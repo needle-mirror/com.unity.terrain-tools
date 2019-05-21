@@ -1,0 +1,93 @@
+﻿//inputs
+Texture2D<float>   InHeightMap;
+Texture2D<float>   InSediment;
+Texture2D<float2>  WindVel;
+
+float4 texDim;     //the dimensions of all of our textures (they must all be the same dimensions)
+
+float dt;
+float SuspensionRate;
+float DepositionRate;
+float SlopeFactor;
+float DragCoefficient;
+float ReflectionCoefficient;
+float AbrasivenessCoefficient;
+
+
+//outputs
+RWTexture2D<float>   OutSediment;
+RWTexture2D<float>   OutHeightMap;
+RWTexture2D<float2>  OutWindVel;
+
+uint4 getSafeNeighbors(uint2 coord) {
+	return uint4(
+		(coord.x < (uint)(texDim[0] - 1)) ? coord.x + 1 : coord.x,  //right index
+		(coord.x > 0) ? (uint)(coord.x - 1) : coord.x,              //left index
+		(coord.y < (uint)(texDim[1] - 1)) ? coord.y + 1 : coord.y,  //bottom index
+		(coord.y > 0) ? (uint)(coord.y - 1) : coord.y               //top index
+		);
+}
+
+#define RIGHT(c)	(c.x)
+#define LEFT(c)		(c.y)
+#define BOTTOM(c)	(c.z)
+#define TOP(c)		(c.w)
+
+float3 computeNormal(uint2 coord) {
+	
+	//This is faster, but doesn't get recomputed every iteration.
+	//float3 n = 2.0f * (SurfaceNormal[coord] - float3(0.5f, 0.5f, 0.5f));
+	//n = normalize(n);
+
+
+	//this is more accurate, and probably is better at removing rectilinear artifacts, since we are sampling 8 neighbors
+	//but... slower
+	uint4 nidx = getSafeNeighbors(coord);
+
+	float dzdx = ((InHeightMap[uint2(RIGHT(nidx), BOTTOM(nidx))] + 2 * InHeightMap[uint2(RIGHT(nidx), coord.y)] + InHeightMap[uint2(RIGHT(nidx), TOP(nidx))]) -
+		(InHeightMap[uint2(LEFT(nidx), BOTTOM(nidx))] + 2 * InHeightMap[uint2(LEFT(nidx), coord.y)] + InHeightMap[uint2(LEFT(nidx), TOP(nidx))])) / 8.0f;
+
+	float dzdy = ((InHeightMap[uint2(LEFT(nidx), TOP(nidx))] + 2 * InHeightMap[uint2(coord.x, TOP(nidx))] + InHeightMap[uint2(RIGHT(nidx), TOP(nidx))]) -
+		(InHeightMap[uint2(LEFT(nidx), BOTTOM(nidx))] + 2 * InHeightMap[uint2(coord.x, BOTTOM(nidx))] + InHeightMap[uint2(RIGHT(nidx), BOTTOM(nidx))])) / 8.0f;
+
+	//float m = length(float2(dzdx, dzdy));
+	//return normalize(float3(dzdx, dzdy, m));
+	return normalize(float3(dzdx, dzdy, 2.0f));
+}
+
+#pragma kernel WindSedimentErode
+[numthreads(8,8,1)]
+void WindSedimentErode(uint3 id : SV_DispatchThreadID)
+{
+	float3 n = computeNormal(id.xy);
+
+	float n_dot_w = max(-1.0f * dot(n.xy, WindVel[id.xy]), 0.0f);
+
+	float pnw = pow(n_dot_w, SlopeFactor);
+	float sandBlast = AbrasivenessCoefficient * dt * InSediment[id.xy];
+	float windSwept = SuspensionRate * dt;
+
+	float suspendedSediment = min(pnw * (sandBlast + windSwept), InHeightMap[id.xy]);
+	float depositedSediment = min(DepositionRate * dt, InSediment[id.xy]);
+
+	float halfHeight = InHeightMap[id.xy] / 2.0f;
+	float dS = clamp(depositedSediment - suspendedSediment, -halfHeight, halfHeight);
+
+	OutSediment[id.xy] = max(InSediment[id.xy] - dS, 0.0f);
+	OutHeightMap[id.xy] = max(InHeightMap[id.xy] + dS, 0.0f);
+}
+
+#pragma kernel ApplyHeightfieldDrag
+[numthreads(8, 8, 1)]
+void ApplyHeightfieldDrag(uint3 id : SV_DispatchThreadID)
+{
+	float3 n = computeNormal(id.xy);
+
+	//use the reflection vector between wind velocity and surface normal to drive "drag"
+	float2 r = WindVel[id.xy] - 2.0f * (dot(WindVel[id.xy], n.xy)) * n.xy;
+
+	float effectiveReflection = ReflectionCoefficient * dt;
+	float effectiveDrag = DragCoefficient * dt;
+
+	OutWindVel[id.xy] = WindVel[id.xy] + effectiveReflection * r - effectiveDrag * WindVel[id.xy];
+}

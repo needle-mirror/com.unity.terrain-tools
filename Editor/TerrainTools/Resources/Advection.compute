@@ -1,0 +1,39 @@
+﻿//Inputs
+float dt;        //user-specified time step
+float velScale;  //user-specified velocity scalar
+float4 dxdy;     //(pixel width, pixel height, (dx,dy).length, 0.0) precomputed
+float2 texDim;  //dimensions of the texture
+
+Texture2D<float>      InputTexFloat;
+Texture2D<float4>     InputTex;
+Texture2D<float2>     VelocityTex;
+
+//output
+RWTexture2D<float4>   OutputTex;
+RWTexture2D<float>    OutputTexFloat;
+
+#pragma kernel Advect
+
+[numthreads(8, 8, 1)]
+void Advect(uint3 id : SV_DispatchThreadID)
+{
+	float2 vel = velScale * VelocityTex[id.xy].xy * dxdy.xy;
+	
+	float x = clamp((float)id.x - (dt * vel.x), 0.0f, texDim[0] - 1.0f);
+	float y = clamp((float)id.y - (dt * vel.y), 0.0f, texDim[1] - 1.0f);
+	
+	uint2 uv0 = uint2((uint)x, (uint)y);
+	uint2 uv1 = uv0 + uint2(1, 1);
+
+	// remainder values, used for blending between texels
+	float s1 = (x - (float)uv0.x) / texDim[0];
+	float s0 = 1.0f - s1;
+	float t1 = (y - (float)uv0.y) / texDim[1];
+	float t0 = 1.0f - t1;
+
+	// sample from 4 backtraced voxels, in proportions based on where the exact backtraced position landed
+	// essentially doing bilinear interpolation here
+	//TODO: use gather4(); ?
+	OutputTex[id.xy] = s0 * (t0 * InputTex[uv0] + t1 * InputTex[uint2(uv0.x, uv1.y)]) +
+		               s1 * (t1 * InputTex[uint2(uv1.x, uv0.x)] + t1 * InputTex[uv1]);
+}
