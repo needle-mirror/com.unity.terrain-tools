@@ -14,7 +14,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Max";
         }
 
-        public override void Eval(RenderTexture src, RenderTexture dest)
+        public override void Eval(RenderTexture src, RenderTexture dest, RenderTextureCollection rtCollection)
         {
             FilterUtility.builtinMaterial.SetFloat("_Max", value);
 

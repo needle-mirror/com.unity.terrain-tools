@@ -313,26 +313,26 @@ namespace UnityEditor.Experimental.TerrainAPI
             public static GUIContent noiseSettings = EditorGUIUtility.TrTextContent("Noise Settings:");
             public static GUIContent randomize = EditorGUIUtility.TrTextContent("Randomize");
             public static GUIContent reset = EditorGUIUtility.TrTextContent("Reset");
-            public static GUIContent flipScale = EditorGUIUtility.TrTextContent("Flip Scale");
-            public static GUIContent flipScaleX = EditorGUIUtility.TrTextContent("X");
-            public static GUIContent flipScaleY = EditorGUIUtility.TrTextContent("Y");
-            public static GUIContent flipScaleZ = EditorGUIUtility.TrTextContent("Z");
-            public static GUIContent noiseType = EditorGUIUtility.TrTextContent("Noise Type");
-            public static GUIContent fractalType = EditorGUIUtility.TrTextContent("Fractal Type");
+            public static GUIContent flipScale = EditorGUIUtility.TrTextContent("Flip Scale", "Flips the scale of the Noise Domain Space");
+            public static GUIContent flipScaleX = EditorGUIUtility.TrTextContent("X", "Flips the scale of the Noise Domain Space along the X-axis");
+            public static GUIContent flipScaleY = EditorGUIUtility.TrTextContent("Y", "Flips the scale of the Noise Domain Space along the Y-axis");
+            public static GUIContent flipScaleZ = EditorGUIUtility.TrTextContent("Z", "Flips the scale of the Noise Domain Space along the Z-axis");
+            public static GUIContent noiseType = EditorGUIUtility.TrTextContent("Noise Type", "The type of Noise to be used");
+            public static GUIContent fractalType = EditorGUIUtility.TrTextContent("Fractal Type", "The type of Fractal to be used when generating Noise");
             public static GUIContent noisePreview;
             public static GUIContent noiseTooltip = EditorGUIUtility.TrTextContent("",
                                 "Scroll Mouse Wheel:\nZooms the preview in and out and changes the noise scale\n\n" +
                                 "Left-mouse Drag:\nPans the noise field and changes the noise translation\n\n" +
                                 "Color Key:\nCyan = negative noise values\nGrayscale = values between 0 and 1\nBlack = values are 0\nRed = Values greater than 1. Used for debugging texture normalization");
             public static GUIContent seed = EditorGUIUtility.TrTextContent("Seed");
-            public static GUIContent domainSettings = EditorGUIUtility.TrTextContent("Domain Settings");
-            public static GUIContent transformSettings = EditorGUIUtility.TrTextContent("Transform Settings");
+            public static GUIContent domainSettings = EditorGUIUtility.TrTextContent("Domain Settings", "Settings governing the Noise Domain. This is specific to each Noise Type and Fractal Type implementation");
+            public static GUIContent transformSettings = EditorGUIUtility.TrTextContent("Transform Settings", "Settings governing the transformations applied to positions in the Noise Domain Space");
             // public static GUIContent filterSettings = EditorGUIUtility.TrTextContent("Filter Settings");
             public static GUIContent ridgePower = EditorGUIUtility.TrTextContent("Ridge Power");
             public static GUIContent billowPower = EditorGUIUtility.TrTextContent("Billow Power");
             public static GUIContent voronoiPower = EditorGUIUtility.TrTextContent("Voronoi Power");
             public static GUIContent power = EditorGUIUtility.TrTextContent("Power");
-            public static GUIContent export = EditorGUIUtility.TrTextContent("Export");
+            public static GUIContent export = EditorGUIUtility.TrTextContent("Export", "Open a window providing options for exporting Noise to Textures");
             public static GUIContent infoIcon = new GUIContent("", EditorGUIUtility.FindTexture("console.infoicon"),
                                 "Scroll Mouse Wheel:\nZooms the preview in and out and changes the noise scale\n\n" +
                                 "Left-mouse Drag:\nPans the noise field and changes the noise translation\n\n" +

@@ -11,7 +11,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Negate";
         }
 
-        public override void Eval(RenderTexture src, RenderTexture dest)
+        public override void Eval(RenderTexture src, RenderTexture dest, RenderTextureCollection rtCollection)
         {
             Graphics.Blit( src, dest, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Negate );
         }

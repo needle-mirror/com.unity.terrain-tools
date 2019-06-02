@@ -138,6 +138,26 @@ namespace UnityEditor.Experimental.TerrainAPI
             m_serializedObject.Update();
         }
 
+        public void OnSceneGUI2D( SceneView sceneView )
+        {
+            Handles.BeginGUI();
+            {
+                if( m_reorderableList.index != -1 && m_reorderableList.index < m_filterStack.filters.Count )
+                {
+                    m_filterStack.filters[ m_reorderableList.index ].DoSceneGUI2D( sceneView );
+                }
+            }
+            Handles.EndGUI();
+        }
+
+        public void OnSceneGUI3D( SceneView sceneView )
+        {
+            if( m_reorderableList.index != -1 && m_reorderableList.index < m_filterStack.filters.Count )
+            {
+                m_filterStack.filters[ m_reorderableList.index ].DoSceneGUI3D( sceneView );
+            }
+        }
+
         private void AddFilter(Type type)
         {
             InsertFilter(m_filtersProperty.arraySize, type);

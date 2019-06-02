@@ -17,7 +17,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Remap";
         }
 
-        public override void Eval(RenderTexture src, RenderTexture dest)
+        public override void Eval(RenderTexture src, RenderTexture dest, RenderTextureCollection rtCollection)
         {
             FilterUtility.builtinMaterial.SetVector( "_RemapRanges", new Vector4( fromRange.x, fromRange.y, toRange.x, toRange.y ) );
 

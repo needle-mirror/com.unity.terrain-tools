@@ -14,7 +14,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Clamp";
         }
 
-        public override void Eval(RenderTexture src, RenderTexture dest)
+        public override void Eval(RenderTexture src, RenderTexture dest, RenderTextureCollection rtCollection)
         {
             FilterUtility.builtinMaterial.SetVector("_ClampRange", range);
 

@@ -42,9 +42,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         /*============================================================================================
-
+        
             UI Helpers
-
+        
         ============================================================================================*/
         
         /// <summary>
@@ -92,9 +92,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         /*==========================================================================================
-
+        
             Get Noise
-
+        
         ==========================================================================================*/
 
         // TODO(wyatt): this needs to be read-only
@@ -175,9 +175,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         /*==========================================================================================
-
+        
             Get Fractals
-
+        
         ==========================================================================================*/
 
         // TODO(wyatt): this needs to be a read-only collection
@@ -260,7 +260,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         /*=========================================================================
 
             Gather Types
-
+        
         =========================================================================*/
 
         private static bool IsSubclassOfGenericType(Type t, Type genericType)
@@ -291,11 +291,27 @@ namespace UnityEditor.Experimental.TerrainAPI
             List<INoiseType> instances = new List<INoiseType>();
             List<string> names = new List< string >();
 
-            List<Type> types = new List<Type>(
-                AppDomain.CurrentDomain.GetAssemblies().SelectMany(
-                    asm => GetSubclassesOfGenericType( asm.GetTypes(), typeof(NoiseType<>) )
-                )
-            );
+            List<Type> types = new List< Type >();
+
+            foreach( Assembly asm in AppDomain.CurrentDomain.GetAssemblies() )
+            {
+                Type[] assemblyTypes = null;
+
+                try
+                {
+                    assemblyTypes = asm.GetTypes();
+                }
+                catch( Exception )
+                {
+                    Debug.Log( "NoiseLib::GatherNoiseTypes: Failed to get types from assembly: " + asm );
+                    assemblyTypes = null;
+                }
+
+                if( assemblyTypes != null )
+                {
+                    types.AddRange( GetSubclassesOfGenericType( assemblyTypes, typeof( NoiseType<> ) ) );
+                }
+            }
 
             foreach (Type t in types)
             {
@@ -307,7 +323,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                 if(string.IsNullOrEmpty(desc.name))
                 {
-                    Debug.LogError("NoiseType name cannot be null or empty! Skipping noise type: " + desc.name);
+                    Debug.LogError("NoiseType name cannot be null or empty! Skipping noise type: " + t);
                     continue;
                 }
 
@@ -324,11 +340,27 @@ namespace UnityEditor.Experimental.TerrainAPI
             List<IFractalType> instances = new List<IFractalType>();
             List<string> names = new List<string>();
 
-            List<Type> types = new List<Type>(
-                AppDomain.CurrentDomain.GetAssemblies().SelectMany(
-                    asm => GetSubclassesOfGenericType( asm.GetTypes(), typeof(FractalType<>) )
-                )
-            );
+            List<Type> types = new List< Type >();
+
+            foreach( Assembly asm in AppDomain.CurrentDomain.GetAssemblies() )
+            {
+                Type[] assemblyTypes = null;
+
+                try
+                {
+                    assemblyTypes = asm.GetTypes();
+                }
+                catch( Exception )
+                {
+                    Debug.Log( "NoiseLib::GatherFractalTypes: Failed to get types from assembly: " + asm );
+                    assemblyTypes = null;
+                }
+
+                if( assemblyTypes != null )
+                {
+                    types.AddRange( GetSubclassesOfGenericType( assemblyTypes, typeof( FractalType<> ) ) );
+                }
+            }
 
             foreach (Type t in types)
             {
@@ -354,7 +386,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         /*==========================================================================================
 
             Load Source
-
+        
         ==========================================================================================*/
 
         private static string[] LoadNoiseSource(INoiseType[] noiseTypes)
@@ -539,6 +571,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// </summary>
         public static void GenerateHeaderFiles()
         {
+            System.Globalization.CultureInfo prevCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
+            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+
             GatherNoiseTypes();
             GatherFractalTypes();
 
@@ -599,24 +634,40 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                     string oldContents = null;
 
-                    if(File.Exists(info.generatedIncludePath))
+                    FileInfo fi = new FileInfo( info.generatedIncludePath );
+
+                    if( File.Exists( info.generatedIncludePath ) )
                     {
-                        using(StreamReader sr = new StreamReader(info.generatedIncludePath))
+                        using( StreamReader sr = new StreamReader( info.generatedIncludePath ) )
                         {
                             oldContents = sr.ReadToEnd();
-                            oldContents = NormalizeLineEndings(oldContents);
+                            oldContents = NormalizeLineEndings( oldContents );
                         }
                     }
 
-                    if(newContents.CompareTo(oldContents) != 0)
+                    if( !fi.IsReadOnly )
                     {
-                        using (StreamWriter sw = new StreamWriter(info.generatedIncludePath))
+                        if(oldContents == null || newContents.CompareTo( oldContents ) != 0)
                         {
-                            sw.Write(newContents);
+                            try
+                            {
+                                using( StreamWriter sw = new StreamWriter( info.generatedIncludePath ) )
+                                {
+                                    sw.Write( newContents );
+                                }
+                            }
+                            catch( Exception )
+                            {
+                                // restore previous cultureinfo
+                                System.Threading.Thread.CurrentThread.CurrentCulture = prevCultureInfo;
+                            }
                         }
                     }
                 }
             }
+            
+            // restore previous cultureinfo
+            System.Threading.Thread.CurrentThread.CurrentCulture = prevCultureInfo;
 
             UnityEditor.AssetDatabase.Refresh();
         }
@@ -624,7 +675,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         /*==========================================================================================
 
             Generate Tool Shaders
-
+        
         ==========================================================================================*/
 
         /// <summary>
@@ -682,12 +733,15 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         /// <summary>
-        /// Forces generation of the any shaders that make use of generated noise header files. Gathers all
+        /// Forces the generation of any shaders that make use of generated noise header files. Gathers all
         /// the NoiseShaderGenerators and generates shaders based on the ".noisehlsltemplate" file
         /// provided by that particular NoiseShaderGenerator implementation
         /// </summary>
         public static void GenerateShaders()
         {
+            System.Globalization.CultureInfo prevCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
+            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+
             GatherGenerators();
 
             IFractalType[] fractalTypes = s_fractalTypes;
@@ -769,7 +823,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                     string currentContents = null;
 
-                    if(File.Exists(filePath))
+                    FileInfo fi = new FileInfo( filePath );
+
+                    if( File.Exists( filePath ) )
                     {
                         using(StreamReader sr = new StreamReader(filePath))
                         {
@@ -785,11 +841,24 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                     newContents = NormalizeLineEndings(newContents);
 
-                    if(currentContents == null || currentContents.CompareTo(newContents) != 0)
+                    // only write to file if it is not read-only, ie. if it is one of the generated
+                    // shader files that we ship with the TerrainTools package
+                    if( !fi.IsReadOnly )
                     {
-                        using(StreamWriter sw = new StreamWriter(filePath))
+                        if(currentContents == null || currentContents.CompareTo(newContents) != 0)
                         {
-                            sw.Write(newContents);
+                            try
+                            {
+                                using(StreamWriter sw = new StreamWriter(filePath))
+                                {
+                                    sw.Write(newContents);
+                                }
+                            }
+                            catch( Exception )
+                            {
+                                // restore previous cultureinfo
+                                System.Threading.Thread.CurrentThread.CurrentCulture = prevCultureInfo;
+                            }
                         }
                     }
 
@@ -797,6 +866,9 @@ namespace UnityEditor.Experimental.TerrainAPI
                     passesSB.Clear();
                 }
             }
+
+            // restore previous cultureinfo
+            System.Threading.Thread.CurrentThread.CurrentCulture = prevCultureInfo;
 
             UnityEditor.AssetDatabase.Refresh();
         }

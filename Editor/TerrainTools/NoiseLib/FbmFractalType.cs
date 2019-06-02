@@ -192,15 +192,15 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         private static class Styles
         {
-            public static GUIContent warpStrength = EditorGUIUtility.TrTextContent("Strength");
-            public static GUIContent warpIterations = EditorGUIUtility.TrTextContent("Iterations");
-            public static GUIContent warpOffsets = EditorGUIUtility.TrTextContent("Offsets");
-            public static GUIContent domainWarpSettings = EditorGUIUtility.TrTextContent("Warp Settings");
-            public static GUIContent octaves = EditorGUIUtility.TrTextContent("Octaves");
-            public static GUIContent amplitude = EditorGUIUtility.TrTextContent("Amplitude");
-            public static GUIContent persistence = EditorGUIUtility.TrTextContent("Persistence");
-            public static GUIContent frequency = EditorGUIUtility.TrTextContent("Frequency");
-            public static GUIContent lacunarity = EditorGUIUtility.TrTextContent("Lacunarity");
+            public static GUIContent warpStrength = EditorGUIUtility.TrTextContent("Strength", "The overall strength of the warping effect");
+            public static GUIContent warpIterations = EditorGUIUtility.TrTextContent("Iterations", "The number of warping iterations applied to the Noise");
+            public static GUIContent warpOffsets = EditorGUIUtility.TrTextContent("Offset", "The offset direction to be used when warping the Noise");
+            public static GUIContent domainWarpSettings = EditorGUIUtility.TrTextContent("Warp Settings", "Settings for applying turbulence to the Noise");
+            public static GUIContent octaves = EditorGUIUtility.TrTextContent("Octaves", "The number of Octaves of Noise to generate. Each Octave is generally a smaller scale than the previous Octave and a larger scale than the next");
+            public static GUIContent amplitude = EditorGUIUtility.TrTextContent("Amplitude", "The unmodified amplitude applied to each Octave of Noise. At each Octave, the amplitude is multiplied by the Persistence");
+            public static GUIContent persistence = EditorGUIUtility.TrTextContent("Persistence", "The scaling factor applied to the Noise Amplitude at each Octave");
+            public static GUIContent frequency = EditorGUIUtility.TrTextContent("Frequency", "The unmodified frequency of Noise at each Octave. At each Octave, the Frequency is multiplied by the Lacunarity");
+            public static GUIContent lacunarity = EditorGUIUtility.TrTextContent("Lacunarity", "The scaling factor applied to the Noise Frequency at each Octave");
         }
     }
 }

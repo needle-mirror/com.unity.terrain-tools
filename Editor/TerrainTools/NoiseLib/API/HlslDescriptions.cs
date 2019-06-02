@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -246,22 +247,28 @@ namespace UnityEditor.Experimental.TerrainAPI
             switch(valueType)
             {
                 case HlslValueType.Float:
-                    constructedValueString = floatValue.val.ToString();
+                    constructedValueString = floatValue.val.ToString( CultureInfo.InvariantCulture );
                     break;
                 case HlslValueType.Float2:
-                    constructedValueString = string.Format("{0}({1})", valueTypeString, float2Value.x + ", " +
-                                                                                        float2Value.y);
+                    constructedValueString = string.Format( CultureInfo.InvariantCulture,
+                                                            "{0}({1})", valueTypeString,
+                                                                float2Value.x.ToString( CultureInfo.InvariantCulture ) + ", " +
+                                                                float2Value.y.ToString( CultureInfo.InvariantCulture ) );
                     break;
                 case HlslValueType.Float3:
-                    constructedValueString = string.Format("{0}({1})", valueTypeString, float3Value.x + ", " +
-                                                                                        float3Value.y + ", " +
-                                                                                        float3Value.z);
+                    constructedValueString = string.Format( CultureInfo.InvariantCulture,
+                                                            "{0}({1})", valueTypeString,
+                                                                float3Value.x.ToString( CultureInfo.InvariantCulture ) + ", " +
+                                                                float3Value.y.ToString( CultureInfo.InvariantCulture ) + ", " +
+                                                                float3Value.z.ToString( CultureInfo.InvariantCulture ) );
                     break;
                 case HlslValueType.Float4:
-                    constructedValueString = string.Format("{0}({1})", valueTypeString, float4Value.x + ", " +
-                                                                                        float4Value.y + ", " +
-                                                                                        float4Value.z + ", " +
-                                                                                        float4Value.w);
+                    constructedValueString = string.Format( CultureInfo.InvariantCulture,
+                                                            "{0}({1})", valueTypeString,
+                                                                float4Value.x.ToString( CultureInfo.InvariantCulture ) + ", " +
+                                                                float4Value.y.ToString( CultureInfo.InvariantCulture ) + ", " +
+                                                                float4Value.z.ToString( CultureInfo.InvariantCulture ) + ", " +
+                                                                float4Value.w.ToString( CultureInfo.InvariantCulture ) );
                     break;
                 default:
                     return "unsupported_type()"; 

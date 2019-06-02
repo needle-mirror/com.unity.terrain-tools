@@ -26,7 +26,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override void OnEnterToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler) {
             base.OnEnterToolMode(shortcutHandler);
-            m_BrushSpacing = GetEditorPrefs("TerrainBrushSpacing", 0.5f);
+            m_BrushSpacing = GetEditorPrefs("TerrainBrushSpacing", 0.0f);
         }
 
         public override void OnExitToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler) {

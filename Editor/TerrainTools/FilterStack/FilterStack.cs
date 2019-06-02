@@ -9,6 +9,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     internal class FilterStack : ScriptableObject
     {
         public List< Filter > filters = new List<Filter>();
+        public RenderTextureCollection rtCollection = new RenderTextureCollection();
 
         [NonSerialized]
         public bool isDirty = true;
@@ -38,7 +39,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             filters.RemoveAt( index );
         }
 
-        public void Eval( RenderTexture src, RenderTexture dest )
+        public void Eval( RenderTexture src, RenderTexture dest, RenderTextureCollection rtCollection )
         {
             int count = filters.Count;
 
@@ -58,7 +59,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( filters[ i ].enabled )
                 {
-                    filters[ i ].Eval( rts[srcIndex], rts[destIndex] );
+                    filters[ i ].Eval( rts[srcIndex], rts[destIndex], rtCollection );
 
                     destIndex += srcIndex;
                     srcIndex = destIndex - srcIndex;

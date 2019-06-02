@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Experimental.TerrainAPI;
 using UnityEditor.ShortcutManagement;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -8,9 +9,23 @@ namespace UnityEditor.Experimental.TerrainAPI
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Mesh Stamp Tool", typeof(TerrainToolShortcutContext))]                // tells shortcut manager what to call the shortcut and what to pass as args
-        static void SelectShortcut(ShortcutArguments args) {
+        static void SelectShortcut(ShortcutArguments args)
+        {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;              // gets interface to modify state of TerrainTools
             context.SelectPaintTool<MeshStampTool>();                                                   // set active tool
+        }
+
+        [ClutchShortcut("Terrain/Adjust Mesh Stamp Transform", typeof(TerrainToolShortcutContext), KeyCode.C)]
+        static void StrengthBrushShortcut(ShortcutArguments args)
+        {
+            if(args.stage == ShortcutStage.Begin)
+            {
+                m_editTransform = true;
+            }
+            else if(args.stage == ShortcutStage.End)
+            {
+                m_editTransform = false;
+            }
         }
 #endif
 
@@ -23,35 +38,74 @@ namespace UnityEditor.Experimental.TerrainAPI
             StampToHeightmap
         }
 
-        [System.Serializable]
-        class MeshStampToolSerializedProperties
+        [SerializeField]
+        IBrushUIGroup brushUI = new MeshBrushUIGroup("Mesh Stamp Tool");
+
+        static class RenderTextureIDs
         {
-            public Quaternion m_StampRotation;
-            public Vector3 m_StampScale;
-            public bool m_OverwriteMode;
-            public float m_StampHeight;
-            public int m_LastBrushSize;
-            public Mesh m_Mesh;
+            public static int cameraView = "cameraView".GetHashCode();
+            public static int meshStamp = "meshStamp".GetHashCode();
+            public static int sourceHeight = "sourceHeight".GetHashCode();
+            public static int combinedHeight = "combinedHeight".GetHashCode();
+        }
+
+        [System.Serializable]
+        class ToolSettings
+        {
+            public Quaternion rotation;
+            public Vector3 scale;
+            public float stampHeight;
+            public float blendAmount;
+            public string meshAssetGUID;
+            public bool showToolSettings;
 
             public void SetDefaults()
             {
-                m_StampRotation = Quaternion.identity;
-                m_StampScale = Vector3.one;
-                m_OverwriteMode = true;
-                m_StampHeight = 0.0f;
-                m_LastBrushSize = 0;
-                m_Mesh = null;
+                rotation = Quaternion.identity;
+                scale = Vector3.one;
+                blendAmount = 0.0f;
+                stampHeight = 0.0f;
+                meshAssetGUID = null;
+                showToolSettings = true;
             }
         }
 
-        MeshStampToolSerializedProperties meshStampToolProperties = new MeshStampToolSerializedProperties();
+        private Mesh m_activeMesh;
+        public Mesh activeMesh
+        {
+            get
+            {
+                if( m_activeMesh == null )
+                {
+                    m_activeMesh = AssetDatabase.LoadAssetAtPath<Mesh>( AssetDatabase.GUIDToAssetPath( toolSettings.meshAssetGUID ) );
+                }
 
-        private RenderTexture m_MeshRenderTexture = null;
+                return m_activeMesh;
+            }
+
+            set
+            {
+                m_activeMesh = value;
+            }
+        }
+
+        ToolSettings toolSettings = new ToolSettings();
+        RenderTextureCollection m_rtCollection;
+
         private Vector3 m_SceneRaycastHitPoint;
         private BrushTransform brushXformIdentity = new BrushTransform(Vector2.zero, Vector2.right, Vector2.up);
-
+        [System.NonSerialized] private bool m_initialized = false;
+        private float m_prevBrushRotation;
+        private float m_prevBrushSize;
+        private Vector3 m_baseHandlePos;
+        private float m_handleHeightOffsetWS;
+        private float m_handleHeightViewOffsetWS;
+        static private bool m_prevEditTransform = false;
+        static private bool m_editTransform = false;
+        Bounds m_worldBounds;
+        
         private Material m_Material = null;
-        private Material GetPaintMaterial()
+        private Material GetMaterial()
         {
             if (m_Material == null)
             {
@@ -59,6 +113,18 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
 
             return m_Material;
+        }
+
+        public override void OnEnterToolMode()
+        {
+            base.OnEnterToolMode();
+            brushUI.OnEnterToolMode();
+        }
+
+        public override void OnExitToolMode()
+        {
+            base.OnExitToolMode();
+            brushUI.OnExitToolMode();
         }
 
         public override string GetName()
@@ -71,222 +137,425 @@ namespace UnityEditor.Experimental.TerrainAPI
             return Styles.descriptionString;
         }
 
-        private PaintContext ApplyBrushInternal(Terrain terrain, Vector2 brushCenterTerrainSpaceXZ, int extraBorderPixels)
+        private void Init()
         {
-            float maxScale = Mathf.Max(meshStampToolProperties.m_StampScale.x, meshStampToolProperties.m_StampScale.z);
-            Vector2 brushSizeScaled = new Vector2(maxScale * 2.0f, maxScale * 2.0f);
-            Rect brushRect = new Rect(brushCenterTerrainSpaceXZ - brushSizeScaled * 0.5f, brushSizeScaled);
-
-            PaintContext context = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushRect, extraBorderPixels);
-            Material mat = GetPaintMaterial();
-
-            DrawMesh(terrain, context, maxScale, mat);
-
-            // draw to heightmap
-            mat.SetTexture("_MeshStampTex", m_MeshRenderTexture);
-            Graphics.Blit(context.sourceRenderTexture, context.destinationRenderTexture, mat, (int)ShaderPasses.StampToHeightmap);
-
-            RenderTexture.ReleaseTemporary(m_MeshRenderTexture);
-            m_MeshRenderTexture = null;
-
-            return context;
-        }
-
-        public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
-        {
-            // don't render mesh previews, etc. if the mesh field has not been populated yet
-            // or the mouse is not over a Terrain tile
-            if (meshStampToolProperties.m_Mesh == null || !editContext.hitValidTerrain)
-            {
-                return;
-            }
-
-            if (!Event.current.shift)
-            {
-                m_SceneRaycastHitPoint = editContext.raycastHit.point + new Vector3(0, meshStampToolProperties.m_StampHeight, 0);
-            }
-
-            if (meshStampToolProperties.m_LastBrushSize != (int)editContext.brushSize)
-            {
-                meshStampToolProperties.m_LastBrushSize = (int)editContext.brushSize;
-                CalculateBrushSizeToWorldScale();
-            }
-
-            Vector3 posTerrainSpace = m_SceneRaycastHitPoint - terrain.GetPosition();
-            PaintContext context = ApplyBrushInternal(terrain, new Vector2(posTerrainSpace.x, posTerrainSpace.z), 1);
-
-            Material material = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
-
-            // restore old render target
-            RenderTexture.active = context.oldRenderTexture;
-            material.SetTexture("_HeightmapOrig", context.sourceRenderTexture);
-            TerrainPaintUtilityEditor.DrawBrushPreview(context, TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture,
-                                                       editContext.brushTexture, brushXformIdentity,
-                                                       material, 1);
-
-            TerrainPaintUtility.ReleaseContextResources(context);
-
-            // draw transform Handles for rot, scale, and height translation
-            if (Event.current.shift)
-            {
-                EditorGUI.BeginChangeCheck();
-                float size = HandleUtility.GetHandleSize(m_SceneRaycastHitPoint);
-                Vector3 scale = Handles.ScaleHandle(meshStampToolProperties.m_StampScale, m_SceneRaycastHitPoint, meshStampToolProperties.m_StampRotation, size * 1.5f);
-
-                scale.x = Mathf.Max(scale.x, 0.02f);
-                scale.y = Mathf.Max(scale.y, 0.02f);
-                scale.z = Mathf.Max(scale.z, 0.02f);
-
-                Quaternion rot = Handles.RotationHandle(meshStampToolProperties.m_StampRotation, m_SceneRaycastHitPoint);
-
-                Handles.DrawingScope drawingScope = new Handles.DrawingScope(Handles.yAxisColor);
-
-                float height = (Handles.Slider(m_SceneRaycastHitPoint, Vector3.up, size, Handles.ArrowHandleCap, 0.01f).y - m_SceneRaycastHitPoint.y) * 0.5f;
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(this, "Mesh Stamp Tool - Scaling Mesh");
-                    meshStampToolProperties.m_StampScale = scale;
-                    meshStampToolProperties.m_StampRotation = rot;
-                    m_SceneRaycastHitPoint.y += height;
-                    meshStampToolProperties.m_StampHeight += height;
-                    RepaintInspector();
-                    editContext.Repaint();
-                    SaveSetting();
-                }
-            }
-        }
-
-        private void RepaintInspector()
-        {
-            Editor[] ed = (Editor[])Resources.FindObjectsOfTypeAll<Editor>();
-            for (int i = 0; i < ed.Length; ++i)
-            {
-                if (ed[i].GetType() == this.GetType())
-                {
-                    ed[i].Repaint();
-                    return;
-                }
-            }
-        }
-        bool m_initialized = false;
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            if (!m_initialized)
+            if( !m_initialized )
             {
                 LoadSettings();
+
+                m_rtCollection = new RenderTextureCollection();
+                m_rtCollection.AddRenderTexture( RenderTextureIDs.cameraView, "cameraView", GraphicsFormat.R8G8B8A8_SRGB );
+                m_rtCollection.AddRenderTexture( RenderTextureIDs.meshStamp, "meshStamp", GraphicsFormat.R16_SFloat );
+                m_rtCollection.AddRenderTexture( RenderTextureIDs.sourceHeight, "sourceHeight", GraphicsFormat.R16_UNorm );
+                m_rtCollection.AddRenderTexture( RenderTextureIDs.combinedHeight, "combinedHeight", GraphicsFormat.R16_UNorm );
+
+                m_rtCollection.debugSize = EditorWindow.GetWindow<SceneView>().position.height / 4;
+
                 m_initialized = true;
             }
+        }
+
+        float nearPlane = -1;
+        float farPlane = 1;
+        float orthoLeft = -1;
+        float orthoRight = 1;
+        float orthoTop = -1;
+        float orthoBottom = 1;
+        float lookAtZ = -1;
+        bool debugOrtho = true;
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            Init();
+
+            // brush GUI
+            brushUI.OnInspectorGUI(terrain, editContext);
+
             EditorGUI.BeginChangeCheck();
-
-            meshStampToolProperties.m_OverwriteMode = EditorGUILayout.Toggle(Styles.overwriteContent, meshStampToolProperties.m_OverwriteMode);
-            meshStampToolProperties.m_StampHeight = EditorGUILayout.FloatField(Styles.stampHeightContent, meshStampToolProperties.m_StampHeight);
-
-            meshStampToolProperties.m_StampScale = EditorGUILayout.Vector3Field(Styles.stampScaleContent, meshStampToolProperties.m_StampScale);
-            meshStampToolProperties.m_StampScale.x = Mathf.Max(meshStampToolProperties.m_StampScale.x, 0.02f);
-            meshStampToolProperties.m_StampScale.y = Mathf.Max(meshStampToolProperties.m_StampScale.y, 0.02f);
-            meshStampToolProperties.m_StampScale.z = Mathf.Max(meshStampToolProperties.m_StampScale.z, 0.02f);
-
-            meshStampToolProperties.m_StampRotation = Quaternion.Euler(EditorGUILayout.Vector3Field(Styles.stampRotationContent, meshStampToolProperties.m_StampRotation.eulerAngles));
-
-            EditorGUILayout.BeginHorizontal();
             {
-                meshStampToolProperties.m_Mesh = EditorGUILayout.ObjectField(Styles.meshContent, meshStampToolProperties.m_Mesh as Object, typeof(Mesh), false) as Mesh;
+                toolSettings.showToolSettings = TerrainToolGUIHelper.DrawHeaderFoldout( Styles.settings, toolSettings.showToolSettings );
+                if( toolSettings.showToolSettings )
+                {                    
+                    toolSettings.blendAmount = EditorGUILayout.Slider( Styles.blendAmount, toolSettings.blendAmount, 0, 1 );
 
-                if (GUILayout.Button(Styles.resetTransformContent, GUILayout.ExpandWidth(false)))
-                {
-                    CalculateBrushSizeToWorldScale();
-                    meshStampToolProperties.m_StampRotation = Quaternion.identity;
-                    meshStampToolProperties.m_StampHeight = 0;
-                    meshStampToolProperties.m_StampScale = Vector3.one;
+                    if (activeMesh == null)
+                    {
+                        EditorGUILayout.HelpBox(Styles.nullMeshString, MessageType.Warning);
+                    }
+
+                    EditorGUILayout.BeginHorizontal();
+                    {
+                        activeMesh = EditorGUILayout.ObjectField(Styles.meshContent, activeMesh as Object, typeof(Mesh), false) as Mesh;
+
+                        if (GUILayout.Button(Styles.resetTransformContent, GUILayout.ExpandWidth(false)))
+                        {
+                            toolSettings.rotation = Quaternion.identity;
+                            toolSettings.stampHeight = 0;
+                            toolSettings.scale = Vector3.one;
+                        }
+                    }
+                    EditorGUILayout.EndHorizontal();
+
+                    toolSettings.stampHeight = EditorGUILayout.FloatField( Styles.stampHeightContent, toolSettings.stampHeight );
+
+                    toolSettings.scale = EditorGUILayout.Vector3Field( Styles.stampScaleContent, toolSettings.scale );
+                    toolSettings.scale.x = Mathf.Max( toolSettings.scale.x, 0.02f );
+                    toolSettings.scale.y = Mathf.Max( toolSettings.scale.y, 0.02f );
+                    toolSettings.scale.z = Mathf.Max( toolSettings.scale.z, 0.02f );
+
+                    toolSettings.rotation = Quaternion.Euler(EditorGUILayout.Vector3Field(Styles.stampRotationContent, toolSettings.rotation.eulerAngles));
                 }
             }
-            EditorGUILayout.EndHorizontal();
 
-            if (meshStampToolProperties.m_Mesh == null)
-            {
-                EditorGUILayout.HelpBox(Styles.nullMeshString, MessageType.Info);
-            }
+            // EditorGUILayout.BeginVertical("GroupBox");
+            // {
+            //     GUILayout.Label( "World Bounds:" );
+            //     GUILayout.Label( "Center: " + m_worldBounds.center );
+            //     GUILayout.Label( "Size: " + m_worldBounds.size );
+            //     GUILayout.Label( "Max: " + m_worldBounds.max );
+            //     GUILayout.Label( "Min: " + m_worldBounds.min );
+            // }
+            // EditorGUILayout.EndVertical();
+
+            // EditorGUILayout.BeginVertical("GroupBox");
+            // {
+            //     GUILayout.Label( "Ortho Camera:" );
+            //     GUILayout.Label( "LookAt: " + lookAtZ );
+            //     GUILayout.Label( "Near: " + nearPlane );
+            //     GUILayout.Label( "Far: " + farPlane );
+            //     GUILayout.Label( "Right: " + orthoRight );
+            //     GUILayout.Label( "Left: " + orthoLeft );
+            // }
+            // EditorGUILayout.EndVertical();
+
+            // EditorGUILayout.BeginVertical("GroupBox");
+            // {
+            //     GUILayout.Label( "Handle Info:" );
+            //     GUILayout.Label( "Handle Pos: " + m_baseHandlePos );
+            //     GUILayout.Label( "Delta height: " + m_handleHeightOffsetWS );
+            //     GUILayout.Label( "Stamp height: " + toolSettings.stampHeight );
+            // }
+            // EditorGUILayout.EndVertical();
+
+            // debugOrtho = TerrainToolGUIHelper.DrawHeaderFoldout( new GUIContent("Debug"), debugOrtho );
+            // if( debugOrtho )
+            // {
+            //     orthoLeft = EditorGUILayout.FloatField( "Left", orthoLeft );
+            //     orthoRight = EditorGUILayout.FloatField( "Right", orthoRight );
+            //     orthoTop = EditorGUILayout.FloatField( "Top", orthoTop );
+            //     orthoBottom = EditorGUILayout.FloatField( "Bottom", orthoBottom );
+            //     nearPlane = EditorGUILayout.FloatField( "Near", nearPlane );
+            //     farPlane = EditorGUILayout.FloatField( "Far", farPlane );
+            //     lookAtZ = EditorGUILayout.FloatField( "LookAtZ", lookAtZ );
+            // }
 
             if (EditorGUI.EndChangeCheck())
             {
-                SaveSetting();
+                SaveSettings();
                 Save(true);
             }
         }
 
-        private void DrawMesh(Terrain terrain, PaintContext context, float maxScale, Material mat)
+        public override void OnSceneGUI( Terrain terrain, IOnSceneGUI editContext )
         {
-            m_MeshRenderTexture = RenderTexture.GetTemporary(context.pixelRect.width, context.pixelRect.height, 0, terrain.terrainData.heightmapTexture.format, RenderTextureReadWrite.Linear);
-            RenderTexture.active = m_MeshRenderTexture;
+            Init();
 
-            // clear black when adding, and white when subtracting
-            GL.Clear(true, true, Event.current.control ? Color.white : Color.black, 1.0f);
+            // m_rtCollection.DebugGUI( editContext.sceneView );
 
-            // adjust the scale of the mesh to be xyz = 1,y,1 for standard scale of 1,1,1. BrushSize will expand mesh in texture, therefore we need to inverse the scale here
-            Vector3 adjustedScale = new Vector3(1, meshStampToolProperties.m_StampScale.y / maxScale, 1);
-            if (meshStampToolProperties.m_StampScale.x > meshStampToolProperties.m_StampScale.z)
+            brushUI.OnSceneGUI2D( terrain, editContext );
+
+            // only do the rest if user mouse hits valid terrain or they are using the
+            // brush parameter hotkeys to resize, etc
+            if ( !editContext.hitValidTerrain && !brushUI.isInUse && !m_editTransform && !debugOrtho )
             {
-                adjustedScale.z = meshStampToolProperties.m_StampScale.z / meshStampToolProperties.m_StampScale.x;
-                adjustedScale.y = meshStampToolProperties.m_StampScale.y / meshStampToolProperties.m_StampScale.x;
-            }
-            else if (meshStampToolProperties.m_StampScale.z > meshStampToolProperties.m_StampScale.x)
-            {
-                adjustedScale.x = meshStampToolProperties.m_StampScale.x / meshStampToolProperties.m_StampScale.z;
-                adjustedScale.y = meshStampToolProperties.m_StampScale.y / meshStampToolProperties.m_StampScale.z;
+                return;
             }
 
-            // setup the matrices for rendering manually (to render without a camera)
-            Matrix4x4 proj = Matrix4x4.Ortho(-1.0f, 1.0f, -1.0f, 1.0f, terrain.terrainData.size.y * 2.0f, -1.0f);
-            Matrix4x4 view = Matrix4x4.LookAt(new Vector3(0, 0, -terrain.terrainData.size.y), Vector3.forward, Vector3.up);
-            Matrix4x4 drawTranslate = Matrix4x4.Translate(new Vector3(0, 0, terrain.terrainData.size.y * 0.5f));
-            Matrix4x4 stampTranslate = Matrix4x4.Translate(new Vector3(0, 0, m_SceneRaycastHitPoint.y * 0.5f));
-            Matrix4x4 scale = Matrix4x4.Scale(adjustedScale);
-            Matrix4x4 rotate = Matrix4x4.Rotate(Quaternion.AngleAxis(90.0f, new Vector3(1, 0, 0)) * meshStampToolProperties.m_StampRotation);
-            Matrix4x4 postScale = Matrix4x4.Scale(new Vector3(1, 1, maxScale * 0.5f));
-            Matrix4x4 postScaleRotScale = postScale * rotate * scale;
-            mat.SetMatrix("_MVP", proj * view * drawTranslate * postScaleRotScale);
-            mat.SetMatrix("_Model", stampTranslate * postScaleRotScale);
-            mat.SetVector("_StampParams", new Vector4(
-                                        terrain.terrainData.size.y,               // terrain max height
-                                        m_SceneRaycastHitPoint.y * 0.5f,          // desired mesh height
-                                        meshStampToolProperties.m_OverwriteMode ? 100.0f : 0.0f,          // if in override
-                                        !Event.current.control ? 100.0f : 0.0f)); // if adding or not
-            mat.SetVector("_BrushParams", new Vector4(meshStampToolProperties.m_StampHeight * 0.5f, 0.0f, 0.0f, 0.0f));
+            // update brush UI group
+            brushUI.OnSceneGUI( terrain, editContext );
 
-            // back face culling = boolean operation addition, front face culling = boolean operation subtraction
-            if (!Event.current.control)
+            bool justPressedEditKey = m_editTransform && !m_prevEditTransform;
+            bool justReleaseEditKey = m_prevEditTransform && !m_editTransform;
+            m_prevEditTransform = m_editTransform;
+
+            if( justPressedEditKey )
             {
-                mat.SetPass((int)ShaderPasses.DepthPassFrontFaces);
+                ( brushUI as MeshBrushUIGroup).LockTerrainUnderCursor( true );
+                m_baseHandlePos = brushUI.raycastHitUnderCursor.point;
+                m_handleHeightOffsetWS = 0;
             }
-            else
+            else if( justReleaseEditKey )
             {
-                mat.SetPass((int)ShaderPasses.DepthPassBackFaces);
+                ( brushUI as MeshBrushUIGroup).UnlockTerrainUnderCursor();
+                m_handleHeightOffsetWS = 0;
             }
 
-            GL.PushMatrix();
-            Graphics.DrawMeshNow(meshStampToolProperties.m_Mesh, Matrix4x4.identity);
-            GL.PopMatrix();
+            // don't render mesh previews, etc. if the mesh field has not been populated yet
+            if ( activeMesh == null )
+            {
+                return;
+            }
+
+            // dont render preview if this isnt a repaint. losing performance if we do
+            if ( Event.current.type == EventType.Repaint )
+            {
+                Terrain currTerrain = brushUI.terrainUnderCursor;
+                Vector2 uv = brushUI.raycastHitUnderCursor.textureCoord;
+                float brushSize = brushUI.brushSize;
+                float brushRotation = brushUI.brushRotation;
+
+                if ( /* debugOrtho || */ brushUI.isRaycastHitUnderCursorValid )
+                {
+                    // if(debugOrtho)
+                    // {
+                    //     uv = Vector2.one * .5f;
+                    // }
+
+                    BrushTransform brushTransform = TerrainPaintUtility.CalculateBrushTransform( currTerrain, uv, brushSize, brushRotation );
+                    PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap( brushUI.terrainUnderCursor, brushTransform.GetBrushXYBounds(), 1 );
+                    Material material = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
+                
+                    // don't draw the brush mask preview
+                    // but draw the resulting mesh stamp preview
+                    {
+                        ApplyBrushInternal( terrain, ctx, brushTransform );
+
+                        TerrainPaintUtilityEditor.DrawBrushPreview( ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, 
+                                                                    m_rtCollection[ RenderTextureIDs.meshStamp ], brushTransform, material, 0 );
+
+                        RenderTexture.active = ctx.oldRenderTexture;
+
+                        material.SetTexture( "_HeightmapOrig", ctx.sourceRenderTexture );
+                        TerrainPaintUtility.SetupTerrainToolMaterialProperties( ctx, brushTransform, material );
+                        TerrainPaintUtilityEditor.DrawBrushPreview( ctx, TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture,
+                                                                    m_rtCollection[ RenderTextureIDs.meshStamp ], brushTransform, material, 1 );
+
+                        TerrainPaintUtility.ReleaseContextResources( ctx );
+                    }
+                }
+            }
+
+            if( m_editTransform )
+            {
+                EditorGUI.BeginChangeCheck();
+                {
+                    Vector3 prevHandlePosWS = m_baseHandlePos + Vector3.up * m_handleHeightOffsetWS;
+
+                    // draw transform handles
+                    float handleSize = HandleUtility.GetHandleSize( prevHandlePosWS );
+                    toolSettings.scale = Handles.ScaleHandle( toolSettings.scale, prevHandlePosWS, toolSettings.rotation, handleSize * 1.5f );
+                    Quaternion brushRotation = Quaternion.AngleAxis( brushUI.brushRotation, Vector3.up );
+                    toolSettings.rotation = Handles.RotationHandle( toolSettings.rotation, prevHandlePosWS );
+                    
+                    Vector3 currHandlePosWS = Handles.Slider( prevHandlePosWS, Vector3.up, handleSize, Handles.ArrowHandleCap, 1f );
+                    float deltaHeight = ( currHandlePosWS.y - prevHandlePosWS.y );
+                    m_handleHeightOffsetWS += deltaHeight;
+                    toolSettings.stampHeight += deltaHeight;
+                }
+                
+                if( EditorGUI.EndChangeCheck() )
+                {
+                    editContext.Repaint();
+                    SaveSettings();
+                }
+            }
         }
 
-        private void CalculateBrushSizeToWorldScale()
+        Bounds TransformBounds( Matrix4x4 m, Bounds bounds )
         {
-            meshStampToolProperties.m_StampScale.x = meshStampToolProperties.m_LastBrushSize;
-            meshStampToolProperties.m_StampScale.z = meshStampToolProperties.m_LastBrushSize;
-            meshStampToolProperties.m_StampScale.y = meshStampToolProperties.m_LastBrushSize;
+            Vector3[] points = new Vector3[ 8 ];
 
-            RepaintInspector();
+            // get points for each corner of the bounding box
+            points[ 0 ] = new Vector3( bounds.max.x, bounds.max.y, bounds.max.z );
+            points[ 1 ] = new Vector3( bounds.min.x, bounds.max.y, bounds.max.z );
+            points[ 2 ] = new Vector3( bounds.max.x, bounds.min.y, bounds.max.z );
+            points[ 3 ] = new Vector3( bounds.max.x, bounds.max.y, bounds.min.z );
+            points[ 4 ] = new Vector3( bounds.min.x, bounds.min.y, bounds.max.z );
+            points[ 5 ] = new Vector3( bounds.min.x, bounds.min.y, bounds.min.z );
+            points[ 6 ] = new Vector3( bounds.max.x, bounds.min.y, bounds.min.z );
+            points[ 7 ] = new Vector3( bounds.min.x, bounds.max.y, bounds.min.z );
+
+            Vector3 min = Vector3.one * float.PositiveInfinity;
+            Vector3 max = Vector3.one * float.NegativeInfinity;
+
+            for( int i = 0; i < points.Length; ++i )
+            {
+                Vector3 p = m.MultiplyPoint( points[ i ] );
+
+                // update min values
+                if( p.x < min.x )
+                {
+                    min.x = p.x;
+                }
+
+                if( p.y < min.y )
+                {
+                    min.y = p.y;
+                }
+
+                if( p.z < min.z )
+                {
+                    min.z = p.z;
+                }
+
+                // update max values
+                if( p.x > max.x )
+                {
+                    max.x = p.x;
+                }
+
+                if( p.y > max.y )
+                {
+                    max.y = p.y;
+                }
+
+                if( p.z > max.z )
+                {
+                    max.z = p.z;
+                }
+            }
+
+            return new Bounds() { max = max, min = min };
+        }
+
+        private Vector3 MulVector( Vector3 a, Vector3 b )
+        {
+            return new Vector3( a.x * b.x, a.y * b.y, a.z * b.z );
+        }
+
+        private void ApplyBrushInternal(Terrain terrain, PaintContext ctx, BrushTransform brushTransform)
+        {
+            m_rtCollection.ReleaseRenderTextures();
+            m_rtCollection.GatherRenderTextures( ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height );
+
+            Graphics.Blit( ctx.sourceRenderTexture, m_rtCollection[ RenderTextureIDs.sourceHeight ] );
+
+            bool needsUpdate = true;
+
+            // check if mesh or mesh transform changed, otherwise use previous blit
+            if( needsUpdate )
+            {
+                Material mat = GetMaterial();
+
+                // build model, view, and projection matrices
+                // if( !debugOrtho )
+                // {
+                //     orthoLeft = -1;
+                //     orthoRight = 1;
+                //     orthoTop = -1;
+                //     orthoBottom = 1;
+                //     nearPlane = -1;
+                // }
+
+                Matrix4x4 toolMatrix = Matrix4x4.TRS( Vector3.zero, toolSettings.rotation, toolSettings.scale );
+
+                Bounds modelBounds = activeMesh.bounds;
+                float maxModelScale = Mathf.Max( Mathf.Max( modelBounds.size.x, modelBounds.size.y ), modelBounds.size.z );
+                // maxModelScale *= Mathf.Sqrt( 2 + maxModelScale * maxModelScale / 4 ) * .5f; // mult so the mesh fits a little better within the camera / stamp texture bounds
+                // maxModelScale /= 1.414f; 
+                float x = .5f;
+                float y = .5f;
+                float xy = Mathf.Sqrt( x * x + y * y );
+                float z = .5f;
+                float xyz = Mathf.Sqrt( xy * xy + z * z );
+                maxModelScale *= xyz;
+
+                // build the model matrix to transform the mesh with.
+                Matrix4x4 model = toolMatrix * Matrix4x4.Scale( Vector3.one / maxModelScale ) * Matrix4x4.Translate( -modelBounds.center );
+
+                // get the world bounds here so we can calculate the needed offset along the up axis
+                // Bounds worldBounds = TransformBounds( model, activeMesh.bounds );
+                // float localHeightOffset = Mathf.Min( worldBounds.extents.y, toolSettings.stampHeight / brushUI.terrainUnderCursor.terrainData.size.y  * .5f );
+                // Matrix4x4 localHeightOffsetMatrix = Matrix4x4.Translate( Vector3.up * localHeightOffset );
+                // apply the local height offset
+                // model = localHeightOffsetMatrix * model;
+
+                Vector3 translate = Vector3.up * toolSettings.stampHeight / brushUI.terrainUnderCursor.terrainData.size.y;
+                // translate = translate / brushUI.brushStrength * .5f;
+                model = Matrix4x4.Translate( translate ) * model;
+
+                // actually render the mesh to texture to be used with the tool shader
+                RenderMeshToRenderTexture( activeMesh, model, m_rtCollection[ RenderTextureIDs.meshStamp ], mat, 0 );
+                
+                // perform actual composite of mesh stamp and terrain source heightmap
+                float brushStrength = Event.current.control ? -brushUI.brushStrength : brushUI.brushStrength;
+                float baseHeight = Event.current.control ? toolSettings.stampHeight / brushUI.terrainUnderCursor.terrainData.size.y * brushUI.brushStrength / .5f : 0;
+                Vector4 brushParams = new Vector4( brushStrength, toolSettings.blendAmount, 0, baseHeight );
+                mat.SetVector( "_BrushParams", brushParams );
+                mat.SetTexture( "_MeshStampTex", m_rtCollection[ RenderTextureIDs.meshStamp ] );
+                TerrainPaintUtility.SetupTerrainToolMaterialProperties( ctx, brushTransform, mat );
+                Graphics.Blit( ctx.sourceRenderTexture, ctx.destinationRenderTexture, mat, 1 );
+                Graphics.Blit( ctx.destinationRenderTexture, m_rtCollection[ RenderTextureIDs.combinedHeight ] );
+            }
+            
+            // restore old render target
+            RenderTexture.active = ctx.oldRenderTexture;
+        }
+
+        private void RenderMeshToRenderTexture( Mesh mesh, Matrix4x4 model, RenderTexture destination, Material mat, int pass )
+        {
+            RenderTexture prev = RenderTexture.active;
+            RenderTexture.active = destination;
+
+            // normally we'd probably want to use camera space mesh bounds but, in this case, the world bounds
+            // should be the same as the camera bounds with an orthographic and axis aligned camera with just
+            // the y and z components swapped
+            m_worldBounds = TransformBounds( model, mesh.bounds );
+            // Debug.Log( $@"worldBounds = {worldBounds}" );
+
+            // if( !debugOrtho )
+            {
+                lookAtZ = -( m_worldBounds.center.y );
+                float range = m_worldBounds.max.y - Mathf.Max( m_worldBounds.center.y, m_worldBounds.min.y );
+                nearPlane = -range * 10;
+                farPlane =  1;
+            }
+
+            // build view and projection matrices
+            Vector3 lookAtOrigin = new Vector3( 0, 0, lookAtZ );
+            Matrix4x4 view = Matrix4x4.LookAt( lookAtOrigin, lookAtOrigin + Vector3.down, Vector3.forward );
+            Matrix4x4 proj = Matrix4x4.Ortho( orthoLeft, orthoRight, orthoTop, orthoBottom, nearPlane, farPlane );
+
+            GL.Clear( true, true, Color.black );
+
+            mat.SetMatrix( "_Matrix_M", model );
+            mat.SetMatrix( "_Matrix_MV", view * model );
+            mat.SetMatrix( "_Matrix_MVP", proj * view * model );
+            mat.SetFloat( "_InvHeight", 1 );
+
+            mat.SetPass( pass );
+            GL.PushMatrix();
+            {
+                Graphics.DrawMeshNow( activeMesh, Matrix4x4.identity );
+            }
+            GL.PopMatrix();
+
+            RenderTexture.active = prev;
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
-            if (meshStampToolProperties.m_Mesh == null || Event.current.type != EventType.MouseDown || Event.current.shift == true)
+            Init();
+
+            if (activeMesh == null || Event.current.type != EventType.MouseDown || Event.current.shift == true || m_editTransform)
+            {
                 return false;
+            }
 
-            Vector3 terrainSize = terrain.terrainData.size;
-            PaintContext context = ApplyBrushInternal(terrain, editContext.uv * new Vector2(terrainSize.x, terrainSize.z), 0);
+            brushUI.OnPaint( terrain, editContext );
 
-            TerrainPaintUtility.EndPaintHeightmap(context, "Terrain Paint - Mesh Stamp");
+            if ( brushUI.allowPaint )
+            {
+                Texture brushTexture = editContext.brushTexture;
+                
+                BrushTransform brushTransform = TerrainPaintUtility.CalculateBrushTransform( terrain, editContext.uv, brushUI.brushSize, brushUI.brushRotation );
+                PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap( terrain, brushTransform.GetBrushXYBounds() );
+
+                ApplyBrushInternal( terrain, ctx, brushTransform );
+
+                TerrainPaintUtility.EndPaintHeightmap( ctx, "Mesh Stamp - Stamp Mesh" );
+            }
+
             return true;
         }
 
@@ -297,35 +566,30 @@ namespace UnityEditor.Experimental.TerrainAPI
                     "Left Click to stamp the selected mesh into the heightmap (addition)." +
                     "\n\nHold Control + Left Click to indent the selected mesh into the heightmap (subtraction)." +
                     "\n\nHold Shift to bring up the gizmos for rotation, scale, and height.";
-            public static readonly GUIContent overwriteContent =
-                    EditorGUIUtility.TrTextContent("Overwrite", "Overwrites the height by simply stamping the mesh as is into the terrian.");
-            public static readonly GUIContent stampHeightContent =
-                    EditorGUIUtility.TrTextContent("Height", "The height to stamp the mesh into the terrain at.");
-            public static readonly GUIContent stampScaleContent =
-                    EditorGUIUtility.TrTextContent("Scale", "The scale of the mesh.");
-            public static readonly GUIContent stampRotationContent =
-                    EditorGUIUtility.TrTextContent("Rotation", "The rotation of the mesh.");
-            public static readonly GUIContent meshContent =
-                    EditorGUIUtility.TrTextContent("Mesh", "The mesh to stamp.");
-            public static readonly GUIContent resetTransformContent =
-                    EditorGUIUtility.TrTextContent("Reset Transform", "Resets the mesh's rotation, scale, and height to their default state.");
-            public static readonly string nullMeshString =
-                    "Must assign a mesh to use with the Mesh Stamp Tool.";
+            public static readonly GUIContent blendAmount = EditorGUIUtility.TrTextContent("Blend Amount",
+                                    "Amount of blending to apply to the stamp. 0 means no blending. 1 means fully additive blending");
+            public static readonly GUIContent stampHeightContent = EditorGUIUtility.TrTextContent("Height", "The height to stamp the mesh into the terrain at.");
+            public static readonly GUIContent stampScaleContent = EditorGUIUtility.TrTextContent("Scale", "The scale of the mesh.");
+            public static readonly GUIContent stampRotationContent = EditorGUIUtility.TrTextContent("Rotation", "The rotation of the mesh.");
+            public static readonly GUIContent meshContent = EditorGUIUtility.TrTextContent("Mesh", "The mesh to stamp.");
+            public static readonly GUIContent settings = EditorGUIUtility.TrTextContent("Mesh Stamp Settings");
+            public static readonly GUIContent resetTransformContent = EditorGUIUtility.TrTextContent("Reset Transform",
+                                    "Resets the mesh's rotation, scale, and height to their default state.");
+            public static readonly string nullMeshString = "Must assign a mesh to use with the Mesh Stamp Tool.";
         }
 
-        private void SaveSetting()
+        private void SaveSettings()
         {
-            string meshstampToolData = JsonUtility.ToJson(meshStampToolProperties);
+            toolSettings.meshAssetGUID = AssetDatabase.AssetPathToGUID( AssetDatabase.GetAssetPath( activeMesh ) );
+            string meshstampToolData = JsonUtility.ToJson( toolSettings );
             EditorPrefs.SetString("Unity.TerrainTools.MeshStamp", meshstampToolData);
-
         }
 
         private void LoadSettings()
         {
-
             string meshstampToolData = EditorPrefs.GetString("Unity.TerrainTools.MeshStamp");
-            meshStampToolProperties.SetDefaults();
-            JsonUtility.FromJsonOverwrite(meshstampToolData, meshStampToolProperties);
+            toolSettings.SetDefaults();
+            JsonUtility.FromJsonOverwrite(meshstampToolData, toolSettings);
         }
     }
 }

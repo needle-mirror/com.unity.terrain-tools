@@ -14,7 +14,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Add";
         }
 
-        public override void Eval(RenderTexture src, RenderTexture dest)
+        public override void Eval(RenderTexture src, RenderTexture dest, RenderTextureCollection rtCollection)
         {
             FilterUtility.builtinMaterial.SetFloat("_Add", value);
 

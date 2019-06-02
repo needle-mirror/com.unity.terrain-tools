@@ -224,25 +224,25 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                     noiseSettingsGUI.DrawPreviewTexture(256f, true);
 
-                    GUILayout.Space(12);
+                    // GUILayout.Space(12);
 
-                    // fill controls
-                    EditorGUILayout.BeginHorizontal();
-                    {
-                        EditorGUILayout.PrefixLabel( Styles.fillOptions );
+                    // // fill controls
+                    // EditorGUILayout.BeginHorizontal();
+                    // {
+                    //     EditorGUILayout.PrefixLabel( Styles.fillOptions );
 
-                        if (GUILayout.Button(Styles.fillSelected))
-                        {
-                            FillTile(terrain);
-                        }
+                    //     if (GUILayout.Button(Styles.fillSelected))
+                    //     {
+                    //         FillTile(terrain);
+                    //     }
                         
-                        if(GUILayout.Button(Styles.fillGroup))
-                        {
-                            FillAllTiles(terrain);
-                        }
-                    }
-                    EditorGUILayout.EndHorizontal();
-                    // end fill controls
+                    //     if(GUILayout.Button(Styles.fillGroup))
+                    //     {
+                    //         FillAllTiles(terrain);
+                    //     }
+                    // }
+                    // EditorGUILayout.EndHorizontal();
+                    // // end fill controls
 
                     GUILayout.Space(12);
 
@@ -718,17 +718,17 @@ namespace UnityEditor.Experimental.TerrainAPI
             public static GUIContent fillOptions = EditorGUIUtility.TrTextContent("Fill Options");
             public static GUIContent fillSelected = EditorGUIUtility.TrTextContent("Fill Selected Tile");
             public static GUIContent fillGroup = EditorGUIUtility.TrTextContent("Fill Tiles in Group");
-            public static GUIContent reset = EditorGUIUtility.TrTextContent("Reset");
-            public static GUIContent revert = EditorGUIUtility.TrTextContent("Revert");
-            public static GUIContent apply = EditorGUIUtility.TrTextContent("Apply");
-            public static GUIContent saveAs = EditorGUIUtility.TrTextContent("Save As");
+            public static GUIContent reset = EditorGUIUtility.TrTextContent("Reset", "Reset the Noise Settings to the default settings");
+            public static GUIContent revert = EditorGUIUtility.TrTextContent("Revert", "Revert the Noise Settings to the values of the Asset that is saved on disk");
+            public static GUIContent apply = EditorGUIUtility.TrTextContent("Apply", "Apply the current Noise Settings to the Asset that is saved on disk");
+            public static GUIContent saveAs = EditorGUIUtility.TrTextContent("Save As", "Open a window allowing you to save the current Noise Settings to a new Asset on disk");
             public static GUIContent liveUpdate = EditorGUIUtility.TrTextContent("Live Update:");
-            public static GUIContent noiseSettingsProfile = EditorGUIUtility.TrTextContent("Noise Settings Profile");
-            public static GUIContent coordSpace = EditorGUIUtility.TrTextContent("Coordinate Space");
-            public static GUIContent worldSpace = EditorGUIUtility.TrTextContent("World");
-            public static GUIContent brushSpace = EditorGUIUtility.TrTextContent("Brush");
+            public static GUIContent noiseSettingsProfile = EditorGUIUtility.TrTextContent("Noise Settings Profile", "The Noise Settings Asset to use when generating Noise for this tool");
+            public static GUIContent coordSpace = EditorGUIUtility.TrTextContent("Coordinate Space", "The coordinate space that is used when calculating positions fed into the Noise generation");
+            public static GUIContent worldSpace = EditorGUIUtility.TrTextContent("World", "World space positions are used to generate Noise");
+            public static GUIContent brushSpace = EditorGUIUtility.TrTextContent("Brush", "Brush space positions based on Brush UVs are used to generate Noise");
             public static GUIContent worldSpaceHeightRange = EditorGUIUtility.TrTextContent("World Height Range");
-            public static GUIContent noiseToolSettings = EditorGUIUtility.TrTextContent("Noise Height Tool Settings");
+            public static GUIContent noiseToolSettings = EditorGUIUtility.TrTextContent("Noise Height Tool Settings", "Settings for the Noise Height Tool");
         }
     }
 }
