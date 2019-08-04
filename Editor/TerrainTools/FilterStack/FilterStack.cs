@@ -6,13 +6,10 @@ using System.Collections.Generic;
 namespace UnityEditor.Experimental.TerrainAPI
 {
     [System.Serializable]
-    internal class FilterStack : ScriptableObject
+    public class FilterStack : ScriptableObject
     {
+        [SerializeField]
         public List< Filter > filters = new List<Filter>();
-        public RenderTextureCollection rtCollection = new RenderTextureCollection();
-
-        [NonSerialized]
-        public bool isDirty = true;
 
         void OnEnable()
         {
@@ -39,7 +36,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             filters.RemoveAt( index );
         }
 
-        public void Eval( RenderTexture src, RenderTexture dest, RenderTextureCollection rtCollection )
+        public void Eval(FilterContext fc)
         {
             int count = filters.Count;
 
@@ -50,16 +47,22 @@ namespace UnityEditor.Experimental.TerrainAPI
             int srcIndex = 0;
             int destIndex = 1;
 
-            rts[0] = RenderTexture.GetTemporary(src.descriptor);
-            rts[1] = RenderTexture.GetTemporary(src.descriptor);
+            rts[0] = RenderTexture.GetTemporary(fc.destinationRenderTexture.descriptor);
+            rts[1] = RenderTexture.GetTemporary(fc.destinationRenderTexture.descriptor);
 
-            Graphics.Blit(src, rts[0]);
+            rts[0].enableRandomWrite = true;
+            rts[1].enableRandomWrite = true;
+
+            Graphics.Blit(Texture2D.whiteTexture, rts[0]);
+            Graphics.Blit(Texture2D.blackTexture, rts[1]); //don't remove this! needed for compute shaders to work correctly.
 
             for( int i = 0; i < count; ++i )
             {
                 if( filters[ i ].enabled )
                 {
-                    filters[ i ].Eval( rts[srcIndex], rts[destIndex], rtCollection );
+                    fc.sourceRenderTexture = rts[srcIndex];
+                    fc.destinationRenderTexture = rts[destIndex];
+                    filters[ i ].Eval(fc);
 
                     destIndex += srcIndex;
                     srcIndex = destIndex - srcIndex;
@@ -67,7 +70,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 }
             }
 
-            Graphics.Blit(rts[ srcIndex ], dest);
+            Graphics.Blit(rts[srcIndex], fc.renderTextureCollection["output"]);//fc.destinationRenderTexture);
 
             RenderTexture.ReleaseTemporary(rts[0]);
             RenderTexture.ReleaseTemporary(rts[1]);

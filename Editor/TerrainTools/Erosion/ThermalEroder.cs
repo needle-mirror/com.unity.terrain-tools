@@ -31,7 +31,6 @@ namespace Erosion {
 
         #endregion
 
-
         #region Simulation Params
         [SerializeField]
         public int m_AddHeightAmt = 10;
@@ -56,6 +55,15 @@ namespace Erosion {
         public Dictionary<string, RenderTexture> outputTextures { get; private set; } = new Dictionary<string, RenderTexture>();
 
         public void OnEnable() { }
+
+        public void ResetTool()
+        {
+            //presets will always reset resting angle correctly so that will not be reset here
+            m_ThermalIterations = 50;
+            m_dt = 0.0025f;
+            m_ReposeJitter = 0;
+        }
+
 
         private void ResetOutputs(int width, int height) {
             foreach(var rt in outputTextures) {

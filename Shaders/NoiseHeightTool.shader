@@ -22,6 +22,8 @@ Shader "Hidden/TerrainTools/NoiseHeightTool"
         sampler2D _BrushTex;
         float4 _BrushParams;            // x = strength, y = , z = , w = brushSize
 
+		sampler2D _FilterTex;
+
         // _BrushParams macros
         #define BRUSH_STRENGTH      ( _BrushParams[0] )
         #define BRUSH_SIZE          ( _BrushParams[2] )
@@ -70,7 +72,7 @@ Shader "Hidden/TerrainTools/NoiseHeightTool"
                 float oob = all( saturate( brushUV ) == brushUV ) ? 1 : 0;
 
                 // get brush mask value
-                float b = oob * UnpackHeightmap( tex2D( _BrushTex, brushUV ) );
+                float b = oob * UnpackHeightmap( tex2D( _BrushTex, brushUV ) ) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
 
                 // need to adjust uvs due to "scaling" from brush rotation
                 float2 pcUVRescale = float2( length( _PCUVToBrushUVScales.xy ), length( _PCUVToBrushUVScales.zw ) );

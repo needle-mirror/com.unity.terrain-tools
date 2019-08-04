@@ -9,79 +9,36 @@ Shader "Hidden/TerrainTools/MeshStamp"
     {
         ZTest ALWAYS Cull OFF ZWrite OFF
 
-        HLSLINCLUDE
-
-        #include "UnityCG.cginc"
-        #include "TerrainTool.cginc"
-
-        sampler2D _MainTex;
-        sampler2D _MeshStampTex;
-
-        float4 _BrushParams;        // x = strength
-
-        // _BrushParams macros
-        #define BRUSH_STRENGTH      ( _BrushParams[ 0 ] )
-        #define BLEND_AMOUNT        ( _BrushParams[ 1 ] )
-        #define BRUSH_HEIGHT        ( _BrushParams[ 2 ] )
-        #define HEIGHT_OFFSET       ( _BrushParams[ 3 ] )
-
-        struct appdata_t
-        {
-            float4 vertex : POSITION;
-            float2 texcoord : TEXCOORD0;
-        };
-
-        ENDHLSL
-
-        Pass // render mesh depth to rendertexture
-        {
-            ZTest ALWAYS Cull BACK ZWrite OFF
-
-            HLSLPROGRAM
-
-            #pragma vertex vert
-            #pragma fragment frag
-
-            float4x4 _Matrix_M;
-            float4x4 _Matrix_MV;
-            float4x4 _Matrix_MVP;
-            float _InvHeight;
-
-            struct v2f
-            {
-                float4 vertex : SV_POSITION;
-                float2 uv : TEXCOORD0;
-                float4 pos : TEXCOORD1;
-                float4 viewPos : TEXCOORD2;
-            };
-
-            v2f vert( appdata_t v )
-            {
-                v2f o;
-                
-                o.pos = mul( _Matrix_M, float4( v.vertex.xyz, 1 ) );        // world space position
-                o.viewPos = mul( _Matrix_MV, float4( v.vertex.xyz, 1 ) );   // view ( camera ) space position
-                o.vertex = mul( _Matrix_MVP, float4( v.vertex.xyz, 1 ) );   // clip space position
-                o.uv = v.texcoord;
-
-                return o;
-            }
-
-            float4 frag( v2f i ) : SV_Target
-            {
-                // return PackHeightmap( i.viewPos.z ); 
-                return PackHeightmap( i.pos.y );
-            }
-
-            ENDHLSL
-        }
-
         Pass // composite
         {
             HLSLPROGRAM
 
             #pragma vertex vert
             #pragma fragment frag
+
+            #include "UnityCG.cginc"
+            #include "TerrainTool.cginc"
+
+            sampler2D _MainTex;
+
+            struct appdata_t
+            {
+                float4 vertex : POSITION;
+                float2 texcoord : TEXCOORD0;
+            };
+
+            sampler2D _FilterTex;
+            sampler2D _MeshMaskTex;
+            sampler2D _MeshStampTex;
+
+            float4 _BrushParams;
+            float _TerrainHeight;
+
+            // _BrushParams macros
+            #define BRUSH_STRENGTH      ( _BrushParams[ 0 ] )
+            #define BLEND_AMOUNT        ( _BrushParams[ 1 ] )
+            #define BRUSH_HEIGHT        ( _BrushParams[ 2 ] )
+            #define TOOL_HEIGHT         ( _BrushParams[ 3 ] )
 
             struct v2f
             {
@@ -108,6 +65,22 @@ Shader "Hidden/TerrainTools/MeshStamp"
 
             float4 frag( v2f i ) : SV_Target
             {
+                // if (BRUSH_MAXBLENDADD > 0.0f)
+                // {
+                //     float brushIntersection = saturate(1.0f - BRUSH_MAXBLENDADD);
+                //     float brushSmooth = exp2(brushIntersection * 8.0f);
+                //     targetHeight = SmoothMax(height, brushHeight, brushSmooth);
+                // }
+                // else
+                // {
+                //     targetHeight = max(height, brushHeight);
+                // }
+
+                //////////////////////////////////////////////////////////////////////////////
+
+                // get filter value
+                float filter = tex2D( _FilterTex, i.pcUV ).r;
+                
                 // get current height value
                 float h = UnpackHeightmap( tex2D( _MainTex, i.pcUV ) );
 
@@ -116,30 +89,33 @@ Shader "Hidden/TerrainTools/MeshStamp"
                 // out of bounds multiplier
                 float oob = all( saturate( brushUV ) == brushUV ) ? 1 : 0;
 
-                float brushStrength = abs( BRUSH_STRENGTH );
-                
                 // get brush mask value
-                float brushMask = max( oob * ( UnpackHeightmap( tex2D( _MeshStampTex, brushUV ) ) ), 0 );
-                float isMask = ceil( brushMask );
-                float heightOffset = HEIGHT_OFFSET * isMask;
-                float brushHeight = brushMask * brushStrength;
+                float isMask = oob * max( 0, floor( tex2D( _MeshMaskTex, brushUV ).r ) ); // floor is for filtering
+                float stampHeight = tex2D( _MeshStampTex, brushUV ).r;
+                float strengthSign = sign( BRUSH_STRENGTH );
+                float brushStrength = abs( BRUSH_STRENGTH );
+                float toolHeight = TOOL_HEIGHT * abs( strengthSign ) * isMask;
+                float brushMask = oob * ( stampHeight - toolHeight ) * brushStrength * filter;
+                float brushHeight = BRUSH_HEIGHT * isMask * abs( strengthSign );
 
-                float absMaxH = max( h, brushHeight + heightOffset );   // absolute
-                float additiveMaxH = h + brushHeight + heightOffset;    // additive
-                float maxH = lerp( absMaxH, additiveMaxH, BLEND_AMOUNT );
+                float maxH = max( h, lerp( h, brushMask + brushHeight + toolHeight, isMask ) );
+                float addMaxH = max( h, h + brushMask * isMask + toolHeight );
+                float finalAdd = lerp( maxH, addMaxH, BLEND_AMOUNT );
 
-                float absMinH = min( h, lerp( h, heightOffset - brushHeight, isMask ) );    // absolute
-                float subDiffH = heightOffset - h;       // subtractive
-                float minH = lerp( absMinH, h - brushHeight, BLEND_AMOUNT );
+                float minH = min( h, lerp( h, brushHeight - ( toolHeight + brushMask ), isMask * abs( strengthSign ) ) );
+                float subMinH = min( h, h - ( brushMask * isMask + toolHeight ) );
+                float finalSub = lerp( minH, subMinH, BLEND_AMOUNT );
 
-                float isAdd = max( sign( BRUSH_STRENGTH ), 0 );
-                float ret = lerp( minH, maxH, isAdd );
-                ret = lerp( h, ret, abs( sign( BRUSH_STRENGTH ) ) );
+                float isAdd = max( strengthSign, 0 ); // remap -1 and 1 to 0 and 1
+
+                float ret = lerp( finalSub, finalAdd, isAdd );
+                // ret = minH;
 
                 return PackHeightmap( clamp( ret, 0, .5 ) );
             }
 
             ENDHLSL
         }
+        
     }
 }

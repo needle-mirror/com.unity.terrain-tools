@@ -1,12 +1,13 @@
 ﻿//Inputs
-float dt;        //user-specified time step
-float velScale;  //user-specified velocity scalar
-float4 dxdy;     //(pixel width, pixel height, (dx,dy).length, 0.0) precomputed
-float2 texDim;  //dimensions of the texture
+float dt;             // user-specified time step
+float velScale;       // user-specified velocity scalar (flow rate)
+float4 dxdy;          // (pixel width, pixel height, 1 / dx, 1 / dy) precomputed
+float4 domainDim;     // dimensions of the brush Rectangle
+float4 DomainRes;     // (xRes, yRes, 1 / xRes, 1 / yRes)
 
 Texture2D<float>      InputTexFloat;
-Texture2D<float4>     InputTex;
-Texture2D<float2>     VelocityTex;
+Texture2D<float4>     InputTex; // Texture to advect
+Texture2D<float2>     VelocityTex; // m/s
 
 //output
 RWTexture2D<float4>   OutputTex;
@@ -14,21 +15,44 @@ RWTexture2D<float>    OutputTexFloat;
 
 #pragma kernel Advect
 
-[numthreads(8, 8, 1)]
+
+[numthreads(1, 1, 1)]
 void Advect(uint3 id : SV_DispatchThreadID)
 {
 	float2 vel = velScale * VelocityTex[id.xy].xy * dxdy.xy;
+
+	// backtraced coordinates
+	float2 xy = clamp(float2((float)id.x, (float)id.y) - (dt * vel), 0.0f, DomainRes.xy - float2(1.0f, 1.0f));
 	
-	float x = clamp((float)id.x - (dt * vel.x), 0.0f, texDim[0] - 1.0f);
-	float y = clamp((float)id.y - (dt * vel.y), 0.0f, texDim[1] - 1.0f);
+	// sample from 4 backtraced voxels, in proportions based on where the exact backtraced position landed
+	uint2 uv0 = uint2((uint)xy.x, (uint)xy.y);
+	uint2 uv1 = uv0 + uint2(1, 1);
+
+	// blend weights
+	float2 st1 = (xy - (float2)uv0) * DomainRes.zw;
+	float2 st0 = 1.0f - st1;
+
+	// essentially doing bilinear interpolation here
+	OutputTex[id.xy] = st0.x * (st0.y * InputTex[uv0] + st1.y * InputTex[uint2(uv0.x, uv1.y)]) +
+		               st1.x * (st1.y * InputTex[uint2(uv1.x, uv0.x)] + st1.y * InputTex[uv1]);
+}
+
+/*
+[numthreads(1, 1, 1)]
+void Advect(uint3 id : SV_DispatchThreadID)
+{
+	float2 vel = velScale * VelocityTex[id.xy].xy * dxdy.zw;
+	
+	float x = clamp((float)id.x - (dt * vel.x), 0.0f, DomainRes[0] - 1.0f);
+	float y = clamp((float)id.y - (dt * vel.y), 0.0f, DomainRes[1] - 1.0f);
 	
 	uint2 uv0 = uint2((uint)x, (uint)y);
 	uint2 uv1 = uv0 + uint2(1, 1);
 
 	// remainder values, used for blending between texels
-	float s1 = (x - (float)uv0.x) / texDim[0];
+	float s1 = (x - (float)uv0.x) / DomainRes[0];
 	float s0 = 1.0f - s1;
-	float t1 = (y - (float)uv0.y) / texDim[1];
+	float t1 = (y - (float)uv0.y) / DomainRes[1];
 	float t0 = 1.0f - t1;
 
 	// sample from 4 backtraced voxels, in proportions based on where the exact backtraced position landed
@@ -37,3 +61,4 @@ void Advect(uint3 id : SV_DispatchThreadID)
 	OutputTex[id.xy] = s0 * (t0 * InputTex[uv0] + t1 * InputTex[uint2(uv0.x, uv1.y)]) +
 		               s1 * (t1 * InputTex[uint2(uv1.x, uv0.x)] + t1 * InputTex[uv1]);
 }
+*/

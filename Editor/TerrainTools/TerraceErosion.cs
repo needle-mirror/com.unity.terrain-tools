@@ -15,7 +15,20 @@ namespace UnityEditor.Experimental.TerrainAPI
 #endif
 
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("TerraceTool");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "TerraceTool" );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
 
         [System.Serializable]
         class TerraceToolSerializedProperties
@@ -109,7 +122,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             commonUI.OnInspectorGUI(terrain, editContext);
 
-            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.controls, m_ShowControls);
+            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controls, m_ShowControls, terraceToolProperties.SetDefaults);
             if (m_ShowControls)
             {
                 EditorGUILayout.BeginVertical("GroupBox");
@@ -128,14 +141,20 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
 
-        private void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
+        private void ApplyBrushInternal(Terrain terrain, IPaintContextRender renderer, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
         {
+            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+
             Material mat = GetPaintMaterial();
             float delta = terraceToolProperties.m_JitterTerraceCount * 50.0f;
             float jitteredFeatureSize = terraceToolProperties.m_FeatureSize + Random.Range(terraceToolProperties.m_FeatureSize - delta, terraceToolProperties.m_FeatureSize + delta);
             Vector4 brushParams = new Vector4(brushStrength, jitteredFeatureSize, terraceToolProperties.m_BevelAmountInterior, 0.0f);
             
             mat.SetTexture("_BrushTex", brushTexture);
+            mat.SetTexture("_FilterTex", filterMaskRT);
             mat.SetVector("_BrushParams", brushParams);
             
             renderer.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
@@ -154,7 +173,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                     {
                         PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds());
 
-                        ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, editContext.brushTexture, brushXform);
+                        ApplyBrushInternal(terrain, brushRender, paintContext, commonUI.brushStrength, editContext.brushTexture, brushXform);
                     }
                 }
 

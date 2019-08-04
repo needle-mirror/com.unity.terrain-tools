@@ -8,14 +8,15 @@ namespace UnityEditor.Experimental.TerrainAPI
 {
     public class RenderTextureCollection
     {
-        private Dictionary<int, RenderTexture> rts;
-        private Dictionary<int, GraphicsFormat> formats;
-        private Dictionary<int, string> names;
-        private List<int> ids;
+        private Dictionary< int, RenderTexture > rts;
+        private Dictionary< int, GraphicsFormat > formats;
+        private Dictionary< string, int > nameToHash;
+        private Dictionary< int, string > hashToName;
+        private List< int > hashes;
 
         public float debugSize = 128;
 
-        public RenderTexture this[int hash]
+        public RenderTexture this[ int hash ]
         {
             get
             {
@@ -26,31 +27,62 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                 return null;
             }
+
+            set
+            {
+                rts[ hash ] = value;
+            }
+        }
+
+        public RenderTexture this[ string name ]
+        {
+            get
+            {
+                if( nameToHash.ContainsKey( name ) )
+                {
+                    return rts[ nameToHash[ name ] ];
+                }
+
+                return null;
+            }
+
+            set
+            {
+                rts[ nameToHash[ name ] ] = value;
+            }
         }
 
         public RenderTextureCollection()
         {
-            rts = new Dictionary<int, RenderTexture>();
-            formats = new Dictionary<int, GraphicsFormat>();
-            names = new Dictionary<int, string>();
-            ids = new List<int>();
+            rts = new Dictionary< int, RenderTexture >();
+            formats = new Dictionary< int, GraphicsFormat >();
+            nameToHash = new Dictionary< string, int >();
+            hashToName = new Dictionary< int, string >();
+            hashes = new List< int >();
         }
 
         public void AddRenderTexture( int hash, string name, GraphicsFormat format )
         {
-            if(!rts.ContainsKey( hash ))
+            if( !rts.ContainsKey( hash ) )
             {
-                names.Add( hash, name );
+                nameToHash.Add( name, hash );
+                hashToName.Add( hash, name );
                 rts.Add( hash, null );
                 formats.Add( hash, format );
-                ids.Add( hash );
+                hashes.Add( hash );
             }
             else
             {
                 // if the RenderTexture already exists, assume they are changing the descriptor
                 formats[ hash ] = format;
-                names[ hash ] = name;
+                nameToHash[ name ] = hash;
+                hashToName[ hash ] = name;
             }
+        }
+
+        public bool ContainsRenderTexture( string name )
+        {
+            return nameToHash.ContainsKey( name );
         }
         
         public RenderTexture GetRenderTexture( int hash )
@@ -63,9 +95,9 @@ namespace UnityEditor.Experimental.TerrainAPI
             return null;
         }
 
-        public void GatherRenderTextures(int width, int height, int depth = 0)
+        public void GatherRenderTextures( int width, int height, int depth = 0 )
         {
-            foreach( int key in ids )
+            foreach( int key in hashes )
             {
                 rts[ key ] = new RenderTexture( width, height, depth, formats[ key ] );
                 rts[ key ].enableRandomWrite = true;
@@ -75,7 +107,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public void ReleaseRenderTextures()
         {
-            foreach( int key in ids )
+            foreach( int key in hashes )
             {
                 if( rts[ key ] != null )
                 {
@@ -85,7 +117,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
 
-        public void DebugGUI(SceneView s)
+        public void DebugGUI( SceneView s )
         {
             float padding = 10;
 
@@ -97,7 +129,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                 foreach( KeyValuePair<int, RenderTexture> p in rts )
                 {
-                    GUI.color = Color.red;
+                    GUI.color = new Color( 1, 0, 1, 1 );
                     GUI.DrawTexture( rect, Texture2D.whiteTexture, ScaleMode.ScaleToFit );
 
                     GUI.color = Color.white;
@@ -105,11 +137,15 @@ namespace UnityEditor.Experimental.TerrainAPI
                     {
                         GUI.DrawTexture( rect, p.Value, ScaleMode.ScaleToFit, false );
                     }
+                    else
+                    {
+                        GUI.Label( rect, "NULL" );
+                    }
 
                     Rect labelRect = rect;
                     labelRect.y = rect.yMax;
                     labelRect.height = EditorGUIUtility.singleLineHeight;
-                    GUI.Box(labelRect, names[ p.Key ], Styles.box);
+                    GUI.Box( labelRect, hashToName[ p.Key ], Styles.box );
 
                     rect.y += padding + size + EditorGUIUtility.singleLineHeight;
 

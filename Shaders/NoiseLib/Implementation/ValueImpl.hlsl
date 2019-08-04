@@ -40,7 +40,7 @@ float get_noise_Value( float p )
     float a = hash( i + 0.0 );
     float b = hash( i + 1.0 );
 
-    return lerp( a, b, u );
+    return remap( lerp( a, b, u ).xxxx, -1, 1, 0, 1 ).x;
 }
 
 /*=========================================================================

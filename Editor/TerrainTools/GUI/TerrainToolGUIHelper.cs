@@ -1,8 +1,9 @@
 using System;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Rendering;
 using UnityEditor.Experimental.TerrainAPI;
-using UnityEngine.Experimental.TerrainAPI;
+using Erosion;
 
 public interface IFloatMinMaxSlider {
     float value { get; set; }
@@ -106,27 +107,32 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
         
         EditorGUI.PrefixLabel(labelRect, m_Label);
         m_Value = EditorGUI.Slider(sliderRect, m_Value, minValue, maxValue);
+        if (m_EditRange)
+        {
+            m_Expanded = EditorGUI.Foldout(foldoutRect, m_Expanded, GUIContent.none);
+            if (m_Expanded)
+            {
+                if (m_EditRange)
+                {
+                    totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
+                    Rect rangeLabelRect = new Rect(sliderRect.x, sliderRect.yMax, sliderRect.width / 2, totalRect.height);
+                    Rect minRect = new Rect(totalRect.xMax - 2 * fieldWidth + indentOffset, totalRect.y, fieldWidth, totalRect.height);
+                    Rect maxRect = new Rect(totalRect.xMax - fieldWidth, totalRect.y, fieldWidth, totalRect.height);
 
-        m_Expanded = EditorGUI.Foldout(foldoutRect, m_Expanded, GUIContent.none);
-        if (m_Expanded) {
-            if(m_EditRange) {
-                totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
-                Rect rangeLabelRect = new Rect(sliderRect.x, sliderRect.yMax, sliderRect.width / 2, totalRect.height);
-                Rect minRect = new Rect(totalRect.xMax - 2 * fieldWidth + indentOffset, totalRect.y, fieldWidth, totalRect.height);
-                Rect maxRect = new Rect(totalRect.xMax - fieldWidth, totalRect.y, fieldWidth, totalRect.height);
+                    EditorGUI.PrefixLabel(rangeLabelRect, new GUIContent("Range:"));
+                    m_MinValue = EditorGUI.FloatField(minRect, m_MinValue);
+                    m_MaxValue = EditorGUI.FloatField(maxRect, m_MaxValue);
+                }
 
-                EditorGUI.PrefixLabel(rangeLabelRect, new GUIContent("Range:"));
-                m_MinValue = EditorGUI.FloatField(minRect, m_MinValue);
-                m_MaxValue = EditorGUI.FloatField(maxRect, m_MaxValue);
-            }
+                if (m_EditSensitivity)
+                {
+                    totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
+                    Rect sensitivityLabelRect = new Rect(sliderRect.x, totalRect.y, sliderRect.width / 2, totalRect.height);
+                    Rect sensitivityValueRect = new Rect(totalRect.xMax - fieldWidth, totalRect.y, fieldWidth, totalRect.height);
 
-            if(m_EditSensitivity) {
-                totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
-                Rect sensitivityLabelRect = new Rect(sliderRect.x, totalRect.y, sliderRect.width / 2, totalRect.height);
-                Rect sensitivityValueRect = new Rect(totalRect.xMax - fieldWidth, totalRect.y, fieldWidth, totalRect.height);
-
-                EditorGUI.PrefixLabel(sensitivityLabelRect, new GUIContent("Mouse Sensitivity:"));
-                m_MouseSensitivity = EditorGUI.FloatField(sensitivityValueRect, m_MouseSensitivity);
+                    EditorGUI.PrefixLabel(sensitivityLabelRect, new GUIContent("Mouse Sensitivity:"));
+                    m_MouseSensitivity = EditorGUI.FloatField(sensitivityValueRect, m_MouseSensitivity);
+                }
             }
         }
         GUILayoutUtility.GetRect(1, rectHeight);
@@ -354,7 +360,7 @@ public static class TerrainToolGUIHelper
 		return state;
 	}
 
-	public static bool DrawHeaderFoldout(GUIContent title, bool state)
+    public static bool DrawHeaderFoldout(GUIContent title, bool state)
     {
         var backgroundRect = GUILayoutUtility.GetRect(1f, 17f);
 
@@ -366,6 +372,7 @@ public static class TerrainToolGUIHelper
         foldoutRect.y += 1f;
         foldoutRect.width = 13f;
         foldoutRect.height = 13f;
+
 
         // Background rect should be full-width
         backgroundRect.xMin = 0;
@@ -381,10 +388,140 @@ public static class TerrainToolGUIHelper
         // Active checkbox
         state = GUI.Toggle(foldoutRect, state, GUIContent.none, EditorStyles.foldout);
 
-        var e = Event.current;
+        var e = Event.current; 
+
         if (e.type == EventType.MouseDown && backgroundRect.Contains(e.mousePosition) && e.button == 0)
         {
             state = !state;
+            e.Use();
+        }
+
+        return state;
+    }
+
+
+    public static bool DrawHeaderFoldoutForErosion(GUIContent title, bool state, ResetTool resetMethod)
+    {
+        var backgroundRect = GUILayoutUtility.GetRect(1f, 17f);
+
+        var labelRect = backgroundRect;
+        labelRect.xMin += 16f;
+        labelRect.xMax -= 20f;
+
+        var foldoutRect = backgroundRect;
+        foldoutRect.y += 1f;
+        foldoutRect.width = 13f;
+        foldoutRect.height = 13f;
+
+
+        // Background rect should be full-width
+        backgroundRect.xMin = 0;
+        backgroundRect.width += 4f;
+
+        var gearIconRect = new Rect();
+        gearIconRect.y = backgroundRect.y;
+        gearIconRect.x = backgroundRect.width - 30f;
+        gearIconRect.width = 16f;
+        gearIconRect.height = 16f;
+
+        // Background
+        float backgroundTint = EditorGUIUtility.isProSkin ? 0.1f : 1f;
+        EditorGUI.DrawRect(backgroundRect, new Color(backgroundTint, backgroundTint, backgroundTint, 0.2f));
+
+        // Title
+        EditorGUI.LabelField(labelRect, title, EditorStyles.boldLabel);
+
+        // Active checkbox
+        state = GUI.Toggle(foldoutRect, state, GUIContent.none, EditorStyles.foldout);
+
+        bool reset = false;
+        //icon
+        reset = GUI.Toggle(gearIconRect, reset, EditorGUIUtility.IconContent("_Popup"), EditorStyles.label);
+
+        var e = Event.current;
+
+        if (reset)
+        {
+            GenericMenu menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Reset"), false, () => { resetMethod(); });
+            menu.ShowAsContext();
+            e.Use();
+        }
+        else if (e.type == EventType.MouseDown && backgroundRect.Contains(e.mousePosition) && e.button == 0)
+        {
+            state = !state;
+            e.Use();
+        }
+
+        if (e.type == EventType.MouseDown && backgroundRect.Contains(e.mousePosition) && e.button == 1)
+        {
+            GenericMenu menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Reset"), false, () => { resetMethod(); });
+            menu.ShowAsContext();
+            e.Use();
+        }
+
+        return state;
+    }
+
+    public static bool DrawHeaderFoldoutForBrush(GUIContent title, bool state, ResetBrush resetMethod)
+    {
+        var backgroundRect = GUILayoutUtility.GetRect(1f, 17f);
+
+        var labelRect = backgroundRect;
+        labelRect.xMin += 16f;
+        labelRect.xMax -= 20f;
+
+        var foldoutRect = backgroundRect;
+        foldoutRect.y += 1f;
+        foldoutRect.width = 13f;
+        foldoutRect.height = 13f;
+
+
+        // Background rect should be full-width
+        backgroundRect.xMin = 0;
+        backgroundRect.width += 4f;
+
+        var gearIconRect = new Rect();
+        gearIconRect.y = backgroundRect.y;
+        gearIconRect.x = backgroundRect.width - 30f;
+        gearIconRect.width = 16f;
+        gearIconRect.height = 16f;
+
+        // Background
+        float backgroundTint = EditorGUIUtility.isProSkin ? 0.1f : 1f;
+        EditorGUI.DrawRect(backgroundRect, new Color(backgroundTint, backgroundTint, backgroundTint, 0.2f));
+
+        // Title
+        EditorGUI.LabelField(labelRect, title, EditorStyles.boldLabel);
+
+        // Active checkbox
+        state = GUI.Toggle(foldoutRect, state, GUIContent.none, EditorStyles.foldout);
+
+        bool reset = false;
+        //icon
+        reset = GUI.Toggle(gearIconRect, reset, EditorGUIUtility.IconContent("_Popup"), EditorStyles.label);
+
+        var e = Event.current;
+
+        if (reset)
+        {
+            GenericMenu menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Reset"), false, () => { resetMethod(); });
+            menu.ShowAsContext();
+            e.Use();
+        }
+        else if (e.type == EventType.MouseDown && backgroundRect.Contains(e.mousePosition) && e.button == 0)
+        {
+            state = !state;
+            e.Use();
+        }
+
+        if (e.type == EventType.MouseDown && backgroundRect.Contains(e.mousePosition) && e.button == 1)
+        {
+            GenericMenu menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Reset"), false, () => { resetMethod(); });
+            menu.ShowAsContext();
             e.Use();
         }
 
@@ -437,6 +574,16 @@ public static class TerrainToolGUIHelper
     public static bool ToggleButton(GUIContent content, bool value, params GUILayoutOption[] options)
     {
         if (GUILayout.Button(content, GetButtonToggleStyle(value), options))
+        {
+            value = !value;
+        }
+
+        return value;
+    }
+
+    public static bool ToggleButton(Rect rect, GUIContent content, bool value)
+    {
+        if ( GUI.Button( rect, content, GetButtonToggleStyle( value ) ) )
         {
             value = !value;
         }

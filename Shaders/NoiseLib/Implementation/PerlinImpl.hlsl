@@ -43,7 +43,7 @@ float get_noise_Perlin( float p )
     float ga = a * ( f - 0.0 );
     float gb = b * ( f - 1.0 );
 
-    return remap( lerp( ga, gb, u ).xxxx, -1, 1, 0, 1).x;
+    return remap( lerp( ga, gb, u ).xxxx, -1, 1, 0, 1 ).x;
 }
 
 /*=========================================================================

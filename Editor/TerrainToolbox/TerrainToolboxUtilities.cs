@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
@@ -22,7 +23,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 		public string PalettePath = string.Empty;
 		public bool ClearExistLayers = true;
 		public bool ApplyAllTerrains = true;
-		public LayerViewMode SelectedViewMode = LayerViewMode.List;
 
 		// Replace splatmap
 		public Terrain SplatmapTerrain;
@@ -31,21 +31,25 @@ namespace UnityEditor.Experimental.TerrainAPI
 		public Texture2D SplatmapOld1;
 		public Texture2D SplatmapNew1;
 		public ImageFormat SelectedFormat = ImageFormat.TGA;
+		public RotationAdjustment RotationAdjust = RotationAdjustment.Clockwise;
+		public FlipAdjustment FlipAdjust = FlipAdjustment.Horizontal;
 		public string SplatFolderPath = "Assets/Splatmaps/";
+		public bool AdjustAllSplats = false;
 
 		// Export heightmaps
 		public string HeightmapFolderPath = "Assets/Heightmaps/";
 		public Heightmap.Format HeightFormat = Heightmap.Format.RAW;
 		public Heightmap.Depth HeightmapDepth = Heightmap.Depth.Bit16;
 		public ToolboxHelper.ByteOrder HeightmapByteOrder = ToolboxHelper.ByteOrder.Windows;
-        public float HeightmapRemapMin = 0.0f;
-        public float HeightmapRemapMax = 1.0f;
+		public float HeightmapRemapMin = 0.0f;
+		public float HeightmapRemapMax = 1.0f;
 		public bool FlipVertically = false;
 
 		// Enums
-		public enum LayerViewMode { List, Preview }
 		public enum ImageFormat { TGA, PNG }
 		public enum SplatmapChannel { R, G, B, A }
+		public enum RotationAdjustment { Clockwise, Counterclockwise }
+		public enum FlipAdjustment { Horizontal, Vertical }
 
 		// GUI
 		public bool ShowTerrainEdit = false;
@@ -58,7 +62,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 	public class TerrainToolboxUtilities
 	{
 		Vector2 m_ScrollPosition = Vector2.zero;
-		Vector2 m_ScrollPositionLayer = Vector2.zero;
 		UtilitySettings m_Settings = ScriptableObject.CreateInstance<UtilitySettings>();
 
 		// Splatmaps
@@ -66,9 +69,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 		Terrain[] m_SplatExportTerrains;
 		// Terrain Edit
 		Terrain[] m_Terrains;
+        Material[] m_TerrainMaterials;
 		// Terrain Split
 		Terrain[] m_SplitTerrains;
 		// Layers
+		List<TerrainLayer> m_CopiedLayers = new List<TerrainLayer>();
 		List<Layer> m_PaletteLayers = new List<Layer>();
 		ReorderableList m_LayerList;
 		TerrainPalette m_SelectedLayerPalette = ScriptableObject.CreateInstance<TerrainPalette>();
@@ -76,17 +81,42 @@ namespace UnityEditor.Experimental.TerrainAPI
 		Dictionary<string, Heightmap.Depth> m_DepthOptions = new Dictionary<string, Heightmap.Depth>()
 		{
 			{ "16 bit", Heightmap.Depth.Bit16 },
-			{ "8 bit", Heightmap.Depth.Bit8 }			
+			{ "8 bit", Heightmap.Depth.Bit8 }
 		};
 		int m_SelectedDepth = 0;
 
-		const int kMaxLayerCount = 8; // currently support up to 8 layers with 2 splat alpha maps
-		
+		// Splatmaps
+		List<Texture2D> m_Splatmaps = new List<Texture2D>();
+		ReorderableList m_SplatmapList;
+		int m_SelectedSplatMap = 0;
+		bool m_PreviewIsDirty = false;
+		MaterialPropertyBlock m_PreviewMaterialPropBlock = new MaterialPropertyBlock();
+        ToolboxHelper.RenderPipeline m_ActiveRenderPipeline = ToolboxHelper.RenderPipeline.None;
+
+		//Visualization
+		Material m_PreviewMaterial;
+		bool m_ShowSplatmapPreview = false;
+#if UNITY_2019_2_OR_NEWER
+#else
+        Terrain.MaterialType m_TerrainMaterialType;
+        float m_TerrainLegacyShininess;
+        Color m_TerrainLegacySpecular;
+#endif
+
+        int m_MaxLayerCount = 0;
+		int m_MaxSplatmapCount = 0;
+
+		const int kMaxLayerHD = 8; // HD allows up to 8 layers with 2 splat alpha maps
+		const int kMaxLayerFeatureLW = 4; // LW allows up to 4 layers when having density or height-based blending enabled
+		const int kMaxSplatmapHD = 2;
+		const int kMaxSplatmapFeatureLW = 1;
+		const int kMaxNoLimit = 20;
+
 		static class Styles
 		{
 			public static readonly GUIContent TerrainLayers = EditorGUIUtility.TrTextContent("Terrain Layers");
-			public static readonly GUIContent ReplaceSplatmaps = EditorGUIUtility.TrTextContent("Replace Splatmaps");
-			public static readonly GUIContent ExportSplatmaps = EditorGUIUtility.TrTextContent("Export Splatmaps");			
+			public static readonly GUIContent ImportSplatmaps = EditorGUIUtility.TrTextContent("Terrain Splatmaps");
+			public static readonly GUIContent ExportSplatmaps = EditorGUIUtility.TrTextContent("Export Splatmaps");
 			public static readonly GUIContent ExportHeightmaps = EditorGUIUtility.TrTextContent("Export Heightmaps");
 			public static readonly GUIContent TerrainEdit = EditorGUIUtility.TrTextContent("Terrain Edit");
 			public static readonly GUIContent DuplicateTerrain = EditorGUIUtility.TrTextContent("Duplicate");
@@ -100,9 +130,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 			public static readonly GUIContent SavePalette = EditorGUIUtility.TrTextContent("Save", "Save the current palette asset file on disk.");
 			public static readonly GUIContent SaveAsPalette = EditorGUIUtility.TrTextContent("Save As", "Save the current palette asset as a new file on disk.");
 			public static readonly GUIContent RefreshPalette = EditorGUIUtility.TrTextContent("Refresh", "Load selected palette and apply to list of layers.");
-			public static readonly GUIContent ViewMode = EditorGUIUtility.TrTextContent("View Mode:", "Select view mode of layer list from List view or Preview view.");
 			public static readonly GUIContent ClearExistingLayers = EditorGUIUtility.TrTextContent("Clear Existing Layers", "Remove existing layers on selected terrain(s).");
 			public static readonly GUIContent ApplyToAllTerrains = EditorGUIUtility.TrTextContent("All Terrains in Scene", "When unchecked only apply layer changes to selected terrain(s).");
+			public static readonly GUIContent ImportTerrainLayersBtn = EditorGUIUtility.TrTextContent("Import From Terrain", "Import layers from the selected terrain.");
 			public static readonly GUIContent AddLayersBtn = EditorGUIUtility.TrTextContent("Add to Terrain(s)", "Start adding layers to either all or selected terrain(s).");
 			public static readonly GUIContent RemoveLayersBtn = EditorGUIUtility.TrTextContent("Remove All Layers", "Start removing all layers from either all or selected terrain(s)");
 
@@ -112,8 +142,16 @@ namespace UnityEditor.Experimental.TerrainAPI
 			public static readonly GUIContent SplatAlpha1 = EditorGUIUtility.TrTextContent("Old SplatAlpha1", "The SplatAlpha 1 texture from selected terrain.");
 			public static readonly GUIContent SplatAlpha0New = EditorGUIUtility.TrTextContent("New SplatAlpha0", "Select a texture to replace the SplatAlpha 0 texture on selected terrain.");
 			public static readonly GUIContent SplatAlpha1New = EditorGUIUtility.TrTextContent("New SplatAlpha1", "Select a texture to replace the SplatAlpha 1 texture on selected terrain.");
+			public static readonly GUIContent ImportFromSplatmapBtn = EditorGUIUtility.TrTextContent("Import From Terrain", "Import splatmaps from the selected terrain.");
 			public static readonly GUIContent ReplaceSplatmapsBtn = EditorGUIUtility.TrTextContent("Replace Splatmaps", "Replace splatmaps with new splatmaps on selected terrain.");
 			public static readonly GUIContent ResetSplatmapsBtn = EditorGUIUtility.TrTextContent("Reset Splatmaps", "Clear splatmap textures on selected terrain(s).");
+			public static readonly GUIContent ExportToTerrSplatmapBtn = EditorGUIUtility.TrTextContent("Export to Terrain(s)", "Export splatmaps to selected terrains.");
+			public static readonly GUIContent PreviewSplatMapTogg = EditorGUIUtility.TrTextContent("Preview Splatmap", "Preview a splatmap on selected terrains.");
+			public static readonly GUIContent RotateSplatmapLabel = EditorGUIUtility.TrTextContent("Rotate Adjustment", "Select whether to rotate clockwise or counterclockwise.");
+			public static readonly GUIContent FlipSplatmapLabel = EditorGUIUtility.TrTextContent("Flip Adjustment", "Select whether to flip horizontally or vertically.");
+			public static readonly GUIContent RotateSplatmapBtn = EditorGUIUtility.TrTextContent("Rotate", "Rotate splatmap in the selected direction.");
+			public static readonly GUIContent FlipSplatmapBtn = EditorGUIUtility.TrTextContent("Flip", "Flip splatmaps in the selected direction.");
+			public static readonly GUIContent MultiAdjustTogg = EditorGUIUtility.TrTextContent("Adjust All Splatmaps", "Make changes to all splatmaps.");
 			public static readonly GUIContent ExportSplatmapFolderPath = EditorGUIUtility.TrTextContent("Export Folder Path", "Select or input a folder path where splatmap textures will be saved.");
 			public static readonly GUIContent ExportSplatmapFormat = EditorGUIUtility.TrTextContent("Splatmap Format", "Texture format of exported splatmap(s).");
 			public static readonly GUIContent ExportSplatmapsBtn = EditorGUIUtility.TrTextContent("Export Splatmaps", "Start exporting splatmaps into textures as selected format from selected terrain(s).");
@@ -129,17 +167,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 			public static readonly GUIContent ExportHeightmapFolderPath = EditorGUIUtility.TrTextContent("Export Folder Path", "Select or input a folder path where heightmaps will be saved.");
 			public static readonly GUIContent HeightmapBitDepth = EditorGUIUtility.TrTextContent("Heightmap Depth", "Select heightmap depth option from 8 bit or 16 bit.");
 			public static readonly GUIContent HeightmapByteOrder = EditorGUIUtility.TrTextContent("Heightmap Byte Order", "Select heightmap byte order from Windows or Mac.");
-            public static readonly GUIContent HeightmapRemap = EditorGUIUtility.TrTextContent("Levels Correction", "Remap the height range before export.");
-            public static readonly GUIContent HeightmapRemapMin = EditorGUIUtility.TrTextContent("Min", "Minimum input height");
-            public static readonly GUIContent HeightmapRemapMax = EditorGUIUtility.TrTextContent("Max", "Maximum input height");
-            public static readonly GUIContent FlipVertically = EditorGUIUtility.TrTextContent("Flip Vertically", "Flip heights vertically when export. Enable this if using heightmap in external program like World Machine. Or use the Flip Y Axis option in World Machine instead.");
+			public static readonly GUIContent HeightmapRemap = EditorGUIUtility.TrTextContent("Levels Correction", "Remap the height range before export.");
+			public static readonly GUIContent HeightmapRemapMin = EditorGUIUtility.TrTextContent("Min", "Minimum input height");
+			public static readonly GUIContent HeightmapRemapMax = EditorGUIUtility.TrTextContent("Max", "Maximum input height");
+			public static readonly GUIContent FlipVertically = EditorGUIUtility.TrTextContent("Flip Vertically", "Flip heights vertically when export. Enable this if using heightmap in external program like World Machine. Or use the Flip Y Axis option in World Machine instead.");
 
 			public static readonly GUIStyle ToggleButtonStyle = "LargeButton";
-			public static readonly GUIContent[] LayerViewModes =
-			{
-				EditorGUIUtility.TrTextContent("List", "Shows layers in an reorderable list view."),
-				EditorGUIUtility.TrTextContent("Preview", "Shows layers in a thumbnail preview view.")
-			};
 		}
 
 		public static void DrawSeperatorLine()
@@ -154,7 +187,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 		public void OnLoad()
 		{
-			if (m_Settings.PalettePath != string.Empty)
+			if (m_Settings.PalettePath != string.Empty && File.Exists(m_Settings.PalettePath))
 			{
 				LoadPalette();
 			}
@@ -188,11 +221,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 			DrawSeperatorLine();
 
 			// Terrain Splatmaps
-			m_Settings.ShowReplaceSplatmaps = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.ReplaceSplatmaps, m_Settings.ShowReplaceSplatmaps);
+			m_Settings.ShowReplaceSplatmaps = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.ImportSplatmaps, m_Settings.ShowReplaceSplatmaps);
 			++EditorGUI.indentLevel;
 			if (m_Settings.ShowReplaceSplatmaps)
 			{
-				ShowReplaceSplatmapGUI();
+				ShowSplatmapImportGUI();
 			}
 			--EditorGUI.indentLevel;
 			DrawSeperatorLine();
@@ -289,7 +322,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 					AssetDatabase.SaveAssets();
 				}
 			}
-			if (GUILayout.Button(Styles.SaveAsPalette)) 
+			if (GUILayout.Button(Styles.SaveAsPalette))
 			{
 				CreateNewPalette();
 			}
@@ -302,55 +335,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 			}
 			EditorGUILayout.EndHorizontal();
 
-			// Layer View Mode
-			EditorGUILayout.BeginHorizontal();
-			EditorGUILayout.LabelField("View Mode");
-			m_Settings.SelectedViewMode = (UtilitySettings.LayerViewMode)GUILayout.Toolbar((int)m_Settings.SelectedViewMode, Styles.LayerViewModes, Styles.ToggleButtonStyle, GUI.ToolbarButtonSize.Fixed);
-			EditorGUILayout.EndHorizontal();
-			EditorGUILayout.BeginVertical("Box");
-			// List View
-			if (m_Settings.SelectedViewMode == UtilitySettings.LayerViewMode.List)
-			{
-				if (m_LayerList == null)
-				{
-					m_LayerList = new ReorderableList(m_PaletteLayers, typeof(Layer), true, true, true, true);
-				}
-				m_LayerList.drawHeaderCallback = (Rect rect) => EditorGUI.LabelField(rect, "Material Layer Palette");
-				m_LayerList.drawElementCallback = DrawLayerElement;
-				m_LayerList.onAddCallback = OnAddElement;
-				m_LayerList.onRemoveCallback = OnRemoveElement;
-				m_LayerList.onCanAddCallback = OnCanAddElement;
-				m_LayerList.DoLayoutList();
-			}
-
-			// Preview view
-			if (m_Settings.SelectedViewMode == UtilitySettings.LayerViewMode.Preview)
-			{				
-				Texture2D[] layerIcons = new Texture2D[m_PaletteLayers.Count];				
-				m_ScrollPositionLayer = EditorGUILayout.BeginScrollView(m_ScrollPositionLayer, false, false, GUILayout.MinHeight(180));
-				EditorGUILayout.BeginHorizontal();
-				for (int i = 0; i < m_PaletteLayers.Count; i++)
-				{
-					if (m_PaletteLayers[i] == null)
-					{
-						continue;
-					}
-
-					if (m_PaletteLayers[i].AssignedLayer == null || m_PaletteLayers[i].AssignedLayer.diffuseTexture == null)
-					{
-						layerIcons[i] = EditorGUIUtility.whiteTexture;
-					}
-					else
-					{
-						layerIcons[i] = AssetPreview.GetAssetPreview(m_PaletteLayers[i].AssignedLayer.diffuseTexture);
-					}						
-
-					DrawLayerIcon(layerIcons[i], i);
-				}
-				EditorGUILayout.EndHorizontal();
-				EditorGUILayout.EndScrollView();				
-			}
-			EditorGUILayout.EndVertical();
+			// layer reorderable list
+			ShowLayerListGUI();
 
 			// Apply button			
 			m_Settings.ClearExistLayers = EditorGUILayout.Toggle(Styles.ClearExistingLayers, m_Settings.ClearExistLayers);
@@ -368,40 +354,75 @@ namespace UnityEditor.Experimental.TerrainAPI
 			}
 			EditorGUILayout.EndHorizontal();
 		}
-		 
-		const int kElementHeight = 16;
-		const int kElementHeightPadding = 2;
-		const int kElementObjectFieldWidth = 270;
+
+		// layer list view
+		const int kElementHeight = 70;
+		const int kElementObjectFieldHeight = 16;
+		const int kElementPadding = 2;
+		const int kElementObjectFieldWidth = 240;
 		const int kElementToggleWidth = 20;
+		const int kElementImageWidth = 64;
+		const int kElementImageHeight = 64;
+
+		void ShowLayerListGUI()
+		{
+			EditorGUILayout.BeginVertical("Box");
+			if (GUILayout.Button(Styles.ImportTerrainLayersBtn, GUILayout.Width(200)))
+			{
+				ImportLayersFromTerrain();
+			}
+			// List View
+			if (m_LayerList == null)
+			{
+				m_LayerList = new ReorderableList(m_PaletteLayers, typeof(Layer), true, true, true, true);
+			}
+			m_LayerList.elementHeight = kElementHeight;
+			m_LayerList.drawHeaderCallback = (Rect rect) => EditorGUI.LabelField(rect, "Material Layer Palette");
+			m_LayerList.drawElementCallback = DrawLayerElement;
+			m_LayerList.onAddCallback = OnAddLayerElement;
+			m_LayerList.onRemoveCallback = OnRemoveLayerElement;
+			m_LayerList.onCanAddCallback = OnCanAddLayerElement;
+			m_LayerList.DoLayoutList();
+			EditorGUILayout.EndVertical();
+		}
 
 		void DrawLayerElement(Rect rect, int index, bool selected, bool focused)
 		{
-			rect.height = rect.height + kElementHeightPadding;
-			var rectToggle = new Rect((rect.x + 2), rect.y, kElementToggleWidth, kElementHeight);
-			var rectObject = new Rect((rectToggle.x + kElementToggleWidth), rect.y, kElementObjectFieldWidth, kElementHeight);
+			rect.y = rect.y + kElementPadding;
+			var rectImage = new Rect((rect.x + kElementPadding), rect.y, kElementImageWidth, kElementImageHeight);
+			var rectObject = new Rect((rectImage.x + kElementImageWidth), rect.y, kElementObjectFieldWidth, kElementObjectFieldHeight);
+
 			if (m_PaletteLayers.Count > 0 && m_PaletteLayers[index] != null)
 			{
 				EditorGUI.BeginChangeCheck();
+				EditorGUILayout.BeginHorizontal();
 				List<TerrainLayer> existLayers = m_PaletteLayers.Select(l => l.AssignedLayer).ToList();
 				TerrainLayer oldLayer = m_PaletteLayers[index].AssignedLayer;
+				Texture2D icon = null;
+				if (m_PaletteLayers[index].AssignedLayer != null)
+				{
+					icon = AssetPreview.GetAssetPreview(m_PaletteLayers[index].AssignedLayer.diffuseTexture);
+				}
+				GUI.Box(rectImage, icon);
 				m_PaletteLayers[index].AssignedLayer = EditorGUI.ObjectField(rectObject, m_PaletteLayers[index].AssignedLayer, typeof(TerrainLayer), false) as TerrainLayer;
+				EditorGUILayout.EndHorizontal();
 				if (EditorGUI.EndChangeCheck())
-				{					
-					if (existLayers.Contains(m_PaletteLayers[index].AssignedLayer))
+				{
+					if (existLayers.Contains(m_PaletteLayers[index].AssignedLayer) && m_PaletteLayers[index].AssignedLayer != oldLayer)
 					{
 						EditorUtility.DisplayDialog("Error", "Layer exists. Please select a different layer.", "OK");
 						m_PaletteLayers[index].AssignedLayer = oldLayer;
 					}
-				}				
+				}
 			}
 		}
 
-		bool OnCanAddElement(ReorderableList list)
+		bool OnCanAddLayerElement(ReorderableList list)
 		{
-			return list.count < kMaxLayerCount;
+			return list.count < m_MaxLayerCount;
 		}
 
-		void OnAddElement(ReorderableList list)
+		void OnAddLayerElement(ReorderableList list)
 		{
 			Layer newLayer = ScriptableObject.CreateInstance<Layer>();
 			newLayer.IsSelected = true;
@@ -409,10 +430,143 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_LayerList.index = m_PaletteLayers.Count - 1;
 		}
 
-		void OnRemoveElement(ReorderableList list)
+		void OnRemoveLayerElement(ReorderableList list)
 		{
 			m_PaletteLayers.RemoveAt(list.index);
 			list.index = 0;
+		}
+
+		void ShowSplatmapImportGUI()
+		{
+			EditorGUILayout.BeginVertical("Box");
+			if (GUILayout.Button(Styles.ImportFromSplatmapBtn, GUILayout.Width(200)))
+			{
+				ImportSplatmapsFromTerrain();
+			}
+			if (m_SplatmapList == null)
+			{
+				m_SplatmapList = new ReorderableList(m_Splatmaps, typeof(Texture2D), true, false, true, true);
+			}
+			m_SplatmapList.elementHeight = 70;
+			m_SplatmapList.drawHeaderCallback = (Rect rect) => EditorGUI.LabelField(rect, "Splatmaps");
+			m_SplatmapList.drawElementCallback = DrawSplatmapElement;
+			m_SplatmapList.onAddCallback = OnAddSplatmapElement;
+			m_SplatmapList.onRemoveCallback = OnRemoveSplatmapElement;
+			m_SplatmapList.onCanAddCallback = OnCanAddSplatmapElement;
+			m_SplatmapList.onSelectCallback = OnSelectSplatmapElement;
+
+			m_SplatmapList.DoLayoutList();
+
+			//Splatmap Preview and Adjustment
+			EditorStyles.label.fontStyle = FontStyle.Bold;
+			EditorGUI.BeginChangeCheck();
+			m_ShowSplatmapPreview = EditorGUILayout.Toggle(Styles.PreviewSplatMapTogg, m_ShowSplatmapPreview);
+			if (EditorGUI.EndChangeCheck())
+			{
+				m_PreviewIsDirty = true;
+                if(m_ShowSplatmapPreview)
+                {
+                    GetAndSetActiveRenderPipelineSettings();
+                }
+            }
+			EditorStyles.label.fontStyle = FontStyle.Normal;
+
+			++EditorGUI.indentLevel;
+			m_Settings.AdjustAllSplats = EditorGUILayout.Toggle(Styles.MultiAdjustTogg, m_Settings.AdjustAllSplats);
+
+			EditorGUILayout.BeginHorizontal();
+			m_Settings.RotationAdjust = (UtilitySettings.RotationAdjustment)EditorGUILayout.EnumPopup(Styles.RotateSplatmapLabel, m_Settings.RotationAdjust);
+			if (GUILayout.Button(Styles.RotateSplatmapBtn, GUILayout.Width(150)))
+			{
+				RotateSplatmap();
+			}
+			EditorGUILayout.EndHorizontal();
+
+			EditorGUILayout.BeginHorizontal();
+			m_Settings.FlipAdjust = (UtilitySettings.FlipAdjustment)EditorGUILayout.EnumPopup(Styles.FlipSplatmapLabel, m_Settings.FlipAdjust);
+			if (GUILayout.Button(Styles.FlipSplatmapBtn, GUILayout.Width(150)))
+			{
+				FlipSplatmap();
+			}
+			EditorGUILayout.EndHorizontal();
+
+			--EditorGUI.indentLevel;
+			EditorGUILayout.EndVertical();
+
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.Space();
+
+			if (GUILayout.Button(Styles.ExportToTerrSplatmapBtn, GUILayout.Height(30), GUILayout.Width(200)))
+			{
+				ExportSplatmapsToTerrain();
+			}
+			if (GUILayout.Button(Styles.ResetSplatmapsBtn, GUILayout.Height(30), GUILayout.Width(200)))
+			{
+				ResetSplatmaps();
+			}
+
+			EditorGUILayout.EndHorizontal();
+
+			if (m_PreviewIsDirty)
+			{
+				if (!m_ShowSplatmapPreview)
+				{
+					RevertPreviewMaterial();
+				}
+				else if (ValidatePreviewTexture())
+				{
+                    m_PreviewMaterial.DisableKeyword("_HEATMAP");
+					m_PreviewMaterial.EnableKeyword("_SPLATMAP_PREVIEW");
+                    UpdateAdjustedSplatmaps();
+                }
+				m_PreviewIsDirty = false;
+			}
+		}
+
+		bool OnCanAddSplatmapElement(ReorderableList list)
+		{
+			return list.count < m_MaxSplatmapCount;
+		}
+
+		void OnAddSplatmapElement(ReorderableList list)
+		{
+			Texture2D newSplatmap = null;
+			m_Splatmaps.Add(newSplatmap);
+			m_SplatmapList.index = m_Splatmaps.Count - 1;
+		}
+
+		void OnRemoveSplatmapElement(ReorderableList list)
+		{
+			m_Splatmaps.RemoveAt(list.index);
+			list.index = 0;
+			m_SelectedSplatMap = 0;
+			if (list.count == 0)
+			{
+				RevertPreviewMaterial();
+			}
+		}
+
+		void OnSelectSplatmapElement(ReorderableList list)
+		{
+			m_SelectedSplatMap = list.index;
+			m_PreviewIsDirty = true;
+		}
+
+		const int kSplatmapElementHeight = 64;
+		const int kSplatmapLabelWidth = 100;
+		const int kSplatmapFieldWidth = 75;
+		void DrawSplatmapElement(Rect rect, int index, bool selected, bool focused)
+		{
+			rect.height = rect.height + kElementPadding;
+			var rectLabel = new Rect(rect.x, rect.y, kSplatmapLabelWidth, kSplatmapElementHeight);
+			var rectObject = new Rect((rectLabel.x + kSplatmapLabelWidth), rect.y + kElementPadding, kSplatmapFieldWidth, kSplatmapElementHeight);
+			if (m_Splatmaps.Count > 0)
+			{
+				// label is the built-in splatmap name that gets auto assigned
+				string label = "SplatAlpha " + index;
+				EditorGUI.LabelField(rectLabel, label);
+				m_Splatmaps[index] = EditorGUI.ObjectField(rectObject, m_Splatmaps[index], typeof(Texture2D), false) as Texture2D;
+			}
 		}
 
 		void ShowReplaceSplatmapGUI()
@@ -506,14 +660,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			EditorGUILayout.BeginHorizontal();
 			m_Settings.HeightmapByteOrder = (ToolboxHelper.ByteOrder)EditorGUILayout.EnumPopup(Styles.HeightmapByteOrder, m_Settings.HeightmapByteOrder);
 			EditorGUILayout.EndHorizontal();
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.MinMaxSlider(Styles.HeightmapRemap, ref m_Settings.HeightmapRemapMin, ref m_Settings.HeightmapRemapMax, 0f, 1.0f);
-            EditorGUILayout.LabelField(Styles.HeightmapRemapMin, GUILayout.Width(40.0f));
-            m_Settings.HeightmapRemapMin = EditorGUILayout.FloatField(m_Settings.HeightmapRemapMin, GUILayout.Width(75.0f));
-            EditorGUILayout.LabelField(Styles.HeightmapRemapMax, GUILayout.Width(40.0f));
-            m_Settings.HeightmapRemapMax = EditorGUILayout.FloatField(m_Settings.HeightmapRemapMax, GUILayout.Width(75.0f));
-            EditorGUILayout.EndHorizontal();
-            m_Settings.FlipVertically = EditorGUILayout.Toggle(Styles.FlipVertically, m_Settings.FlipVertically);
+
 			//Future to support PNG and TGA. 
 			//m_Settings.HeightFormat = (Heightmap.Format)EditorGUILayout.EnumPopup(Styles.HeightmapSelectedFormat, m_Settings.HeightFormat);
 			//if (m_Settings.HeightFormat == Heightmap.Format.RAW)
@@ -524,7 +671,15 @@ namespace UnityEditor.Experimental.TerrainAPI
 			//	EditorGUILayout.BeginHorizontal();
 			//	m_Settings.HeightmapByteOrder = (ToolboxHelper.ByteOrder)EditorGUILayout.EnumPopup(Styles.HeightmapByteOrder, m_Settings.HeightmapByteOrder);
 			//	EditorGUILayout.EndHorizontal();
-			//}			
+			//}
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.MinMaxSlider(Styles.HeightmapRemap, ref m_Settings.HeightmapRemapMin, ref m_Settings.HeightmapRemapMax, 0f, 1.0f);
+			EditorGUILayout.LabelField(Styles.HeightmapRemapMin, GUILayout.Width(40.0f));
+			m_Settings.HeightmapRemapMin = EditorGUILayout.FloatField(m_Settings.HeightmapRemapMin, GUILayout.Width(75.0f));
+			EditorGUILayout.LabelField(Styles.HeightmapRemapMax, GUILayout.Width(40.0f));
+			m_Settings.HeightmapRemapMax = EditorGUILayout.FloatField(m_Settings.HeightmapRemapMax, GUILayout.Width(75.0f));
+			EditorGUILayout.EndHorizontal();
+			m_Settings.FlipVertically = EditorGUILayout.Toggle(Styles.FlipVertically, m_Settings.FlipVertically);
 			EditorGUILayout.BeginHorizontal();
 			EditorGUILayout.Space();
 			if (GUILayout.Button(Styles.ExportHeightmapsBtn, GUILayout.Height(30), GUILayout.Width(200)))
@@ -534,6 +689,61 @@ namespace UnityEditor.Experimental.TerrainAPI
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.Separator();
+		}
+
+
+
+		void UpdateAdjustedSplatmaps()
+		{
+			List<Terrain> terrains = m_Terrains.ToList();
+			if (terrains.Count == 0)
+			{
+				EditorUtility.DisplayDialog("Error", "Select a terrain before previewing the splatmap.", "OK");
+				RevertPreviewMaterial();
+				return;
+			}
+
+			List<Terrain> sortedTerrains = terrains.OrderBy(t => t.gameObject.transform.position.x).ThenBy(t => t.gameObject.transform.position.z).ToList();
+
+			Texture2D splatMap = m_Splatmaps[m_SelectedSplatMap];
+			Vector2Int tileOffset = Vector2Int.zero;
+			int tilesX = terrains.Select(t => t.gameObject.transform.position.x).Distinct().Count();
+			int tilesZ = terrains.Select(t => t.gameObject.transform.position.z).Distinct().Count();
+			int expectedCount = tilesX * tilesZ;
+			int tilesCount = terrains.Count;
+			int index = 0;
+
+			Vector2Int resolution = new Vector2Int(splatMap.width / tilesX, splatMap.height / tilesZ);
+			Texture2D texture = new Texture2D(resolution.x, resolution.y);
+
+			if (!ValidateSplatmap(terrains, resolution, expectedCount, tilesCount))
+			{
+				RevertPreviewMaterial();
+				return;
+			}
+
+			for (int x = 0; x < tilesX; x++, tileOffset.x += resolution.x)
+			{
+				tileOffset.y = 0;
+				for (int y = 0; y < tilesZ; y++, tileOffset.y += resolution.y)
+				{
+					texture = new Texture2D(resolution.x, resolution.y);
+					var newPixels = splatMap.GetPixels(tileOffset.x, tileOffset.y, resolution.x, resolution.y);
+#if UNITY_2019_2_OR_NEWER
+#else
+                    sortedTerrains[index].materialType = Terrain.MaterialType.Custom;
+#endif
+                    sortedTerrains[index].materialTemplate = m_PreviewMaterial;
+					texture.SetPixels(newPixels);
+					texture.Apply();
+
+					m_PreviewMaterialPropBlock.Clear();
+					m_PreviewMaterialPropBlock.SetTexture("_SplatmapTex", texture);
+					sortedTerrains[index].SetSplatMaterialPropertyBlock(m_PreviewMaterialPropBlock);
+					index++;
+				}
+			}
+
 		}
 
 		void DrawLayerIcon(Texture icon, int index)
@@ -551,14 +761,14 @@ namespace UnityEditor.Experimental.TerrainAPI
 			icon.filterMode = FilterMode.Point;
 			EditorGUILayout.BeginVertical("Box", GUILayout.Width(140));
 			GUILayout.Label(icon);
-			
+
 			if (m_PaletteLayers[index] != null && m_PaletteLayers[index].AssignedLayer != null)
 			{
 				GUILayout.BeginHorizontal();
 				GUILayout.Label(m_PaletteLayers[index].AssignedLayer.name, GUILayout.Width(90));
 				GUILayout.EndHorizontal();
-			}			
-			
+			}
+
 			EditorGUILayout.EndVertical();
 			icon.filterMode = filterMode;
 		}
@@ -574,7 +784,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			{
 				terrains = ToolboxHelper.GetSelectedTerrainsInScene();
 			}
-			
+
 			if (terrains == null || terrains.Length == 0)
 			{
 				EditorUtility.DisplayDialog("Warning", "No selected terrain found. Please select to continue.", "OK");
@@ -645,7 +855,48 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 					AssetDatabase.SaveAssets();
 					EditorUtility.ClearProgressBar();
-				}			
+				}
+			}
+		}
+
+
+		void ImportLayersFromTerrain()
+		{
+			m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene();
+			if (m_Terrains.Length != 1)
+			{
+				EditorUtility.DisplayDialog("Warning", "Layers can only be imported from 1 terrain.", "OK");
+			}
+			else
+			{
+				Terrain terrain = m_Terrains[0];
+				m_PaletteLayers.Clear();
+				m_CopiedLayers.Clear();
+				foreach (TerrainLayer layer in terrain.terrainData.terrainLayers)
+				{
+					Layer paletteLayer = ScriptableObject.CreateInstance<Layer>();
+					paletteLayer.AssignedLayer = layer;
+					m_PaletteLayers.Add(paletteLayer);
+				}
+				m_CopiedLayers.AddRange(terrain.terrainData.terrainLayers);
+			}
+		}
+
+		void ImportSplatmapsFromTerrain()
+		{
+			m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene();
+			if (m_Terrains.Length != 1)
+			{
+				EditorUtility.DisplayDialog("Warning", "Splatmaps can only be imported from 1 terrain.", "OK");
+			}
+			else
+			{
+				Terrain terrain = m_Terrains[0];
+				m_Splatmaps.Clear();
+				foreach (Texture2D alphamap in terrain.terrainData.alphamapTextures)
+				{
+					m_Splatmaps.Add(alphamap);
+				}
 			}
 		}
 
@@ -665,7 +916,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 				var dataPath = AssetDatabase.GetAssetPath(terrain.terrainData);
 				var dataPathNew = AssetDatabase.GenerateUniqueAssetPath(dataPath);
 				AssetDatabase.CopyAsset(dataPath, dataPathNew);
-				TerrainData terrainData = AssetDatabase.LoadAssetAtPath<TerrainData>(dataPathNew);				
+				TerrainData terrainData = AssetDatabase.LoadAssetAtPath<TerrainData>(dataPathNew);
 				// clone terrain from old terrain
 				GameObject newGO = UnityEngine.Object.Instantiate(terrain.gameObject);
 				newGO.transform.localPosition = terrain.gameObject.transform.position;
@@ -674,7 +925,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 				if (terrain.gameObject.transform.parent != null)
 				{
 					newGO.transform.SetParent(terrain.gameObject.transform.parent);
-				}				
+				}
 				// update terrain data reference in terrain collider 
 				TerrainCollider collider = newGO.GetComponent<TerrainCollider>();
 				collider.terrainData = terrainData;
@@ -688,7 +939,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 		void RemoveTerrains()
 		{
-			m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene();			
+			m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene();
 
 			if (m_Terrains == null || m_Terrains.Length == 0)
 			{
@@ -705,12 +956,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 						var path = AssetDatabase.GetAssetPath(terrain.terrainData);
 						AssetDatabase.DeleteAsset(path);
 					}
-					
+
 					UnityEngine.Object.DestroyImmediate(terrain.gameObject);
 				}
 
 				AssetDatabase.Refresh();
-			}			
+			}
 		}
 
 		bool MultipleIDExist(List<Terrain> terrains)
@@ -784,7 +1035,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 					return;
 				}
 
-				int tileIndex = 0;				
+				int tileIndex = 0;
 				int tileCount = m_Settings.TileXAxis * m_Settings.TileZAxis;
 				Terrain[] terrains = new Terrain[tileCount];
 
@@ -867,8 +1118,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 				}
 			}
 		}
-
-		
 
 		int GetGroupIDForSplittedNewTerrain(Terrain[] exclude_terrains)
 		{
@@ -1013,6 +1262,125 @@ namespace UnityEditor.Experimental.TerrainAPI
 			oldTexture.Apply();
 		}
 
+		void ExportSplatmapsToTerrain()
+		{
+			// validate settings
+			// all splatmaps same resolution
+			// terrains same control map resolution
+
+			// get selected tiles and sort by position along X and Z
+			List<Terrain> terrains = ToolboxHelper.GetSelectedTerrainsInScene().ToList();
+			List<Terrain> sortedTerrains = terrains.OrderBy(t => t.gameObject.transform.position.x).ThenBy(t => t.gameObject.transform.position.z).ToList();
+
+			int tilesX = terrains.Select(t => t.gameObject.transform.position.x).Distinct().Count();
+			int tilesZ = terrains.Select(t => t.gameObject.transform.position.z).Distinct().Count();
+			int expectedCount = tilesX * tilesZ;
+			int tilesCount = terrains.Count;
+			Vector2Int tileOffset = Vector2Int.zero;
+			int index = 0;
+
+			try
+			{
+				for (int z = 0; z < m_Splatmaps.Count; z++)
+				{
+					index = 0;
+					tileOffset = Vector2Int.zero;
+
+					if (m_Splatmaps[z] != null)
+					{
+						Vector2Int resolution = new Vector2Int(m_Splatmaps[z].width / tilesX, m_Splatmaps[z].height / tilesZ);
+						if (ValidateSplatmap(terrains, resolution, expectedCount, tilesCount))
+						{
+							for (int x = 0; x < tilesX; x++, tileOffset.x += resolution.x)
+							{
+								tileOffset.y = 0;
+								for (int y = 0; y < tilesZ; y++, tileOffset.y += resolution.y)
+								{
+									EditorUtility.DisplayProgressBar("Importing splatmaps", string.Format("Updating terrain tile {0}", sortedTerrains[index].name), ((float)index / tilesCount));
+
+									ToolboxHelper.ResizeControlTexture(sortedTerrains[index].terrainData, resolution.x);
+									var newPixels = m_Splatmaps[z].GetPixels(tileOffset.x, tileOffset.y, resolution.x, resolution.y);
+									if (sortedTerrains[index].terrainData.alphamapTextures[z] != null)
+									{
+										sortedTerrains[index].terrainData.alphamapTextures[z].SetPixels(newPixels);
+										sortedTerrains[index].terrainData.alphamapTextures[z].Apply();
+									}
+									index++;
+								}
+							}
+						}
+					}
+				}
+			}
+			finally
+			{
+				AssetDatabase.SaveAssets();
+				AssetDatabase.Refresh();
+				EditorUtility.ClearProgressBar();
+			}
+		}
+
+		bool ValidateSplatmap(List<Terrain> terrains, Vector2Int resolution, int expectedCount, int tilesCount)
+		{
+			foreach (Terrain terrain in terrains)
+			{
+				if (terrain.terrainData.alphamapTextures.Length < m_SplatmapList.count)
+				{
+					EditorUtility.DisplayDialog("Error", "You've selected more splatmaps to import than each terrain can hold. Either select less splatmaps or add more to your terrain.", "OK"); //string.Format("The selected amount of {0} splatmap textures, dosen't match that of the average splatmaps of {1:0.##} per terrain ", m_SplatmapList.count, averageSplatmaps)
+					return false;
+				}
+			}
+
+			if (!ToolboxHelper.IsPowerOfTwo(resolution.x))
+			{
+				EditorUtility.DisplayDialog("Error", "The selected splatmap resolutions aren't a power of two.", "OK");
+				return false;
+			}
+			else if (resolution.x != resolution.y)
+			{
+				EditorUtility.DisplayDialog("Error", "The selected splatmaps resolution isn't square.", "OK");
+				return false;
+			}
+			else if (expectedCount > tilesCount)
+			{
+				EditorUtility.DisplayDialog("Error", "The terrains selected aren't square.", "OK");
+				return false;
+			}
+			return true;
+		}
+
+		bool ValidatePreviewTexture()
+		{
+			if (m_Splatmaps.Count == 0)
+			{
+				EditorUtility.DisplayDialog("Error", "Add and select a splatmap before previewing the splatmap.", "OK");
+				RevertPreviewMaterial();
+				return false;
+			}
+			else if (m_Splatmaps[m_SelectedSplatMap] == null)
+			{
+				EditorUtility.DisplayDialog("Error", "Select a splatmap before previewing the splatmap.", "OK");
+
+				if (m_Splatmaps[0] == null)
+				{
+					RevertPreviewMaterial();
+					return false;
+				}
+				m_SelectedSplatMap = 0;
+			}
+
+			Texture2D texture = m_Splatmaps[m_SelectedSplatMap];
+			TextureFormat format = texture.format;
+			if ((format != TextureFormat.RGBA32 && format != TextureFormat.ARGB32 && format != TextureFormat.RGB24) || !texture.isReadable)
+			{
+				EditorUtility.DisplayDialog("Error", "The Texture format isn't compatable. Please change it to either RGBA32, ARGB32, or RGB24 and enable Read/Write.", "OK");
+				RevertPreviewMaterial();
+				return false;
+			}
+
+			return true;
+		}
+
 		void ResetSplatmaps()
 		{
 			var terrains = ToolboxHelper.GetSelectedTerrainsInScene();
@@ -1079,7 +1447,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			int index = 0;
 
 			foreach (var t in terrains)
-			{				
+			{
 				var terrain = t as Terrain;
 				EditorUtility.DisplayProgressBar("Exporting Splatmaps", string.Format("Exporting splatmaps on terrain {0}", terrain.name), (index / (terrains.Count())));
 				TerrainData data = terrain.terrainData;
@@ -1101,7 +1469,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 				index++;
 			}
-			
+
 			AssetDatabase.SaveAssets();
 			AssetDatabase.Refresh();
 			EditorUtility.ClearProgressBar();
@@ -1130,17 +1498,16 @@ namespace UnityEditor.Experimental.TerrainAPI
 				TerrainData terrainData = terrain.terrainData;
 				string fileName = terrain.name + "_heightmap";
 				string path = Path.Combine(m_Settings.HeightmapFolderPath, fileName);
-				ToolboxHelper.ExportTerrainHeightsToRawFile(terrainData, path, m_Settings.HeightmapDepth, m_Settings.FlipVertically, m_Settings.HeightmapByteOrder, new Vector2(m_Settings.HeightmapRemapMin, m_Settings.HeightmapRemapMax));
 
-				//switch (m_Settings.HeightFormat)
-				//{
-				//	case Heightmap.Format.RAW:
-				//		ToolboxHelper.ExportTerrainHeightsToRawFile(terrainData, path, m_Settings.HeightmapDepth, false, m_Settings.HeightmapByteOrder);
-				//		break;
-				//	default:
-				//		ToolboxHelper.ExportTerrainHeightsToTexture(terrainData, m_Settings.HeightFormat, path);
-				//		break;
-				//}				
+				switch (m_Settings.HeightFormat)
+				{
+					case Heightmap.Format.RAW:
+						ToolboxHelper.ExportTerrainHeightsToRawFile(terrainData, path, m_Settings.HeightmapDepth, m_Settings.FlipVertically, m_Settings.HeightmapByteOrder, new Vector2(m_Settings.HeightmapRemapMin, m_Settings.HeightmapRemapMax));
+						break;
+					default:
+						ToolboxHelper.ExportTerrainHeightsToTexture(terrainData, m_Settings.HeightFormat, path);
+						break;
+				}
 
 				index++;
 			}
@@ -1148,6 +1515,200 @@ namespace UnityEditor.Experimental.TerrainAPI
 			AssetDatabase.SaveAssets();
 			AssetDatabase.Refresh();
 			EditorUtility.ClearProgressBar();
+		}
+
+		void RotateSplatmap()
+		{
+			if (!ValidatePreviewTexture())
+				return;
+
+			if (m_Settings.AdjustAllSplats)
+			{
+				for (int i = 0; i < m_SplatmapList.count; i++)
+				{
+					RotateTexture(m_Splatmaps[i]);
+				}
+			}
+			else
+			{
+				RotateTexture(m_Splatmaps[m_SelectedSplatMap]);
+			}
+
+			if (m_ShowSplatmapPreview)
+				m_PreviewIsDirty = true;
+		}
+
+		void RotateTexture(Texture2D texture)
+		{
+			Undo.RegisterCompleteObjectUndo(texture, "Rotate Texture");
+			Color32[] originalPixels;
+			Color32[] rotatedPixels;
+			originalPixels = texture.GetPixels32();
+			rotatedPixels = new Color32[originalPixels.Length];
+			//bool clockwise = m_Settings.RotationAdjust == UtilitySettings.RotationAdjustment.Clockwise ? true : false;
+
+			int width = texture.width;
+			int height = texture.height;
+			int rotatedIndex, originalIndex;
+			for (int row = 0; row < height; row++)
+			{
+				for (int col = 0; col < width; col++)
+				{
+					rotatedIndex = (col + 1) * height - row - 1;
+					if (m_Settings.RotationAdjust == UtilitySettings.RotationAdjustment.Clockwise)
+					{
+						originalIndex = originalPixels.Length - 1 - (row * width + col);
+					}
+					else
+					{
+						originalIndex = row * width + col;
+					}
+					//originalIndex = clockwise ? originalPixels.Length - 1 - (row * width + col) : row * width + col;
+
+					rotatedPixels[rotatedIndex] = originalPixels[originalIndex];
+				}
+			}
+			texture.SetPixels32(rotatedPixels);
+			texture.Apply();
+		}
+
+		void FlipSplatmap()
+		{
+			if (!ValidatePreviewTexture())
+				return;
+
+
+			if (m_Settings.AdjustAllSplats)
+			{
+				for (int i = 0; i < m_SplatmapList.count; i++)
+				{
+					FlipTexture(m_Splatmaps[i]);
+				}
+			}
+			else
+			{
+				FlipTexture(m_Splatmaps[m_SelectedSplatMap]);
+			}
+
+			if (m_ShowSplatmapPreview)
+				m_PreviewIsDirty = true;
+		}
+
+
+		void FlipTexture(Texture2D texture)
+		{
+			Undo.RegisterCompleteObjectUndo(texture, "Flip Texture");
+			Color32[] originalPixels;
+			Color32[] flippedPixels;
+			bool horizontal = m_Settings.FlipAdjust == UtilitySettings.FlipAdjustment.Horizontal ? true : false;
+			int difference;
+			int width;
+			int height;
+
+			int flippedIndex, originalIndex;
+
+			originalPixels = texture.GetPixels32();
+			flippedPixels = new Color32[originalPixels.Length];
+			width = texture.width;
+			height = texture.height;
+			difference = width - height;
+			for (int row = 0; row < height; row++)
+			{
+				for (int col = 0; col < width; col++)
+				{
+					flippedIndex = horizontal ? (((width - 1) - row) * height + col) - difference : (height - 1) + (row * width) - col - difference;
+					originalIndex = row * width + col;
+					if (flippedIndex < 0) continue;
+					flippedPixels[flippedIndex] = originalPixels[originalIndex];
+				}
+			}
+			texture.SetPixels32(flippedPixels);
+			texture.Apply();
+		}
+
+
+		void RevertPreviewMaterial()
+		{
+            if(m_PreviewMaterial == null)
+            {
+                GetAndSetActiveRenderPipelineSettings();
+            }
+            m_PreviewMaterial.DisableKeyword("_SPLATMAP_PREVIEW");
+            for (int i = 0; i < m_Terrains.Length; i++)
+            {
+                if(m_Terrains[i] != null)
+                {
+#if UNITY_2019_2_OR_NEWER
+                    m_Terrains[i].materialTemplate = m_TerrainMaterials[i];
+#else
+                    m_Terrains[i].materialType = m_TerrainMaterialType;
+                    if (m_TerrainMaterialType == Terrain.MaterialType.Custom)
+                    {
+                        m_Terrains[i].materialTemplate = m_TerrainMaterials[i];
+                    }
+                    else if (m_TerrainMaterialType == Terrain.MaterialType.BuiltInLegacySpecular)
+                    {
+                        m_Terrains[i].legacyShininess = m_TerrainLegacyShininess;
+                        m_Terrains[i].legacySpecular = m_TerrainLegacySpecular;
+                        m_Terrains[i].materialTemplate = null;
+                    }
+                    else
+                    {
+                        m_Terrains[i].materialTemplate = null;
+                    }
+#endif
+                }
+			}
+			m_ShowSplatmapPreview = false;
+		}
+
+		void GetAndSetActiveRenderPipelineSettings()
+		{
+			m_ActiveRenderPipeline = ToolboxHelper.GetRenderPipeline();
+			m_PreviewMaterial = AssetDatabase.LoadAssetAtPath<Material>("Packages/com.unity.terrain-tools/editor/terraintoolbox/materials/terrainvisualization.mat");
+
+            m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene();
+            m_TerrainMaterials = new Material[m_Terrains.Length];
+            for(int i = 0; i < m_TerrainMaterials.Length; i++)
+            {
+                m_TerrainMaterials[i] = m_Terrains[i].materialTemplate;
+            }
+            switch (m_ActiveRenderPipeline)
+			{
+				case ToolboxHelper.RenderPipeline.HD:
+					m_MaxLayerCount = kMaxLayerHD;
+					m_MaxSplatmapCount = kMaxSplatmapHD;
+					m_PreviewMaterial.shader = Shader.Find("Hidden/HDRP_TerrainVisualization");
+					break;
+				case ToolboxHelper.RenderPipeline.LW:
+					// this is a temp setting, in LW if height based blending or opacity as density enabled, 
+					// we only support 4 layers and 1 splatmap
+					// this will get checked when applying changes to each terrain
+					// To-do: update max allowance check once LW terrain checked in
+					m_MaxLayerCount = kMaxNoLimit;
+					m_MaxSplatmapCount = kMaxNoLimit;
+					m_PreviewMaterial.shader = Shader.Find("Hidden/LWRP_TerrainVisualization");
+					break;
+				default:
+					m_MaxLayerCount = kMaxNoLimit;
+					m_MaxSplatmapCount = kMaxNoLimit;
+					if (m_Terrains == null || m_Terrains.Length == 0)
+                    {
+                        break;
+                    }               
+
+#if UNITY_2019_2_OR_NEWER
+#else
+                    m_TerrainMaterialType = m_Terrains[0].materialType;
+                    if (m_TerrainMaterialType == Terrain.MaterialType.BuiltInLegacySpecular)
+                    {
+                        m_TerrainLegacyShininess = m_Terrains[0].legacyShininess;
+                        m_TerrainLegacySpecular = m_Terrains[0].legacySpecular;
+                    }
+#endif
+                    m_PreviewMaterial.shader = Shader.Find("Hidden/Builtin_TerrainVisualization");
+					break;
+			}
 		}
 
 		void CreateNewPalette()
@@ -1175,7 +1736,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 				newLayer.AssignedLayer = layer;
 				newLayer.IsSelected = true;
 				m_PaletteLayers.Add(newLayer);
-			}			
+			}
 		}
 
 		bool GetPalette()
@@ -1210,7 +1771,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 			string filePath = ToolboxHelper.GetPrefFilePath(ToolboxHelper.ToolboxPrefsUtility);
 			string utilitySettings = JsonUtility.ToJson(m_Settings);
 			File.WriteAllText(filePath, utilitySettings);
-		}
+            RevertPreviewMaterial();
+            SceneView.RepaintAll();
+        }
 
 		public void LoadSettings()
 		{
@@ -1229,6 +1792,52 @@ namespace UnityEditor.Experimental.TerrainAPI
 			{
 				m_SelectedLayerPalette = AssetDatabase.LoadAssetAtPath(m_Settings.PalettePath, typeof(TerrainPalette)) as TerrainPalette;
 			}
+
+			GetAndSetActiveRenderPipelineSettings();
+			EditorSceneManager.sceneSaving += OnSceneSaving;
+            EditorSceneManager.sceneOpened += OnSceneOpened;
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+		}
+
+		public void OnLostFocus()
+		{
+			if (!m_ShowSplatmapPreview)
+				return;
+
+			string mouseOverWindow;
+			try
+			{
+				mouseOverWindow = EditorWindow.mouseOverWindow.ToString();
+			}
+			catch
+			{
+				mouseOverWindow = null;
+			}
+
+			if (mouseOverWindow == null
+				|| mouseOverWindow != " (UnityEditor.Experimental.TerrainAPI.TerrainToolboxWindow)"
+				&& mouseOverWindow != " (UnityEditor.SceneView)")
+			{
+				RevertPreviewMaterial();
+			}
+		}
+
+		void OnSceneSaving(UnityEngine.SceneManagement.Scene scene, string path)
+		{
+            if(m_ShowSplatmapPreview)
+            {
+                RevertPreviewMaterial();
+            }
+        }
+
+        void OnSceneOpened(UnityEngine.SceneManagement.Scene scene, OpenSceneMode open)
+        {
+            m_PaletteLayers.Clear();
+        }
+
+        void OnPlayModeChanged(PlayModeStateChange state)
+		{
+			RevertPreviewMaterial();
 		}
 	}
 }

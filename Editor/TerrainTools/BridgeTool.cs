@@ -15,7 +15,20 @@ namespace UnityEditor.Experimental.TerrainAPI
 #endif
 
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("BridgeTool", DefaultBrushUIGroup.Feature.NoScatter);
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "BridgeTool", DefaultBrushUIGroup.Feature.NoScatter );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
 
         Terrain m_StartTerrain = null;
         private Vector3 m_StartPoint;
@@ -119,7 +132,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             commonUI.OnInspectorGUI(terrain, editContext);
 
-            m_ShowBridgeControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.controlHeader, m_ShowBridgeControls);
+            m_ShowBridgeControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controlHeader, m_ShowBridgeControls, bridgeToolProperties.SetDefaults);
 
             if (m_ShowBridgeControls) {
                 //"Controls the width of the bridge over the length of the stroke"
@@ -177,6 +190,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             Vector2 jitterVec = new Vector2(-stroke.z, stroke.x); //perpendicular to stroke direction
             jitterVec.Normalize();
 
+            
+
             for (int i = 0; i < numSplats; i++)
             {
                 float pct = (float)i / (float)numSplats;
@@ -233,6 +248,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                         mat.SetVector("_BrushParams", brushParams);
 
+                        FilterContext fc = new FilterContext(terrain, currPos, finalBrushSize, commonUI.brushRotation);
+                        fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+                        RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+                        mat.SetTexture("_FilterTex", filterMaskRT);
+
                         brushRenderWithTerrain.SetupTerrainToolMaterialProperties(paintContext, brushTransform, mat);
                         brushRenderWithTerrain.RenderBrush(paintContext, mat, 0);
                     }
@@ -246,7 +266,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             Vector2 uv = editContext.uv;
 
             if(Event.current.shift) { return true; }
-
             //grab the starting position & height
             if (Event.current.control)
             {

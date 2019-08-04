@@ -4,7 +4,7 @@ RWTexture2D<float4> OutputTex;
 float4 Constant;
 
 #pragma kernel AddConstant
-[numthreads(8, 8, 1)]
+[numthreads(1, 1, 1)]
 void AddConstant(uint3 id : SV_DispatchThreadID)
 {
 	OutputTex[id.xy] = OutputTex[id.xy] + Constant;
@@ -13,7 +13,7 @@ void AddConstant(uint3 id : SV_DispatchThreadID)
 float4 ValueRanges;
 
 #pragma kernel RemapValues
-[numthreads(8,8,1)]
+[numthreads(1,1,1)]
 void RemapValues (uint3 id : SV_DispatchThreadID)
 {
 	float4 inLow = float4(ValueRanges.x, ValueRanges.x, ValueRanges.x, ValueRanges.x);

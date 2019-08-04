@@ -9,10 +9,10 @@ namespace UnityEditor.Experimental.TerrainAPI
         
         private const float kMinBrushSize = 0.01f;
         private const float kMaxBrushSize = 500.0f;
-        private const float kDefaultBrushSize = 25.0f;
+        private const float kDefaultBrushSize = 100.0f;
         private const float kDefaultMouseSensitivity = 0.1f;
 
-        private readonly TerrainFloatMinMaxValue m_BrushSize = new TerrainFloatMinMaxValue(styles.brushSize, kDefaultBrushSize, kMinBrushSize, kMaxBrushSize, true, kDefaultMouseSensitivity);
+        private readonly TerrainFloatMinMaxValue m_BrushSize = new TerrainFloatMinMaxValue(styles.brushSize, kDefaultBrushSize, kMinBrushSize, kMaxBrushSize, true);
         private readonly BrushJitterHandler m_JitterHandler = new BrushJitterHandler(0.0f, kMinBrushSize, kMaxBrushSize);
         
         private bool m_AdjustingSize;
@@ -52,7 +52,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             shortcutHandler.AddActions(BrushShortcutType.Size, BeginAdjustingSize, EndAdjustingSize);
             
             m_BrushSize.value = GetEditorPrefs("TerrainBrushSize", kDefaultBrushSize);
-            m_BrushSize.mouseSensitivity = GetEditorPrefs("TerrainBrushSizeMouseSensitivity", kDefaultMouseSensitivity);
+            //m_BrushSize.mouseSensitivity = GetEditorPrefs("TerrainBrushSizeMouseSensitivity", kDefaultMouseSensitivity);
             m_JitterHandler.jitter = GetEditorPrefs("TerrainBrushSizeJitter", 0.0f);
         }
         

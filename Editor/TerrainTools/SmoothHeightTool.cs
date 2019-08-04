@@ -16,7 +16,20 @@ namespace UnityEditor.Experimental.TerrainAPI
 #endif
 
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("SmoothTool");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "SmoothTool" );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
 
         const string toolName = "Smooth Height";
 
@@ -30,6 +43,14 @@ namespace UnityEditor.Experimental.TerrainAPI
             if (m_Material == null)
                 m_Material = new Material(Shader.Find("Hidden/TerrainTools/SmoothHeight"));
             return m_Material;
+        }
+
+        ComputeShader m_DiffusionCS = null;
+        ComputeShader GetDiffusionShader() {
+            if(m_DiffusionCS == null) {
+                m_DiffusionCS = (ComputeShader)Resources.Load("Diffusion");
+            }
+            return m_DiffusionCS;
         }
 
         public override string GetName()
@@ -65,7 +86,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             EditorGUI.BeginChangeCheck();
             commonUI.OnInspectorGUI(terrain, editContext);
 
-            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.controls, m_ShowControls);
+            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controls, m_ShowControls, Reset);
             if (m_ShowControls)
             {
                 EditorGUILayout.BeginVertical("GroupBox");
@@ -81,22 +102,54 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
 
-        private void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
+
+        private void Reset()
         {
+            m_direction = 0.0f;     // -1 to 1
+            m_KernelSize = 1.0f; //blur kernel size
+        }
+
+        private void ApplyBrushInternal(Terrain terrain, IPaintContextRender renderer, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
+        {
+            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+
+            /*
+            ComputeShader cs = GetDiffusionShader();
+
+            int kernel = cs.FindKernel("Diffuse");
+            cs.SetFloat("dt", 0.1f);
+            cs.SetFloat("diff", 0.01f);
+            cs.SetVector("texDim", new Vector4(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0.0f, 0.0f));
+            cs.SetTexture(kernel, "InputTex", paintContext.sourceRenderTexture);
+            cs.SetTexture(kernel, "OutputTex", paintContext.destinationRenderTexture);
+            cs.Dispatch(kernel, paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 1);
+            */
+
+            
             Material mat = GetMaterial();
-            Vector4 brushParams = new Vector4(brushStrength, 0.0f, 0.0f, 0.0f);
+            Vector4 brushParams = new Vector4(Mathf.Clamp(brushStrength, 0.0f, 1.0f), 0.0f, 0.0f, 0.0f);
             
             mat.SetTexture("_BrushTex", brushTexture);
+            mat.SetTexture("_FilterTex", filterMaskRT);
             mat.SetVector("_BrushParams", brushParams);
             Vector4 smoothWeights = new Vector4(
                 Mathf.Clamp01(1.0f - Mathf.Abs(m_direction)),   // centered
                 Mathf.Clamp01(-m_direction),                    // min
                 Mathf.Clamp01(m_direction),                     // max
-                0.03f * commonUI.brushSize * m_KernelSize);                                          // kernel size
+                m_KernelSize);                                  // kernel size
             mat.SetVector("_SmoothWeights", smoothWeights);
             
             renderer.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
-            renderer.RenderBrush(paintContext, mat, 0);
+
+            // Two pass blur (first horizontal, then vertical)
+            RenderTexture tmpRT = RenderTexture.GetTemporary(paintContext.destinationRenderTexture.descriptor);
+            Graphics.Blit(paintContext.sourceRenderTexture, tmpRT, mat, 0);
+            Graphics.Blit(tmpRT, paintContext.destinationRenderTexture, mat, 1);
+
+            RenderTexture.ReleaseTemporary(tmpRT);
         }
 
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
@@ -130,7 +183,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                     // draw result preview
                     {
-                        ApplyBrushInternal(brushRender, ctx, commonUI.brushStrength, editContext.brushTexture, brushXform);
+                        ApplyBrushInternal(terrain, brushRender, ctx, commonUI.brushStrength, editContext.brushTexture, brushXform);
 
                         // restore old render target
                         RenderTexture.active = ctx.oldRenderTexture;
@@ -154,7 +207,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 {
                     PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds());
                 
-                    ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, editContext.brushTexture, brushXform);
+                    ApplyBrushInternal(terrain, brushRender, paintContext, commonUI.brushStrength, editContext.brushTexture, brushXform);
                 }
             }
             return true;
@@ -165,7 +218,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             public static readonly GUIContent controls = EditorGUIUtility.TrTextContent("Smooth Controls");
             public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Click to smooth the terrain height.");
             public static readonly GUIContent direction = EditorGUIUtility.TrTextContent("Verticality", "Blur only up (1.0), only down (-1.0) or both (0.0)");
-            public static readonly GUIContent kernelSize = EditorGUIUtility.TrTextContent("Kernel Radius", "Specifies the size of the blur kernel");
+            public static readonly GUIContent kernelSize = EditorGUIUtility.TrTextContent("Blur Radius", "Specifies the size of the blur kernel");
         }
 
         private void SaveSetting()
@@ -177,7 +230,6 @@ namespace UnityEditor.Experimental.TerrainAPI
         private void LoadSettings()
         {
             m_direction = EditorPrefs.GetFloat("Unity.TerrainTools.SmoothHeight.Verticality", 0.0f);
-
         }
     }
 }

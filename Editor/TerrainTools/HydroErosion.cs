@@ -4,7 +4,7 @@ using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
-    public class HydroErosionTool : TerrainPaintTool<HydroErosionTool>
+    public class HydroErosionTool : TerrainPaintTool<HydroErosionTool>, IValidationTests
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Hydraulic Erosion Brush", typeof(TerrainToolShortcutContext), KeyCode.F4)]               // tells shortcut manager what to call the shortcut and what to pass as args
@@ -13,9 +13,23 @@ namespace UnityEditor.Experimental.TerrainAPI
             context.SelectPaintTool<HydroErosionTool>();                                                                        // set active tool
         }
 #endif
-        
+
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("HydroErosion");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "HydroErosion" );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
+
 
         NoiseSettings m_HardnessNoiseSettings = null;
 
@@ -80,7 +94,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 }
             }
         }
-
+        
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             if (m_HardnessNoiseSettings == null) {
@@ -88,6 +102,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                 m_HardnessNoiseSettings.Reset();
             }
 
+
+            
             Erosion.HydraulicErosionSettings erosionSettings = ((Erosion.HydraulicEroder)m_Eroder).m_ErosionSettings;
 
             EditorGUI.BeginChangeCheck();
@@ -96,7 +112,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             m_Eroder.OnInspectorGUI(terrain, editContext);
 
-            if (EditorGUI.EndChangeCheck()) {
+            commonUI.validationMessage = ValidateAndGenerateUserMessage(terrain);
+
+            if (EditorGUI.EndChangeCheck()) {  
                 Save(true);
             }
         }
@@ -130,11 +148,18 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                     Vector2 texelSize = new Vector2(terrain.terrainData.size.x / terrain.terrainData.heightmapResolution,
                                                     terrain.terrainData.size.z / terrain.terrainData.heightmapResolution);
+                    m_Eroder.ErodeHeightmap(terrain.terrainData.size, brushXform.GetBrushXYBounds(), texelSize, commonUI.ModifierActive(BrushModifierKey.BRUSH_MOD_INVERT));
                     m_Eroder.ErodeHeightmap(terrain.terrainData.size, brushXform.GetBrushXYBounds(), texelSize, Event.current.control);
+
+                    Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+                    FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+                    fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+                    RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
 
                     Material mat = GetPaintMaterial();
                     Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, 0.0f, 0.0f);
                     mat.SetTexture("_BrushTex", editContext.brushTexture);
+                    mat.SetTexture("_FilterTex", filterMaskRT);
                     mat.SetTexture("_NewHeightTex", m_Eroder.outputTextures["Height"]);
                     mat.SetVector("_BrushParams", brushParams);
                     
@@ -145,6 +170,19 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             return true;
         }
+
+        #endregion
+
+        #region IValidationTests
+        public virtual string ValidateAndGenerateUserMessage(Terrain terrain)
+        {
+            if (terrain.terrainData.heightmapResolution < 1025)
+                return "Erosion tools work best with a heightmap resolution of 1025 or greater.";
+
+            return "";
+
+        }
+
         #endregion
     }
 }

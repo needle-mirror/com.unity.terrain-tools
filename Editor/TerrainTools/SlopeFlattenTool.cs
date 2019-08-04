@@ -15,7 +15,21 @@ namespace UnityEditor.Experimental.TerrainAPI
 #endif
 
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("SlopeFlatten");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "SlopeFlattenTool" );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
+        
 
         Material m_Material = null;
         Material GetPaintMaterial()
@@ -96,10 +110,16 @@ namespace UnityEditor.Experimental.TerrainAPI
                     if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
                         PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
+                        Material mat = GetPaintMaterial();
+
+                        Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+                        FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+                        fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+                        RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+                        mat.SetTexture("_FilterTex", filterMaskRT);
 
                         paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
 
-                        Material mat = GetPaintMaterial();
                         Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, commonUI.brushSize, 0);
                         mat.SetTexture("_BrushTex", editContext.brushTexture);
                         mat.SetVector("_BrushParams", brushParams);

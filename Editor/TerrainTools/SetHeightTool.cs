@@ -20,21 +20,28 @@ namespace UnityEditor.Experimental.TerrainAPI
 #endif
 
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("SetHeightTool");
-
-
-        private static Material m_material;
-        public static Material material
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
         {
             get
             {
-                if(m_material == null)
+                if( m_commonUI == null )
                 {
-                    m_material = new Material(Shader.Find("Hidden/TerrainTools/SetExactHeight"));
+                    m_commonUI = new DefaultBrushUIGroup( "SetHeightTool" );
+                    m_commonUI.OnEnterToolMode();
                 }
 
-                return m_material;
+                return m_commonUI;
             }
+        }
+
+
+        Material m_Material = null;
+        Material GetPaintMaterial()
+        {
+            if (m_Material == null)
+                m_Material = new Material(Shader.Find("Hidden/TerrainTools/SetExactHeight"));
+            return m_Material;
         }
 
 
@@ -124,7 +131,14 @@ namespace UnityEditor.Experimental.TerrainAPI
             Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
             float terrainHeight = Mathf.Clamp01((m_HeightWorldSpace - terrain.transform.position.y) / terrain.terrainData.size.y);
             Vector4 brushParams = new Vector4(brushStrength * 0.01f, 0.5f * terrainHeight, 0.0f, 0.0f);
-            
+
+            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+            mat.SetTexture("_FilterTex", filterMaskRT);
+
+
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
 
@@ -171,16 +185,23 @@ namespace UnityEditor.Experimental.TerrainAPI
             Undo.RegisterCompleteObjectUndo(terrain.terrainData, "Set Height - Flatten Tile");
 
             RenderTexture heightmap = terrain.terrainData.heightmapTexture;
-            
-            Material mat = material;
+
+            Material mat = GetPaintMaterial();
 
             float terrainHeight = Mathf.Clamp01((m_HeightWorldSpace - terrain.transform.position.y) / terrain.terrainData.size.y);
 
             Vector4 brushParams = new Vector4(0, 0.5f * terrainHeight, 0.0f, 0.0f);
             mat.SetVector("_BrushParams", brushParams);
 
+            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+            fc.renderTextureCollection.GatherRenderTextures(heightmap.width, heightmap.height);
+            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, heightmap);
+            mat.SetTexture("_FilterTex", filterMaskRT);
+            mat.SetTexture("_MainTex", heightmap);
             RenderTexture temp = RenderTexture.GetTemporary(heightmap.descriptor);
-
+            Graphics.Blit(heightmap, temp); // copy heightmap into temp
+            
             Graphics.Blit(temp, heightmap, mat, 1);
 
             RenderTexture.ReleaseTemporary(temp);
@@ -210,7 +231,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             commonUI.OnInspectorGUI(terrain, editContext);
 
-            s_showToolControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.controlHeader, s_showToolControls);
+            s_showToolControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controlHeader, s_showToolControls, ()=> { m_HeightWorldSpace = 0; });
 
             if (s_showToolControls)
             {

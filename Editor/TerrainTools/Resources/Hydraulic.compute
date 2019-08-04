@@ -5,7 +5,7 @@ Texture2D<float>  TerrainHeightPrev;  //previous frame
 Texture2D<float2> WaterVelPrev;       //water vel prev
 Texture2D<float>  Hardness;           //mineral hardness
 
-Texture2D<float>   HeightToScale;     //curve mapping height -> scale
+//Texture2D<float>   HeightToScale;     //curve mapping height -> scale
 
 RWTexture2D<float>  TerrainHeight;      //terrain heightmap
 
@@ -51,7 +51,7 @@ float4 RiverBedScalars; //(bedDissolveRate, bedDepositRate, bankDissolveRate, ba
 float4 texDim;     //the dimensions of all of our textures (they must all be the same dimensions)
 float3 terrainDim; //the dimensions of the terrain in world units
 
-float4 HeightToScaleRange; //(min, max, ?, ?)
+//float4 HeightToScaleRange; //(min, max, ?, ?)
 
 uint4 getSafeNeighbors(uint2 coord) {
 	return uint4(
@@ -156,8 +156,7 @@ void SimulateWaterFlow(uint3 id : SV_DispatchThreadID)
 	float rainfall = PRECIP_RATE * DT;
 	float evaporated = EVAP_RATE * DT;
 
-	float simScale = HeightToScaleRange[0] + (HeightToScaleRange[1] - HeightToScaleRange[0]) * HeightToScale[uint2((uint)(256.0f * TerrainHeightPrev[coord]), 0)];
-	float cellArea = (DX * DY) / simScale;
+	float cellArea = (DX * DY);
 
 	Flux[coord] = simulateFlux(coord, cellArea);
 	simulateWaterVelocity(coord, cellArea);
@@ -240,10 +239,8 @@ void HydraulicErosion(uint3 id : SV_DispatchThreadID)
 	float transportedSediment = 0.0f;
 	float newHeight = 0.0f;
 
-	float simScale = HeightToScaleRange[0] + (HeightToScaleRange[1] - HeightToScaleRange[0]) * HeightToScale[uint2((uint)(256.0f * TerrainHeightPrev[id.xy]), 0)];
-
-	simulateErosion(id.xy, simScale, dissolvedSediment, newHeight);
-	simulateSedimentTransport(id.xy, simScale, transportedSediment);
+	simulateErosion(id.xy, 1.0f, dissolvedSediment, newHeight);
+	simulateSedimentTransport(id.xy, 1.0f, transportedSediment);
 
 	Eroded[id.xy] = Eroded[id.xy] + 100.0f * max(TerrainHeightPrev[id.xy] - newHeight, 0.0f);
 	Sediment[id.xy] = SEDIMENT_SCALE * (dissolvedSediment + transportedSediment);

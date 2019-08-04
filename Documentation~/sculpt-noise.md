@@ -69,4 +69,5 @@ Below are descriptions for each of the buttons that accompany the Noise Settings
 | **Apply**   | Writes the current settings of the Noise Height Tool’s Noise Settings Asset to the original reference stored on disk. |
 | **Save As** | Opens a window that allows you to save the settings to a new Noise Settings Asset in your project’s `Assets` folder. Also assigns the newly-created Noise Settings Asset in the object field. |
 
-See the [Noise Settings API documentation]() for more information about the actual settings stored in the Noise Settings Asset.
+See the [Noise Settings API documentation](../api/UnityEditor.Experimental.TerrainAPI.html) for more information about the actual settings stored in the Noise Settings Asset.
+

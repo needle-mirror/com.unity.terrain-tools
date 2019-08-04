@@ -10,16 +10,17 @@ namespace UnityEditor.Experimental.TerrainAPI
         const float kMinBrushStrength = 0.0f;
         const float kMaxBrushStrength = 1.0f;
         const float kDefaultBrushStrength = kMaxBrushStrength;
-        const float kDefaultMouseSensitivity = 0.001f;
+
+        private float defaultBrushStrength;
         
-        class Styles {
+        class Styles
+        {
             public readonly GUIContent brushStrength = EditorGUIUtility.TrTextContent("Brush Strength", "Strength of the brush paint effect.");
-            public readonly GUIContent mouseSensitivity = EditorGUIUtility.TrTextContent("Mouse Sensitivity", "Low is slow response to the mouse-wheel, high is large response.");
         }
         
         static readonly Styles styles = new Styles();
 
-        private readonly TerrainFloatMinMaxValue m_BrushStrength = new TerrainFloatMinMaxValue(styles.brushStrength, kDefaultBrushStrength, kMinBrushStrength, kMaxBrushStrength, true, kDefaultMouseSensitivity);
+        private readonly TerrainFloatMinMaxValue m_BrushStrength = new TerrainFloatMinMaxValue(styles.brushStrength, kDefaultBrushStrength, kMinBrushStrength, kMaxBrushStrength, true);
         private readonly BrushJitterHandler m_JitterHandler = new BrushJitterHandler(0.0f, kMinBrushStrength, kMaxBrushStrength);
 
         private bool m_AdjustingStrength;
@@ -34,7 +35,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
         public float brushStrengthUI => Mathf.Clamp(m_BrushStrength.value, kMinBrushStrength, kMaxBrushStrength);
 
-        public BrushStrengthVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache) : base(toolName, eventHandler, terrainCache) {
+        public BrushStrengthVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache, float defaultValue = kDefaultBrushStrength) : base(toolName, eventHandler, terrainCache) {
+            this.defaultBrushStrength = defaultValue;
         }
         
         private void BeginAdjustingStrength()
@@ -55,8 +57,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             
             shortcutHandler.AddActions(BrushShortcutType.Strength, BeginAdjustingStrength, EndAdjustingStrength);
             
-            m_BrushStrength.value = GetEditorPrefs("TerrainBrushStrength", kDefaultBrushStrength);
-            m_BrushStrength.mouseSensitivity = GetEditorPrefs("TerrainBrushStrengthMouseSensitivity", kDefaultMouseSensitivity);
+            m_BrushStrength.value = GetEditorPrefs("TerrainBrushStrength", defaultBrushStrength);
             m_JitterHandler.jitter = GetEditorPrefs("TerrainBrushRandomStrength", 0.0f);
             
         }

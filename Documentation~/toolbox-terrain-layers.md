@@ -6,29 +6,23 @@ The **Terrain Layers** section contains a few tools to help manage Terrain Layer
 
 ### Terrain Palette
 
-A Terrain Palette is a preset Asset file that stores a collection of Terrain Layers. This preset file is similar to other Toolbox presets, which you can save or share.
+A **Terrain Palette** is a preset Asset file that stores a collection of Terrain Layers. This preset file is similar to other Toolbox presets, which you can save or share.
 
 ![](images/Toolbox_Utilities_LayerPalette.png)
 
-### Palette View
+### Material Layer Palette
 
-You can view the Layer Palette as either a reorderable list, or as a list of preview thumbnails. In **List** view, you can add, remove, or reorder layers.
+The **Material Layer Palette** is a reorderable list that contains imported layers. Use the **Import From Terrain** button to import layers from a selected Terrain. Use the Add (**+**) and Remove (**-**) buttons on the bottom right to add or remove a layer. Alternatively, drag a layer row, and move it up or down to change its position in the list.
 
-*Layer Palette in List mode*
+*Material Layer Palette*
 
 ![](images/Toolbox_Layer_ListView.png)
 
-Use the Add (**+**) and Remove (**-**) buttons on the bottom right to add or remove a layer. Alternatively, drag a layer row, and move it up or down to change its position in the list.
+When using the High Definition Render Pipeline, you cannot use more than eight layers. When using the Lightweight Render Pipeline or the built-in Terrain system, there's no limit to the number of layers, but increasing the number of splatmaps uses more memory, which might impact performance.
 
-You cannot add more than eight layers because the Editor currently only supports up to two splatmaps, which implies a maximum of eight channels. Each channel contains information for one Terrain Layer. Thus, the list order affects which channel and splatmap a layer uses. For example, the image below shows the respective splatmap and channel each layer uses when you assign them to a Terrain.
+The list order affects which channel and splatmap a layer uses. For example, the image below shows the respective splatmap and channel each layer uses when you assign them to a Terrain.
 
 ![](images/Toolbox_Layer_ChannelInfo.png)
-
-*Layer Palette in Preview mode*
-
-![](images/Toolbox_Layer_PreviewView.png)
-
-**Preview** mode is convenient if you want to see the texture of each layer. However, you cannot edit or reorder layers in this mode.
 
 ### Edit Layers
 

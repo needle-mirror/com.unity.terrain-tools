@@ -20,11 +20,9 @@ namespace UnityEngine.Experimental.TerrainAPI
 			if (terrainData == null || layers == null)
 				return;
 
-			Undo.RegisterCompleteObjectUndo(terrainData, "Add terrain layer");
-
 			if (clearExisting)
 			{
-				terrainData.terrainLayers = layers.ToArray();
+				terrainData.SetTerrainLayersRegisterUndo(layers.ToArray(), "Add terrain layers");
 			}
 			else
 			{
@@ -35,7 +33,7 @@ namespace UnityEngine.Experimental.TerrainAPI
 				var newArray = new TerrainLayer[newLength];
 				terrainData.terrainLayers.CopyTo(newArray, 0);
 				filteredLayers.CopyTo(newArray, oldLength);
-				terrainData.terrainLayers = newArray;
+				terrainData.SetTerrainLayersRegisterUndo(newArray, "Add terrain layers");
 			}
 		}
 
@@ -44,8 +42,6 @@ namespace UnityEngine.Experimental.TerrainAPI
 		{
 			if (inputLayer == null)
 				return;
-
-			Undo.RegisterCompleteObjectUndo(terrainData, "Add terrain layer");
 
 			var layers = terrainData.terrainLayers;
 			for (var idx = 0; idx < layers.Length; ++idx)
@@ -58,7 +54,7 @@ namespace UnityEngine.Experimental.TerrainAPI
 			var newarray = new TerrainLayer[newIndex + 1];
 			Array.Copy(layers, 0, newarray, 0, newIndex);
 			newarray[newIndex] = inputLayer;
-			terrainData.terrainLayers = newarray;
+			terrainData.SetTerrainLayersRegisterUndo(newarray, "Add terrain layer");
 		}
 
 		public static void CopyTerrainLayers(Terrain fromTerrain, Terrain toTerrain)
@@ -71,14 +67,12 @@ namespace UnityEngine.Experimental.TerrainAPI
 
 		public static void RemoveAllLayers(TerrainData terrainData)
 		{
-			Undo.RegisterCompleteObjectUndo(terrainData, "Remove terrain layer");
-			terrainData.terrainLayers = new TerrainLayer[0];
+			terrainData.SetTerrainLayersRegisterUndo(new TerrainLayer[0], "Remove All terrain layer");
 		}
 
 		// remove a single layer and clear splatmap
 		public static void RemoveLayerFromTerrain(TerrainData terrainData, int index)
 		{
-			Undo.RegisterCompleteObjectUndo(terrainData, "Remove terrain layer");
 
 			int width = terrainData.alphamapWidth;
 			int height = terrainData.alphamapHeight;
@@ -133,7 +127,7 @@ namespace UnityEngine.Experimental.TerrainAPI
 				newSplats[a] = layers[a];
 			for (int a = index + 1; a < alphaCount; ++a)
 				newSplats[a - 1] = layers[a];
-			terrainData.terrainLayers = newSplats;
+			terrainData.SetTerrainLayersRegisterUndo(newSplats, "Remove terrain layer");
 
 			// set new alphamaps
 			terrainData.SetAlphamaps(0, 0, newalphamap);

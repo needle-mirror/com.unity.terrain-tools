@@ -17,7 +17,20 @@ namespace UnityEditor.Experimental.TerrainAPI
         private bool m_ShowControls = true;
 
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("PinchTool");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "PinchTool" );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
 
         [SerializeField]
         float m_PinchAmount = 5.0f;
@@ -117,7 +130,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             commonUI.OnInspectorGUI(terrain, editContext);
 
-            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.controls, m_ShowControls);
+            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controls, m_ShowControls, Reset);
+
             if(m_ShowControls)
             {
                 EditorGUILayout.BeginVertical("GroupBox");
@@ -141,8 +155,15 @@ namespace UnityEditor.Experimental.TerrainAPI
                 Save(true);
             }
         }
+        private void Reset()
+        {
+            m_PinchAmount = 5.0f;
+            m_AffectMaterials = true;
+            m_AffectHeight = true;
 
-        public void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, float pinchAmount, Texture brushTexture, BrushTransform brushXform) {
+        }
+
+    public void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, float pinchAmount, Texture brushTexture, BrushTransform brushXform) {
             Material mat = GetPaintMaterial();
 
             pinchAmount = Event.current.control ? -pinchAmount : pinchAmount; //TODO - use shortcut system once it supports binding modifiers
@@ -180,6 +201,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                             TerrainLayer layer = terrain.terrainData.terrainLayers[i];
                             PaintContext paintContext = brushRender.AcquireTexture(true, brushXform.GetBrushXYBounds(), layer);
 
+                            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+                            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+                            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+                            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+                            mat.SetTexture("_FilterTex", filterMaskRT);
+
                             paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
 
                             brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
@@ -190,7 +217,13 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                     if (m_AffectHeight) {
                         PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
-                    
+
+                        Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+                        FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+                        fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+                        RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+                        mat.SetTexture("_FilterTex", filterMaskRT);
+
                         paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
 
                         ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, finalPinchAmount, editContext.brushTexture, brushXform);

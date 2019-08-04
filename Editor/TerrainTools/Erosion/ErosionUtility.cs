@@ -14,6 +14,7 @@ namespace Erosion {
 
 
         //Hydro 
+        public static GUIContent m_HydroErosionControls = EditorGUIUtility.TrTextContent("Hydraulic Erosion Controls");
         public static GUIContent m_AffectHeight = EditorGUIUtility.TrTextContent("Affect Terrain Height", "Toggles whether this brush will affect the terrain height.");
         public static GUIContent m_AddHeight = EditorGUIUtility.TrTextContent("Add Height", "Amount of new height to add before erosion simulation.");
         public static GUIContent m_Invert = EditorGUIUtility.TrTextContent("Invert", "Invert the effect of the erosion simulation");
@@ -52,6 +53,7 @@ namespace Erosion {
         public static GUIContent m_MatPreset = EditorGUIUtility.TrTextContent("Physical Material Presets", "Value presets for known physical material types");
 
         //Wind
+        public static GUIContent m_WindErosionControls = EditorGUIUtility.TrTextContent("Wind Erosion Controls");
         public static GUIContent m_WindSpeed = EditorGUIUtility.TrTextContent("Wind Speed", "The initial speed of the wind.");
         public static GUIContent m_DiffusionRate = EditorGUIUtility.TrTextContent("Diffusion Rate", "The rate at which suspended particulate is diffused to neighboring cells.");
         public static GUIContent m_Viscosity = EditorGUIUtility.TrTextContent("Viscosity", "The viscosity (thickness) of the fluid being simulated");
@@ -96,6 +98,11 @@ namespace Erosion {
             RenderTexture.active = oldRT;
             AssetDatabase.Refresh();
             RenderTexture.ReleaseTemporary(tmpRT);
+        }
+
+        public static void writeTex2DToPNG(Texture2D tex) {
+            File.WriteAllBytes("Assets/debug.png", tex.EncodeToPNG());
+            AssetDatabase.Refresh();
         }
     }
 }

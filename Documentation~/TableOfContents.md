@@ -1,9 +1,11 @@
 * [Terrain Tools](index)
 * Getting started
   * [Getting started with Terrain Tools](getting-started-with-terrain-tools)
-* Sculpting Tools
+* Sculpting tools
   * Getting started with sculpting tools
     * [Common Brush controls and shortcut keys](brush-controls-shortcut-keys)
+  * [Brush Mask Filters](brush-mask-filters)
+    * [List of Brush Mask Filters](brush-mask-filters-list)
   * Sculpt
     * [Bridge](sculpt-bridge)
     * [Clone](sculpt-clone)
@@ -22,6 +24,7 @@
     * [Pinch](transform-pinch)
     * [Smudge](transform-smudge)
     * [Twist](transform-twist)
+  * [Paint Texture](paint-texture)
 * Terrain Toolbox
   * [Getting started with the Terrain Toolbox](toolbox-getting-started)
   * [Creating Terrain](toolbox-creating-terrain)
@@ -37,6 +40,8 @@
   * [Terrain Utilities](toolbox-terrain-utilities)
     * [Terrain Edit](toolbox-terrain-edit)
     * [Terrain Layers](toolbox-terrain-layers)
-    * [Replace Splatmaps](toolbox-replace-splatmaps)
+    * [Import Splatmaps](toolbox-import-splatmaps)
     * [Export Splatmaps](toolbox-export-splatmaps)
     * [Export Heightmaps](toolbox-export-heightmaps)
+  * [Terrain Visualization](toolbox-visualization)
+    * [Altitude Heatmap Visualization](toolbox-altitude-heatmap)

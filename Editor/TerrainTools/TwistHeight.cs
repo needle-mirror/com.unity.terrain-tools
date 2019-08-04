@@ -17,7 +17,20 @@ namespace UnityEditor.Experimental.TerrainAPI
         private bool m_ShowControls = true;
 
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("TwistTool");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "TwistTool" );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
 
         [SerializeField]
         float m_TwistAmount = 100.0f;
@@ -121,7 +134,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             commonUI.OnInspectorGUI(terrain, editContext);
 
-            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.controlHeader, m_ShowControls);
+            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controlHeader, m_ShowControls, Reset);
 
             if(m_ShowControls)
             {
@@ -147,6 +160,14 @@ namespace UnityEditor.Experimental.TerrainAPI
                 Save(true);
             }
         }
+
+        private void Reset()
+        {
+            m_TwistAmount = 100.0f;
+
+            m_AffectMaterials = true;
+            m_AffectHeight = true;
+    }
 
         void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, float finalTwistAmount, Texture brushTexture, BrushTransform brushXform) {
             Material mat = GetPaintMaterial();
@@ -191,6 +212,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                                 TerrainLayer layer = terrain.terrainData.terrainLayers[i];
                                 PaintContext paintContext = brushRender.AcquireTexture(true, brushXform.GetBrushXYBounds(), layer);
 
+                                Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+                                FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+                                fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+                                RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+                                mat.SetTexture("_FilterTex", filterMaskRT);
+
                                 paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
 
                                 brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
@@ -203,7 +230,13 @@ namespace UnityEditor.Experimental.TerrainAPI
                         if(m_AffectHeight)
                         {
                             PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
-                        
+
+                            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+                            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+                            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+                            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+                            mat.SetTexture("_FilterTex", filterMaskRT);
+
                             paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
  
                             ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, finalTwistAmount, brushTexture, brushXform);

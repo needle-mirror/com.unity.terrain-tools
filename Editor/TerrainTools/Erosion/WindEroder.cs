@@ -27,14 +27,14 @@ namespace Erosion {
 
         #endregion
 
-
+ 
         #region Simulation Params
         [SerializeField]
         public TerrainFloatMinMaxValue m_WindSpeed = new TerrainFloatMinMaxValue(Erosion.Styles.m_WindSpeed, 1.7f, 0.0f, 10.0f);
         [SerializeField]
         public float m_WindSpeedJitter = 0.0f;
         [SerializeField]
-        private TerrainFloatMinMaxValue m_dt = new TerrainFloatMinMaxValue(Erosion.Styles.m_TimeDelta, 0.007f, 0.001f, 0.01f);
+        private TerrainFloatMinMaxValue m_dt = new TerrainFloatMinMaxValue(Erosion.Styles.m_TimeDelta, 0.006f, 0.001f, 0.01f);
 
         public Vector4 m_WindVel = Vector4.zero; //TODO: sloppy..
 
@@ -55,7 +55,7 @@ namespace Erosion {
         [SerializeField]
         private TerrainFloatMinMaxValue m_AdvectionVelScale = new TerrainFloatMinMaxValue(Erosion.Styles.m_AdvectionVelScale, 10.0f, 0.0f, 25.0f);
         [SerializeField]
-        private TerrainFloatMinMaxValue m_SuspensionRate = new TerrainFloatMinMaxValue(Erosion.Styles.m_SuspensionRate, 20.0f, 0.0f, 25.0f);
+        private TerrainFloatMinMaxValue m_SuspensionRate = new TerrainFloatMinMaxValue(Erosion.Styles.m_SuspensionRate, 22.0f, 0.0f, 25.0f);
         [SerializeField]
         private TerrainFloatMinMaxValue m_DepositionRate = new TerrainFloatMinMaxValue(Erosion.Styles.m_DepositionRate, 10.0f, 0.0f, 25.0f);
         [SerializeField]
@@ -72,11 +72,12 @@ namespace Erosion {
         private int m_ThermalIterations = 3;
         [SerializeField]
         private float m_AngleOfRepose = 45.0f;
+        
+        public WindEroder() { ResetSettings(); }
 
-        [SerializeField]
+        //[SerializeField]
         //private Texture2D m_WindVelocityTex = null;
         #endregion
-
 
         public Dictionary<string, RenderTexture> inputTextures { get; set; } = new Dictionary<string, RenderTexture>();
         public Dictionary<string, RenderTexture> outputTextures { get; private set; } = new Dictionary<string, RenderTexture>();
@@ -142,21 +143,11 @@ namespace Erosion {
             int erodeKernelIdx = aeolianCS.FindKernel("WindSedimentErode");
             int thermalKernelIdx = thermalCS.FindKernel("ThermalErosion");
 
-            int[] numWorkGroups = { 8, 8, 1 };
+            int[] numWorkGroups = { 1, 1, 1 };
             #endregion
 
-            #region Calculate Domain Rect Size
-            //figure out what size we need our render targets to be
             int xRes = (int)inputTextures["Height"].width;
             int yRes = (int)inputTextures["Height"].height;
-
-            int rx = xRes - (numWorkGroups[0] * (xRes / numWorkGroups[0]));
-            int ry = yRes - (numWorkGroups[1] * (yRes / numWorkGroups[1]));
-
-            xRes += numWorkGroups[0] - rx;
-            yRes += numWorkGroups[1] - ry;
-
-            #endregion
 
             #region Create Render Textures
             RenderTexture heightmapRT = RenderTexture.GetTemporary(xRes, yRes, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
@@ -199,14 +190,14 @@ namespace Erosion {
             float dy = (float)texelSize.y * m_SimulationScale.value;
 
             float dxy = Mathf.Sqrt(dx * dx + dy * dy);
-            float gridScale = 0.5f * dx;
-            Vector4 dxdy = new Vector4(dx, dy, dxy, gridScale);
+            float gridScale = 0.5f / dx;
+            Vector4 dxdy = new Vector4(dx, dy, 1.0f / dx, 1.0f / dy); //TODO: make this the same for all compute shaders
 
             advectionCS.SetFloat("dt", m_dt.value);
             advectionCS.SetFloat("velScale", m_AdvectionVelScale.value);
             advectionCS.SetVector("dxdy", dxdy);
-            advectionCS.SetVector("terrainDim", new Vector4());
-            advectionCS.SetVector("texDim", new Vector4((float)xRes, (float)yRes, 0.0f, 0.0f));
+            advectionCS.SetVector("domainDim", new Vector4(domainRect.width, domainRect.height, 0.0f, 0.0f));
+            advectionCS.SetVector("DomainRes", new Vector4((float)xRes, (float)yRes, 1.0f / (float)xRes, 1.0f / (float)yRes));
 
             diffusionCS.SetFloat("dt", m_dt.value);
 
@@ -220,6 +211,8 @@ namespace Erosion {
             aeolianCS.SetFloat("ReflectionCoefficient", m_ReflectionCoefficient.value);
             aeolianCS.SetFloat("AbrasivenessCoefficient", m_AbrasivenessCoefficient.value * 1000.0f);
             aeolianCS.SetVector("texDim", new Vector4((float)xRes, (float)yRes, 0.0f, 0.0f));
+            aeolianCS.SetVector("terrainScale", new Vector4(terrainScale.x, terrainScale.y, terrainScale.z, 0.0f));
+            aeolianCS.SetVector("dxdy", dxdy);
 
             //use full tile res here?
             diffusionCS.SetVector("texDim", new Vector4((float)inputTextures["Height"].width, (float)inputTextures["Height"].height, 0.0f, 0.0f));
@@ -308,7 +301,7 @@ namespace Erosion {
 
                 #region Thermal / Diffusion
                 thermalCS.SetFloat("dt", m_ThermalTimeDelta.value * m_dt.value);
-                thermalCS.SetVector("dxdy", dxdy);
+                thermalCS.SetVector("dxdy", new Vector4(dx, dy, Mathf.Sqrt(dx * dx + dy * dy), 0.0f));
                 thermalCS.SetVector("terrainDim", new Vector4(terrainScale.x, terrainScale.y, terrainScale.z));
                 thermalCS.SetVector("texDim", new Vector4((float)xRes, (float)yRes, 0.0f, 0.0f));
 
@@ -359,7 +352,9 @@ namespace Erosion {
         bool m_ShowAdvancedUI = false;
         bool m_ShowThermalUI = false;
         public void OnInspectorGUI() {
-            m_ShowControls = EditorGUILayout.Foldout(m_ShowControls, "Wind Erosion Controls");
+
+            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForErosion(Erosion.Styles.m_WindErosionControls, m_ShowControls, ResetSettings);
+           
             if (m_ShowControls) {
                 EditorGUILayout.BeginVertical("GroupBox");
                 m_SimulationScale.DrawInspectorGUI();
@@ -396,5 +391,76 @@ namespace Erosion {
                 EditorGUILayout.EndVertical();
             }
         }
+        public void ResetSettings()
+        {
+            m_WindSpeed.value = 50.0f;
+            m_WindSpeed.minValue = 0.0f;
+            m_WindSpeed.maxValue = 100.0f;
+            
+            m_WindSpeedJitter = 0.0f;
+
+            m_dt.value = 0.0005f;
+            m_dt.minValue = 0.00001f;
+            m_dt.maxValue = 0.05f;
+           
+            m_WindVel = Vector4.zero; //ToDo: User specified? Flow map?
+
+            m_Iterations.value = 3;
+            m_Iterations.minValue = 1;
+            m_Iterations.maxValue = 10;
+
+            m_SimulationScale.value = 10.0f;
+            m_SimulationScale.minValue = 0.0f;
+            m_SimulationScale.maxValue = 100.0f;
+
+            m_DiffusionRate.value = 0.1f;
+            m_DiffusionRate.minValue = 0.0f;
+            m_DiffusionRate.maxValue = 0.5f;
+
+            m_Viscosity.value = 0.15f;
+            m_Viscosity.minValue = 0.0f;
+            m_Viscosity.maxValue = 0.5f;
+           
+            m_ProjectionSteps = 2;
+
+            m_DiffuseSteps = 2;
+
+            m_AdvectionVelScale.value = 10.0f;
+            m_AdvectionVelScale.value = 10.0f;
+            m_AdvectionVelScale.minValue = 0.0f;
+            m_AdvectionVelScale.maxValue = 25.0f;
+
+            m_SuspensionRate.value = 1.5f;
+            m_SuspensionRate.minValue = 0.0f;
+            m_SuspensionRate.maxValue = 25.0f;
+
+            m_DepositionRate.value = 10.0f;
+            m_DepositionRate.minValue = 0.0f;
+            m_DepositionRate.maxValue = 25.0f;
+
+            m_SlopeFactor.value = 1.2f;
+            m_SlopeFactor.minValue = 0.5f;
+            m_SlopeFactor.maxValue = 4.0f;
+
+            m_DragCoefficient.value = 0.5f;
+            m_DragCoefficient.minValue = 0.0f;
+            m_DragCoefficient.maxValue = 10.0f;
+
+            m_ReflectionCoefficient.value = 5.0f;
+            m_ReflectionCoefficient.minValue = 0.0f;
+            m_ReflectionCoefficient.maxValue = 10.0f;
+
+            m_AbrasivenessCoefficient.value = 0.0f;
+            m_AbrasivenessCoefficient.minValue = 0.0f;
+            m_AbrasivenessCoefficient.maxValue = 10.0f;
+
+            m_ThermalTimeDelta.value = 2.0f;
+            m_ThermalTimeDelta.minValue = 0.0f;
+            m_ThermalTimeDelta.maxValue = 10.0f;
+
+            m_ThermalIterations = 2;
+            m_AngleOfRepose = 5.0f;
+        }
+    
     }
 }

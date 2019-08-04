@@ -70,7 +70,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
         //     ENDHLSL
         // }
 
-        Pass // Billow Noise
+        Pass // 0 - 2D Billow Noise
         {
             Name "Billow Raw Noise Blit (2D)"
 
@@ -78,8 +78,15 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature USE_NOISE_TEXTURE
 
             #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/None/Billow.hlsl"
+
+#if USE_NOISE_TEXTURE
+
+            sampler2D _NoiseTex;
+
+#endif
 
             float4 frag( v2f i ) : SV_Target
             {
@@ -87,10 +94,17 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
                 uv +=  + float3(.5, 0, .5) * _MainTex_TexelSize.xxy; // offset by half a texel so we are sampling noise for the center of the texel
 
-                float3 pos3D = ApplyNoiseTransform( uv.xyz );
-                float2 pos2D = ApplyNoiseTransform( uv.xz );
+#if USE_NOISE_TEXTURE
+                
+                float pos = tex2D( _NoiseTex, i.uv ).r * _NoiseTransform._m00 + _NoiseTransform._m13;
 
-                float n = noise_NoneBillow( pos3D );
+#else
+
+                float3 pos = ApplyNoiseTransform( uv.xyz );
+
+#endif
+
+                float n = noise_NoneBillow( pos );
 
                 return n;
             }
@@ -98,7 +112,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
             ENDHLSL
         }
 
-        Pass
+        Pass // 1 - 3D Billow Noise
         {
             Name "Billow Raw Noise Blit (3D)"
 
@@ -106,14 +120,29 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature _ USE_NOISE_TEXTURE
 
             #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/None/Billow.hlsl"
+
+#if USE_NOISE_TEXTURE
+
+            sampler3D _NoiseTex;
+
+#endif
 
             float _UVY;
 
             float4 frag( v2f i ) : SV_Target
             {
+#if USE_NOISE_TEXTURE
+
+                float pos = tex3D( _NoiseTex, float3(i.uv.x, _UVY, i.uv.y) ).r;
+
+#else
+
                 float3 pos = ApplyNoiseTransform( float3(i.uv.x, _UVY, i.uv.y) - float3(.5, 0, .5) );
+
+#endif
 
                 float n = noise_NoneBillow( pos );
 
@@ -149,7 +178,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
         //     ENDHLSL
         // }
 
-        Pass // Perlin Noise
+        Pass // 0 - 2D Perlin Noise
         {
             Name "Perlin Raw Noise Blit (2D)"
 
@@ -157,8 +186,15 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature USE_NOISE_TEXTURE
 
             #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/None/Perlin.hlsl"
+
+#if USE_NOISE_TEXTURE
+
+            sampler2D _NoiseTex;
+
+#endif
 
             float4 frag( v2f i ) : SV_Target
             {
@@ -166,10 +202,17 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
                 uv +=  + float3(.5, 0, .5) * _MainTex_TexelSize.xxy; // offset by half a texel so we are sampling noise for the center of the texel
 
-                float3 pos3D = ApplyNoiseTransform( uv.xyz );
-                float2 pos2D = ApplyNoiseTransform( uv.xz );
+#if USE_NOISE_TEXTURE
+                
+                float pos = tex2D( _NoiseTex, i.uv ).r * _NoiseTransform._m00 + _NoiseTransform._m13;
 
-                float n = noise_NonePerlin( pos3D );
+#else
+
+                float3 pos = ApplyNoiseTransform( uv.xyz );
+
+#endif
+
+                float n = noise_NonePerlin( pos );
 
                 return n;
             }
@@ -177,7 +220,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
             ENDHLSL
         }
 
-        Pass
+        Pass // 1 - 3D Perlin Noise
         {
             Name "Perlin Raw Noise Blit (3D)"
 
@@ -185,14 +228,29 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature _ USE_NOISE_TEXTURE
 
             #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/None/Perlin.hlsl"
+
+#if USE_NOISE_TEXTURE
+
+            sampler3D _NoiseTex;
+
+#endif
 
             float _UVY;
 
             float4 frag( v2f i ) : SV_Target
             {
+#if USE_NOISE_TEXTURE
+
+                float pos = tex3D( _NoiseTex, float3(i.uv.x, _UVY, i.uv.y) ).r;
+
+#else
+
                 float3 pos = ApplyNoiseTransform( float3(i.uv.x, _UVY, i.uv.y) - float3(.5, 0, .5) );
+
+#endif
 
                 float n = noise_NonePerlin( pos );
 
@@ -228,7 +286,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
         //     ENDHLSL
         // }
 
-        Pass // Ridge Noise
+        Pass // 0 - 2D Ridge Noise
         {
             Name "Ridge Raw Noise Blit (2D)"
 
@@ -236,8 +294,15 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature USE_NOISE_TEXTURE
 
             #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/None/Ridge.hlsl"
+
+#if USE_NOISE_TEXTURE
+
+            sampler2D _NoiseTex;
+
+#endif
 
             float4 frag( v2f i ) : SV_Target
             {
@@ -245,10 +310,17 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
                 uv +=  + float3(.5, 0, .5) * _MainTex_TexelSize.xxy; // offset by half a texel so we are sampling noise for the center of the texel
 
-                float3 pos3D = ApplyNoiseTransform( uv.xyz );
-                float2 pos2D = ApplyNoiseTransform( uv.xz );
+#if USE_NOISE_TEXTURE
+                
+                float pos = tex2D( _NoiseTex, i.uv ).r * _NoiseTransform._m00 + _NoiseTransform._m13;
 
-                float n = noise_NoneRidge( pos3D );
+#else
+
+                float3 pos = ApplyNoiseTransform( uv.xyz );
+
+#endif
+
+                float n = noise_NoneRidge( pos );
 
                 return n;
             }
@@ -256,7 +328,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
             ENDHLSL
         }
 
-        Pass
+        Pass // 1 - 3D Ridge Noise
         {
             Name "Ridge Raw Noise Blit (3D)"
 
@@ -264,14 +336,29 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature _ USE_NOISE_TEXTURE
 
             #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/None/Ridge.hlsl"
+
+#if USE_NOISE_TEXTURE
+
+            sampler3D _NoiseTex;
+
+#endif
 
             float _UVY;
 
             float4 frag( v2f i ) : SV_Target
             {
+#if USE_NOISE_TEXTURE
+
+                float pos = tex3D( _NoiseTex, float3(i.uv.x, _UVY, i.uv.y) ).r;
+
+#else
+
                 float3 pos = ApplyNoiseTransform( float3(i.uv.x, _UVY, i.uv.y) - float3(.5, 0, .5) );
+
+#endif
 
                 float n = noise_NoneRidge( pos );
 
@@ -307,7 +394,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
         //     ENDHLSL
         // }
 
-        Pass // Value Noise
+        Pass // 0 - 2D Value Noise
         {
             Name "Value Raw Noise Blit (2D)"
 
@@ -315,8 +402,15 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature USE_NOISE_TEXTURE
 
             #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/None/Value.hlsl"
+
+#if USE_NOISE_TEXTURE
+
+            sampler2D _NoiseTex;
+
+#endif
 
             float4 frag( v2f i ) : SV_Target
             {
@@ -324,10 +418,17 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
                 uv +=  + float3(.5, 0, .5) * _MainTex_TexelSize.xxy; // offset by half a texel so we are sampling noise for the center of the texel
 
-                float3 pos3D = ApplyNoiseTransform( uv.xyz );
-                float2 pos2D = ApplyNoiseTransform( uv.xz );
+#if USE_NOISE_TEXTURE
+                
+                float pos = tex2D( _NoiseTex, i.uv ).r * _NoiseTransform._m00 + _NoiseTransform._m13;
 
-                float n = noise_NoneValue( pos3D );
+#else
+
+                float3 pos = ApplyNoiseTransform( uv.xyz );
+
+#endif
+
+                float n = noise_NoneValue( pos );
 
                 return n;
             }
@@ -335,7 +436,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
             ENDHLSL
         }
 
-        Pass
+        Pass // 1 - 3D Value Noise
         {
             Name "Value Raw Noise Blit (3D)"
 
@@ -343,14 +444,29 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature _ USE_NOISE_TEXTURE
 
             #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/None/Value.hlsl"
+
+#if USE_NOISE_TEXTURE
+
+            sampler3D _NoiseTex;
+
+#endif
 
             float _UVY;
 
             float4 frag( v2f i ) : SV_Target
             {
+#if USE_NOISE_TEXTURE
+
+                float pos = tex3D( _NoiseTex, float3(i.uv.x, _UVY, i.uv.y) ).r;
+
+#else
+
                 float3 pos = ApplyNoiseTransform( float3(i.uv.x, _UVY, i.uv.y) - float3(.5, 0, .5) );
+
+#endif
 
                 float n = noise_NoneValue( pos );
 
@@ -386,7 +502,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
         //     ENDHLSL
         // }
 
-        Pass // Voronoi Noise
+        Pass // 0 - 2D Voronoi Noise
         {
             Name "Voronoi Raw Noise Blit (2D)"
 
@@ -394,8 +510,15 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature USE_NOISE_TEXTURE
 
             #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/None/Voronoi.hlsl"
+
+#if USE_NOISE_TEXTURE
+
+            sampler2D _NoiseTex;
+
+#endif
 
             float4 frag( v2f i ) : SV_Target
             {
@@ -403,10 +526,17 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
                 uv +=  + float3(.5, 0, .5) * _MainTex_TexelSize.xxy; // offset by half a texel so we are sampling noise for the center of the texel
 
-                float3 pos3D = ApplyNoiseTransform( uv.xyz );
-                float2 pos2D = ApplyNoiseTransform( uv.xz );
+#if USE_NOISE_TEXTURE
+                
+                float pos = tex2D( _NoiseTex, i.uv ).r * _NoiseTransform._m00 + _NoiseTransform._m13;
 
-                float n = noise_NoneVoronoi( pos3D );
+#else
+
+                float3 pos = ApplyNoiseTransform( uv.xyz );
+
+#endif
+
+                float n = noise_NoneVoronoi( pos );
 
                 return n;
             }
@@ -414,7 +544,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
             ENDHLSL
         }
 
-        Pass
+        Pass // 1 - 3D Voronoi Noise
         {
             Name "Voronoi Raw Noise Blit (3D)"
 
@@ -422,14 +552,29 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature _ USE_NOISE_TEXTURE
 
             #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/None/Voronoi.hlsl"
+
+#if USE_NOISE_TEXTURE
+
+            sampler3D _NoiseTex;
+
+#endif
 
             float _UVY;
 
             float4 frag( v2f i ) : SV_Target
             {
+#if USE_NOISE_TEXTURE
+
+                float pos = tex3D( _NoiseTex, float3(i.uv.x, _UVY, i.uv.y) ).r;
+
+#else
+
                 float3 pos = ApplyNoiseTransform( float3(i.uv.x, _UVY, i.uv.y) - float3(.5, 0, .5) );
+
+#endif
 
                 float n = noise_NoneVoronoi( pos );
 

@@ -10,12 +10,9 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using static UnityEditor.Experimental.TerrainAPI.BaseBrushUIGroup;
 
-namespace UnityEditor.Experimental.TerrainAPI
-{
+namespace UnityEditor.Experimental.TerrainAPI {
     [TestFixture]
-    public class BrushPlaybackTests : MonoBehaviour
-    {
-        private bool readyForSceneGUI = false;
+    public class BrushPlaybackTests : MonoBehaviour {
         Terrain terrainObj = null;
         private Bounds terrainBounds;
         private Queue<OnPaintOccurrence> onPaintHistory = null;
@@ -32,11 +29,11 @@ namespace UnityEditor.Experimental.TerrainAPI
         private object terrainToolInstance;
         private MethodInfo onPaintMethod, onSceneGUIMethod;
         private Type baseBrushUIGroupType, brushRotationType, brushSizeType, brushStrengthType;
-        private object baseBrushUIGroupInstance;
+        private BaseBrushUIGroup commonUIInstance;
         private PropertyInfo brushRotationProperty, brushSizeProperty, brushStrengthProperty;
-        
-        private void InitTerrainTypesWithReflection(string paintToolName)
-        {
+
+        private void InitTerrainTypesWithReflection(string paintToolName) {
+
             terrainToolType = Type.GetType("UnityEditor.Experimental.TerrainAPI." + paintToolName + ", " +
                                            "Unity.TerrainTools.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
             onPaintType = Type.GetType("UnityEditor.Experimental.TerrainAPI.OnPaintContext, " +
@@ -51,33 +48,45 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             onPaintMethod = terrainToolType.GetMethod("OnPaint");
             onSceneGUIMethod = terrainToolType.GetMethod("OnSceneGUI");
-            
+
             MethodInfo loadSettingsInfo = terrainToolType.GetMethod("LoadSettings", s_bindingFlags);
-            
-            if(loadSettingsInfo != null)
-            {
+
+            if (loadSettingsInfo != null) {
                 loadSettingsInfo.Invoke(terrainToolInstance, null);
             }
 
             // LOAD TOOL SETTINGS
-            baseBrushUIGroupType =  Type.GetType("UnityEditor.Experimental.TerrainAPI.BaseBrushUIGroup, " +
+            baseBrushUIGroupType = Type.GetType("UnityEditor.Experimental.TerrainAPI.BaseBrushUIGroup, " +
                                                  "Unity.TerrainTools.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
-            brushSizeType =         Type.GetType("UnityEditor.Experimental.TerrainAPI.IBrushSizeController, " +
+            brushSizeType = Type.GetType("UnityEditor.Experimental.TerrainAPI.IBrushSizeController, " +
                                                  "Unity.TerrainTools.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
-            brushStrengthType =     Type.GetType("UnityEditor.Experimental.TerrainAPI.IBrushStrengthController, " +
+            brushStrengthType = Type.GetType("UnityEditor.Experimental.TerrainAPI.IBrushStrengthController, " +
                                                  "Unity.TerrainTools.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
-            brushRotationType =     Type.GetType("UnityEditor.Experimental.TerrainAPI.IBrushRotationController, " +
+            brushRotationType = Type.GetType("UnityEditor.Experimental.TerrainAPI.IBrushRotationController, " +
                                                  "Unity.TerrainTools.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
 
-            baseBrushUIGroupInstance = terrainToolType.GetField("commonUI", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(terrainToolInstance);
+            FieldInfo baseBrushUIGroupFieldInfo = terrainToolType.GetField("commonUI", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (baseBrushUIGroupFieldInfo == null) {
+                PropertyInfo baseBrushUIGroupPropertyInfo = terrainToolType.GetProperty("commonUI", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (baseBrushUIGroupPropertyInfo != null) {
+                    commonUIInstance = baseBrushUIGroupPropertyInfo.GetValue(terrainToolInstance) as BaseBrushUIGroup;
+                }
+            } else {
+                commonUIInstance = baseBrushUIGroupFieldInfo.GetValue(terrainToolInstance) as BaseBrushUIGroup;
+                }
+            if (commonUIInstance == null) {
+                throw new Exception("The commonUI of the brush can't be found - does it have one?");
+            }
+
             brushSizeProperty = baseBrushUIGroupType.GetProperty("brushSize", BindingFlags.Public | BindingFlags.Instance);
             brushStrengthProperty = baseBrushUIGroupType.GetProperty("brushStrength", BindingFlags.Public | BindingFlags.Instance);
             brushRotationProperty = baseBrushUIGroupType.GetProperty("brushRotation", BindingFlags.Public | BindingFlags.Instance);
         }
 
+        // Triggered once per frame while the 
         void OnSceneGUI(SceneView sceneView)
         {
-            if (onPaintHistory.Count == 0)
+            if (onPaintHistory.Count == 0 || terrainObj == null)
             {
                 return;
             }
@@ -112,11 +121,15 @@ namespace UnityEditor.Experimental.TerrainAPI
                                 paintOccurrence.brushSize
                            });
 
-            brushSizeProperty.SetValue(baseBrushUIGroupInstance, paintOccurrence.brushSize);
-            brushStrengthProperty.SetValue(baseBrushUIGroupInstance, paintOccurrence.brushStrength);
-            brushRotationProperty.SetValue(baseBrushUIGroupInstance, paintOccurrence.brushRotation);
+            brushSizeProperty.SetValue(commonUIInstance, paintOccurrence.brushSize);
+            brushStrengthProperty.SetValue(commonUIInstance, paintOccurrence.brushStrength);
+            brushRotationProperty.SetValue(commonUIInstance, paintOccurrence.brushRotation);
 
             onSceneGUIMethod.Invoke(terrainToolInstance, new object[] { terrainObj, onSceneGUIContextInstance });
+
+            // Set the brush strength via commonUI
+            commonUIInstance.brushStrength = paintOccurrence.brushStrength;
+            commonUIInstance.brushSize = paintOccurrence.brushSize;
 
             object onPaintContext = Activator.CreateInstance(
                 onPaintType,
@@ -236,11 +249,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         [TearDown]
         public void Cleanup() {
-            readyForSceneGUI = false;
             Selection.activeObject = null;
             if (onPaintHistory != null)
                 onPaintHistory.Clear();
-            DestroyImmediate(FindObjectOfType<Terrain>().gameObject);
         }
 
         [SetUp]
@@ -277,42 +288,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             Selection.activeObject = null;
 
             if(AreHeightsNotEqual(startHeightArr, GetFullTerrainHeights(terrainObj)))
-            {
-                Assert.Pass();
-            }
-            
-            Assert.Fail("Test reached the end of function without pass or fail");
-        }
-
-        [UnityTest]
-        [TestCase("PaintHeightHistory_Null", ExpectedResult = null)]
-        public IEnumerator Test_PaintHeight_Playback_Negative(string recordingFilePath) {
-            yield return null;
-
-            InitTerrainTypesWithReflection("PaintHeightTool");
-            onPaintHistory = LoadDataFile(recordingFilePath, expectNull: true);
-            SetupTerrain("Terrain");
-
-            // Enables the core brush playback on OnSceneGUI
-            SceneView.duringSceneGui -= OnSceneGUI;
-            SceneView.duringSceneGui += OnSceneGUI;
-            
-            while (onPaintHistory.Count > 0)
-            {
-                // Force a SceneView update for OnSceneGUI to be triggered
-                SceneView.RepaintAll();
-                yield return null;
-            }
-
-            if(terrainObj.drawInstanced)
-            {
-                terrainObj.terrainData.SyncHeightmap();
-            }
-            
-            SceneView.duringSceneGui -= OnSceneGUI;
-            Selection.activeObject = null;
-
-            if(AreHeightsEqual(startHeightArr, GetFullTerrainHeights(terrainObj)))
             {
                 Assert.Pass();
             }
@@ -439,6 +414,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             InitTerrainTypesWithReflection("StampTool");
             onPaintHistory = LoadDataFile(recordingFilePath);
             SetupTerrain("Terrain");
+
     
             // Set the height parameter
             FieldInfo propertiesField = terrainToolType.GetField("stampToolProperties", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -507,6 +483,41 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
             
             Assert.Fail("Test reached the end of function without pass or fail");
+        }
+
+        // Used to check for texture matrix regressions
+        [UnityTest]
+        [TestCase("NoiseHeightHistory", "Terrain", ExpectedResult = null)]
+        public IEnumerator Test_PaintTexture_Playback(string recordingFilePath, string targetTerrainName) {
+            yield return null;
+
+            Terrain t = GameObject.Find("Terrain").GetComponent<Terrain>();
+
+            InitTerrainTypesWithReflection("PaintTextureTool");
+            onPaintHistory = LoadDataFile(recordingFilePath);
+            SetupTerrain(targetTerrainName);
+
+            TerrainLayer tl1 = new TerrainLayer(), tl2 = new TerrainLayer();
+            tl1.diffuseTexture = Resources.Load<Texture2D>("testGradientCircle");
+            tl2.diffuseTexture = Resources.Load<Texture2D>("testGradientCircle");
+            terrainObj.terrainData.terrainLayers = new TerrainLayer[] { tl1, tl2 };
+
+            PaintTextureTool paintTextureTool = terrainToolInstance as PaintTextureTool;
+            FieldInfo selectedTerrainLayerInfo = typeof(PaintTextureTool).GetField("m_SelectedTerrainLayer", 
+               s_bindingFlags);
+            selectedTerrainLayerInfo.SetValue(paintTextureTool, tl2);
+
+            // Enables the core brush playback on OnSceneGUI
+            SceneView.duringSceneGui -= OnSceneGUI;
+            SceneView.duringSceneGui += OnSceneGUI;
+            
+            while (onPaintHistory.Count > 0) {
+                // Force a SceneView update for OnSceneGUI to be triggered
+                SceneView.RepaintAll();
+                yield return null;
+            }
+
+            Assert.Pass("Matrix stack regression not found!");
         }
     }
 }

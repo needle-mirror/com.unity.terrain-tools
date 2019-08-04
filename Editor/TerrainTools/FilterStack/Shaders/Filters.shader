@@ -243,5 +243,26 @@ Shader "Hidden/TerrainTools/Filters"
 
             ENDHLSL
         }
+
+        Pass // 9 - Multiply
+        {
+            HLSLPROGRAM
+
+            #pragma vertex vert
+            #pragma fragment frag
+
+            float _Multiply;
+
+            float4 frag( v2f_s i ) : SV_Target
+            {
+                float4 s = tex2D( _MainTex, i.uv );
+                
+                s = s * _Multiply;
+
+                return float4( s.rgb, 1 );
+            }
+
+            ENDHLSL
+        }
     }
 }

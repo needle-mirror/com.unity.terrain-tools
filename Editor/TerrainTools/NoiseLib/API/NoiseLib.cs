@@ -669,7 +669,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             // restore previous cultureinfo
             System.Threading.Thread.CurrentThread.CurrentCulture = prevCultureInfo;
 
-            UnityEditor.AssetDatabase.Refresh();
+            // UnityEditor.AssetDatabase.Refresh();
         }
 
         /*==========================================================================================
@@ -870,7 +870,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             // restore previous cultureinfo
             System.Threading.Thread.CurrentThread.CurrentCulture = prevCultureInfo;
 
-            UnityEditor.AssetDatabase.Refresh();
+            // UnityEditor.AssetDatabase.Refresh();
         }
 
         private static void LoadShadersAndCreateMaterials()

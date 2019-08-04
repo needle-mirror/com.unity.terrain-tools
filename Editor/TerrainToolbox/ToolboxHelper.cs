@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Experimental.TerrainAPI;
@@ -71,8 +72,15 @@ namespace UnityEditor.Experimental.TerrainAPI
 		public static string ToolboxPrefsCreate = "ToolboxCreatePrefs";
 		public static string ToolboxPrefsSettings = "ToolboxSettingsPrefs";
 		public static string ToolboxPrefsUtility = "ToolboxUtilityPrefs";
+		public static string ToolboxPrefsVisualization = "ToolboxVisualizationPrefs";
 
 		public enum ByteOrder { Mac = 1, Windows = 2 };
+		public enum RenderPipeline
+		{
+			None,
+			HD,
+			LW
+		}
 
 		const string GizmoGOName = "TERRAIN_GIZMO";
 
@@ -155,6 +163,18 @@ namespace UnityEditor.Experimental.TerrainAPI
 			}
 		}
 
+		public static Texture2D GetPartialTexture(Texture2D sourceTexture, Vector2Int resolution, Vector2Int offset)
+		{
+			if (offset.x > resolution.x || offset.y > resolution.y)
+				return null;
+
+			var destColor = sourceTexture.GetPixels(offset.x, offset.y, resolution.x, resolution.y);
+			Texture2D newTexture = new Texture2D(resolution.x, resolution.y);
+			newTexture.SetPixels(destColor);
+
+			return newTexture;
+		}
+
 		// referencing from TerrainInspector.ResizeControltexture()
 		public static void ResizeControlTexture(TerrainData terrainData, int resolution)
 		{
@@ -174,7 +194,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			{
 				RenderTexture.active = oldAlphaMaps[i];
 
-				CopyActiveRenderTextureToTexture(terrainData, "alphamap", i, new RectInt(0, 0, resolution, resolution), Vector2Int.zero, false);
+				CopyActiveRenderTextureToTexture(terrainData.GetAlphamapTexture(i), new RectInt(0, 0, resolution, resolution), Vector2Int.zero, false);
 			}
 			terrainData.SetBaseMapDirty();
 			RenderTexture.active = oldRT;
@@ -187,14 +207,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 		}
 
 		// referencing from TerrainData.GPUCopy.CopyActiveRenderTextureToTexture()
-		private static void CopyActiveRenderTextureToTexture(TerrainData terrainData, string textureName, int textureIndex, RectInt sourceRect, Vector2Int dest, bool allowDelayedCPUSync)
+		private static void CopyActiveRenderTextureToTexture(Texture2D dstTexture, RectInt sourceRect, Vector2Int dest, bool allowDelayedCPUSync)
 		{
-			int textureCount = terrainData.alphamapTextureCount;
 			var source = RenderTexture.active;
 			if (source == null)
 				throw new InvalidDataException("Active RenderTexture is null.");
 
-			var dstTexture = terrainData.GetAlphamapTexture(textureIndex);
 			int dstWidth = dstTexture.width;
 			int dstHeight = dstTexture.height;
 
@@ -264,13 +282,13 @@ namespace UnityEditor.Experimental.TerrainAPI
 			// duv = (((suv * swidth - 0.5) / (swidth - 1)) * (dwidth - 1) + 0.5) / dwidth
 			// k = (dwidth - 1) / (swidth - 1) / dwidth
 			// duv = suv * (swidth * k)		+ 0.5 / dwidth - 0.5 * k
-			
+
 			float k = (dWidth - 1.0f) / (sWidth - 1.0f) / dWidth;
 			float scaleX = sUV * (sWidth * k);
 			float offsetX = (float)(0.5 / dWidth - 0.5 * k);
 			Vector2 scale = new Vector2(scaleX, scaleX);
 			Vector2 offset = new Vector2(offsetX, offsetX);
-			
+
 			Graphics.Blit(oldHeightmap, terrainData.heightmapTexture, scale, offset);
 			RenderTexture.ReleaseTemporary(oldHeightmap);
 
@@ -310,8 +328,13 @@ namespace UnityEditor.Experimental.TerrainAPI
 		public static void ExportTerrainHeightsToRawFile(TerrainData terrainData, string path, Heightmap.Depth depth, bool flipVertical, ByteOrder byteOrder, Vector2 inputLevelsRange)
 		{
 			// trim off the extra 1 pixel, so we get a power of two sized texture
+#if UNITY_2019_3_OR_NEWER
+			int heightmapWidth = terrainData.heightmapResolution - 1;
+			int heightmapHeight = terrainData.heightmapResolution - 1;
+#else
 			int heightmapWidth = terrainData.heightmapWidth - 1;
 			int heightmapHeight = terrainData.heightmapHeight - 1;
+#endif
 			float[,] heights = terrainData.GetHeights(0, 0, heightmapWidth, heightmapHeight);
 			byte[] data = new byte[heightmapWidth * heightmapHeight * (int)depth];
 
@@ -325,7 +348,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 						int index = x + y * heightmapWidth;
 						int srcY = flipVertical ? heightmapHeight - 1 - y : y;
 
-                        float remappedHeight = (heights[srcY, x] - inputLevelsRange.x) / (inputLevelsRange.y - inputLevelsRange.x);
+						float remappedHeight = (heights[srcY, x] - inputLevelsRange.x) / (inputLevelsRange.y - inputLevelsRange.x);
 
 						int height = Mathf.RoundToInt(remappedHeight * normalize);
 						ushort compressedHeight = (ushort)Mathf.Clamp(height, 0, ushort.MaxValue);
@@ -387,12 +410,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 			if (GizmoGO == null)
 			{
 				GetGizmo();
-			}			
-			
+			}
+
 			GizmoGO.SetActive(true);
 			GizmoSettings = GizmoGO.GetComponent<TerrainGizmos>();
-
-			GizmoEnabled = true;
+            GizmoEnabled = true;
 		}
 
 		public static void UpdateGizmos(float width, float height, float length, Vector3 position, int id)
@@ -406,13 +428,49 @@ namespace UnityEditor.Experimental.TerrainAPI
 			GizmoSettings.GroupID = id;
 		}
 
+		public static void SetGizmoColor(Color cubeColor, Color wireColor)
+		{
+			if (GizmoGO == null || GizmoSettings == null) return;
+
+			GizmoSettings.CubeColor = cubeColor;
+			GizmoSettings.CubeWireColor = wireColor;
+		}
+
+		public static Vector3 GetGizmoPosition()
+		{
+			if (GizmoGO == null || GizmoSettings == null) return Vector3.zero;
+
+			Vector3 centerPosition = new Vector3(GizmoGO.transform.localScale.x / 2, GizmoGO.transform.localScale.y / 2, GizmoGO.transform.localScale.z / 2);
+			return GizmoGO.transform.position - centerPosition;
+		}
+
 		public static void HideGizmo()
 		{
+			GizmoEnabled = false;
+
 			if (GizmoGO == null)
 				return;
-
 			UnityEngine.Object.DestroyImmediate(GizmoGO);
-			GizmoEnabled = false;
+		}
+
+		public static RenderPipeline GetRenderPipeline()
+		{
+			if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset == null)
+			{
+				return RenderPipeline.None;
+			}
+			else if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset.GetType().FullName
+				== "UnityEngine.Experimental.Rendering.HDPipeline.HDRenderPipelineAsset")
+			{
+				return RenderPipeline.HD;
+			}
+			else if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset.GetType().FullName
+				== "UnityEngine.Rendering.LWRP.LightweightRenderPipelineAsset")
+			{
+				return RenderPipeline.LW;
+			}
+
+			return RenderPipeline.None;
 		}
 	}
 }

@@ -11,6 +11,7 @@ In the Scene view, use the following hotkeys while moving the mouse horizontally
 | **D**        | Controls Brush rotation.                                     |
 | **Control**  | Inverts the Brush effect for most Brushes; acts as a modifier for others. |
 | **Shift**    | Temporarily enables the smoothing Brush.                     |
+| **Shift + A**    | Enables the Terrain Layer Eyedropper tool.               |
 
 ## Common Brush controls
 

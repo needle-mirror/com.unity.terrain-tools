@@ -5,6 +5,7 @@ using UnityEngine.Experimental.TerrainAPI;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
+    public delegate void ResetBrush();
 	public interface IBrushUIGroup {
 		/// <summary>
 		/// The normalized size of the brush.
@@ -25,16 +26,22 @@ namespace UnityEditor.Experimental.TerrainAPI
 		/// The spacing used when applying certain brushes.
 		/// </summary>
 		float brushSpacing { get;  }
-		
-		/// <summary>
-		/// Are we allowed to paint with this brush?
-		/// </summary>
-		bool allowPaint { get; }
+
+
+        string validationMessage { get; set; }
+        /// <summary>
+        /// Are we allowed to paint with this brush?
+        /// </summary>
+        bool allowPaint { get; }
 		
 		bool InvertStrength { get; }
 		bool isInUse { get; }
-		
-		Terrain terrainUnderCursor { get; }
+
+        FilterStackView brushMaskFilterStackView { get; }
+        FilterStack brushMaskFilterStack { get; }
+
+
+        Terrain terrainUnderCursor { get; }
 		bool isRaycastHitUnderCursorValid { get; }
 		RaycastHit raycastHitUnderCursor { get; }
 
@@ -45,16 +52,18 @@ namespace UnityEditor.Experimental.TerrainAPI
 		void OnSceneGUI2D(Terrain terrain, IOnSceneGUI editContext);
         void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext);
 		void AppendBrushInfo(Terrain terrain, IOnSceneGUI editContext, StringBuilder builder);
-		
-		/// <summary>
-		/// Scatters the brush around the specified UV on the specified terrain. If the scattered UV leaves
-		/// the current terrain then the terrain AND UV are modified for the terrain the UV is now over.
-		/// </summary>
-		/// <param name="terrain">The terrain the scattered UV co-ordinate is actually on.</param>
-		/// <param name="uv">The UV co-ordinate passed in transformed into the UV co-ordinate relative to the scattered terrain.</param>
-		/// <returns>"true" if we scattered to a terrain, "false" if we fell off ALL terrains.</returns>
-		bool ScatterBrushStamp(ref Terrain terrain, ref Vector2 uv);
+        RenderTexture GetBrushMask(FilterContext fc, RenderTexture heightContext);
+
+        /// <summary>
+        /// Scatters the brush around the specified UV on the specified terrain. If the scattered UV leaves
+        /// the current terrain then the terrain AND UV are modified for the terrain the UV is now over.
+        /// </summary>
+        /// <param name="terrain">The terrain the scattered UV co-ordinate is actually on.</param>
+        /// <param name="uv">The UV co-ordinate passed in transformed into the UV co-ordinate relative to the scattered terrain.</param>
+        /// <returns>"true" if we scattered to a terrain, "false" if we fell off ALL terrains.</returns>
+        bool ScatterBrushStamp(ref Terrain terrain, ref Vector2 uv);
 		
 		bool ModifierActive(BrushModifierKey k);
+
 	}
 }

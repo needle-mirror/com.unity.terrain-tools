@@ -9,7 +9,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             AddSizeController(new BrushSizeVariator(name, this, this));             
             AddRotationController(new BrushRotationVariator(name, this, this));
-            AddStrengthController(new BrushStrengthVariator(name, this, this));
+            AddStrengthController(new BrushStrengthVariator(name, this, this, .075f));
             AddSmoothingController(new DefaultBrushSmoother(name));
         }
     }

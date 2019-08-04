@@ -2,7 +2,7 @@
 
 The Terrain Toolbox is a tool that can be opened in the Editor, which contains useful tools to help ease Terrain workflows. It allows you to create new Terrain from preset settings or imported heightmaps, batch change Terrain settings on multiple Terrain tiles, and import/export splatmaps and heightmaps using the tools from the Toolbox. 
 
-### Launch the Terrain Toolbox
+## Launch the Terrain Toolbox
 
 To launch the Terrain Toolbox, select **Window > Terrain > Terrain Toolbox**. 
 

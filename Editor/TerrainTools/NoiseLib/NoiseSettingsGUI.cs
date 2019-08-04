@@ -52,6 +52,10 @@ namespace UnityEditor.Experimental.TerrainAPI
         // private bool m_showFilterStack;
 
         private RenderTexture m_previewRT;
+        public RenderTexture previewRT
+        {
+            get { return m_previewRT; }
+        }
 
         /// <summary>
         /// The current NoiseSettings object that is associated with this instance of NoiseSettingsGUI.
@@ -240,7 +244,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             Rect totalRect = GUILayoutUtility.GetRect(EditorGUIUtility.currentViewWidth, size + padding * 2); // extra pixels for highlight border
 
             Color prev = GUI.color;
-            GUI.color = new Color(.1f, .1f, .1f, 1f);
+            GUI.color = new Color(.15f, .15f, .15f, 1f);
             GUI.DrawTexture(totalRect, Texture2D.whiteTexture, ScaleMode.StretchToFill, false);
             GUI.color = Color.white;
 

@@ -51,7 +51,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                 mat.SetVector("_SmoothWeights", smoothWeights);
                 TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
 
-                Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, 0);
+                RenderTexture temp = RenderTexture.GetTemporary( paintContext.destinationRenderTexture.descriptor );
+
+                Graphics.Blit(paintContext.sourceRenderTexture, temp, mat, 0);
+                Graphics.Blit(temp, paintContext.destinationRenderTexture, mat, 1);
+
+                RenderTexture.ReleaseTemporary( temp );
 
                 TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Smooth Height");
                 return true;

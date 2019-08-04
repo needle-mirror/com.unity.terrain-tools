@@ -46,33 +46,27 @@ int numThermalIterations;
 
 
 void simulateThermalErosion(uint2 coord) {
-	
-	//todo: vectorize?
-	uint lidx = (coord.x > 0) ? coord.x - 1 : 0;
-	uint ridx = (coord.x < (uint)texDim[0] - 1) ? coord.x + 1 : (uint)texDim[0] - 1;
-	uint bidx = (coord.y > 0) ? coord.y - 1 : 0;
-	uint tidx = (coord.y < (uint)texDim[1] - 1) ? coord.y + 1 : (uint)texDim[1] - 1;
-	
-	
-	float4 hCardinal = float4(TerrainHeightPrev[uint2(lidx, coord.y)],  //left
-							  TerrainHeightPrev[uint2(ridx, coord.y)],  //right
-							  TerrainHeightPrev[uint2(coord.x, tidx)],  //up
-							  TerrainHeightPrev[uint2(coord.x, bidx)]); //down
+	uint4 neigh = getSafeNeighbors(coord);
 
-	float4 hDiagonal = float4(TerrainHeightPrev[uint2(lidx, tidx)],  //top left
-							  TerrainHeightPrev[uint2(ridx, tidx)],  //top right
-							  TerrainHeightPrev[uint2(lidx, bidx)],  //bottom left
-							  TerrainHeightPrev[uint2(ridx, bidx)]); //bottom right
+	float4 hCardinal = float4(TerrainHeightPrev[uint2(neigh.y, coord.y)],  //left
+							  TerrainHeightPrev[uint2(neigh.x, coord.y)],  //right
+							  TerrainHeightPrev[uint2(coord.x, neigh.z)],  //up
+							  TerrainHeightPrev[uint2(coord.x, neigh.w)]); //down
 
-	float4 hardnessCardinal = saturate(float4(Hardness[uint2(lidx, coord.y)],
-									 Hardness[uint2(ridx, coord.y)],
-									 Hardness[uint2(coord.x, tidx)],
-									 Hardness[uint2(coord.x, bidx)]));
+	float4 hDiagonal = float4(TerrainHeightPrev[uint2(neigh.x, neigh.z)],  //top left
+							  TerrainHeightPrev[uint2(neigh.y, neigh.z)],  //top right
+							  TerrainHeightPrev[uint2(neigh.y, neigh.w)],  //bottom left
+							  TerrainHeightPrev[uint2(neigh.x, neigh.w)]); //bottom right
 
-	float4 hardnessDiagonal = saturate(float4(Hardness[uint2(lidx, tidx)],
-		                             Hardness[uint2(ridx, tidx)],
-		                             Hardness[uint2(lidx, bidx)],
-		                             Hardness[uint2(ridx, bidx)]));
+	float4 hardnessCardinal = saturate(float4(Hardness[uint2(neigh.y, coord.y)],
+									 Hardness[uint2(neigh.x, coord.y)],
+									 Hardness[uint2(coord.x, neigh.z)],
+									 Hardness[uint2(coord.x, neigh.w)]));
+
+	float4 hardnessDiagonal = saturate(float4(Hardness[uint2(neigh.y, neigh.z)],
+		                             Hardness[uint2(neigh.x, neigh.z)],
+		                             Hardness[uint2(neigh.y, neigh.w)],
+		                             Hardness[uint2(neigh.x, neigh.w)]));
 
 	float4 h = float4(TerrainHeightPrev[coord], TerrainHeightPrev[coord], TerrainHeightPrev[coord], TerrainHeightPrev[coord]);
 
@@ -94,7 +88,7 @@ void simulateThermalErosion(uint2 coord) {
 	float4 mCardinal = abs(dhCardinal / float4(dxdy.x, dxdy.x, dxdy.y, dxdy.y));
 	float4 mDiagonal = abs(dhDiagonal / float4(dxdy.z, dxdy.z, dxdy.z, dxdy.z));
 
-	float tau = angleOfRepose.x;//lerp(angleOfRepose.x, angleOfRepose.y, saturate(NoiseAmount * noiseVal));
+	float tau = angleOfRepose.x;
 
 	float dv = 0.0f; //volume of sediment moved
 	

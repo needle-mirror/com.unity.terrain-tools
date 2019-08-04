@@ -4,12 +4,12 @@ using UnityEditor;
 namespace UnityEditor.Experimental.TerrainAPI
 {
     [System.Serializable]
-    internal class RemapFilter : Filter
+    public class RemapFilter : Filter
     {
         private static GUIContent fromLabel = EditorGUIUtility.TrTextContent("From");
         private static GUIContent toLabel = EditorGUIUtility.TrTextContent("To");
 
-        public Vector2 fromRange = new Vector2(-1, 1);
+        public Vector2 fromRange = new Vector2(0, 1);
         public Vector2 toRange = new Vector2(0, 1);
 
         public override string GetDisplayName()
@@ -17,11 +17,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Remap";
         }
 
-        public override void Eval(RenderTexture src, RenderTexture dest, RenderTextureCollection rtCollection)
+        public override string GetToolTip()
+        {
+            return "Remaps each pixel value in the Brush Mask from the From range to the To range.";
+        }
+
+        public override void Eval(FilterContext fc)
         {
             FilterUtility.builtinMaterial.SetVector( "_RemapRanges", new Vector4( fromRange.x, fromRange.y, toRange.x, toRange.y ) );
 
-            Graphics.Blit( src, dest, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Remap );
+            Graphics.Blit( fc.sourceRenderTexture, fc.destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Remap );
         }
 
         public override void DoGUI(Rect rect)

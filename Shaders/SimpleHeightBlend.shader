@@ -15,6 +15,7 @@
             float4    _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
             sampler2D _BrushTex;
+			sampler2D _FilterTex;
 			sampler2D _NewHeightTex;
 
             float4 _BrushParams;
@@ -61,7 +62,7 @@
 
                 float oldHeight = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
 				float newHeight = tex2D(_NewHeightTex, heightmapUV).r;
-				float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV));
+				float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
 
 				return PackHeightmap(lerp(oldHeight, newHeight, brushStrength));
             }

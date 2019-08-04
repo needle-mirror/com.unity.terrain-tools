@@ -14,9 +14,21 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 #endif
 
-
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("SharpenPeaks");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "SharpenPeaksTool" );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
 
         [SerializeField]
         float m_ErosionStrength = 16.0f;
@@ -97,7 +109,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             
             commonUI.OnInspectorGUI(terrain, editContext);
 
-            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.controls, m_ShowControls);
+            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controls, m_ShowControls, () => { m_MixStrength = 0.7f; });
             if (m_ShowControls) {
                 EditorGUILayout.BeginVertical("GroupBox");
                     m_MixStrength = EditorGUILayout.Slider(Styles.featureSharpness, m_MixStrength, 0, 1);
@@ -122,6 +134,11 @@ namespace UnityEditor.Experimental.TerrainAPI
                 {
                     PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
 
+                    Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+                    FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+                    fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+                    RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+
                     Material mat = GetPaintMaterial();
 
                     // apply brush
@@ -132,6 +149,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                         0.0f);
 
                     mat.SetTexture("_BrushTex", editContext.brushTexture);
+                    mat.SetTexture("_FilterTex", filterMaskRT);
                     mat.SetVector("_BrushParams", brushParams);
                 
                     brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);

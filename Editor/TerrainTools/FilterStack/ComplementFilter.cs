@@ -4,7 +4,7 @@ using UnityEditor;
 namespace UnityEditor.Experimental.TerrainAPI
 {
     [System.Serializable]
-    internal class ComplementFilter : Filter
+    public class ComplementFilter : Filter
     {
         [SerializeField]
         public float value = 1;
@@ -14,11 +14,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Complement";
         }
 
-        public override void Eval(RenderTexture src, RenderTexture dest, RenderTextureCollection rtCollection)
+        public override string GetToolTip()
+        {
+            return "Subtracts each pixel value in the current Brush Mask from the specified constant. To invert the mask results, leave the complement value unchanged as 1.";
+        }
+
+        public override void Eval(FilterContext fc)
         {
             FilterUtility.builtinMaterial.SetFloat("_Complement", value);
 
-            Graphics.Blit( src, dest, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Complement );
+            Graphics.Blit( fc.sourceRenderTexture, fc.destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Complement );
         }
 
         public override void DoGUI(Rect rect)

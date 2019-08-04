@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
-    internal static class FilterUtility
+    public static class FilterUtility
     {
         public enum BuiltinPasses
         {
@@ -15,6 +15,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             Negate      = 6,
             Power       = 7,
             Remap       = 8,
+            Multiply    = 9,
         }
 
         private static Material m_builtinMaterial;
@@ -28,6 +29,20 @@ namespace UnityEditor.Experimental.TerrainAPI
                 }
 
                 return m_builtinMaterial;
+            }
+        }
+
+        private static Material m_blendModesMaterial;
+        public static Material blendModesMaterial
+        {
+            get
+            {
+                if( m_blendModesMaterial == null )
+                {
+                    m_blendModesMaterial = new Material( Shader.Find( "Hidden/TerrainTools/BlendModes" ) );
+                }
+
+                return m_blendModesMaterial;
             }
         }
     }

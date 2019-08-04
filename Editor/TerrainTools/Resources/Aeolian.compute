@@ -3,7 +3,9 @@ Texture2D<float>   InHeightMap;
 Texture2D<float>   InSediment;
 Texture2D<float2>  WindVel;
 
-float4 texDim;     //the dimensions of all of our textures (they must all be the same dimensions)
+float4 texDim;	     // the dimensions of all of our textures (they must all be the same dimensions)
+float4 terrainScale; // the dimensions in world space of the terrain tile
+float4 dxdy;         // (dx, dy, 1 / dx, 1/ dy), where dx, dy = texel width, height
 
 float dt;
 float SuspensionRate;
@@ -33,15 +35,7 @@ uint4 getSafeNeighbors(uint2 coord) {
 #define BOTTOM(c)	(c.z)
 #define TOP(c)		(c.w)
 
-float3 computeNormal(uint2 coord) {
-	
-	//This is faster, but doesn't get recomputed every iteration.
-	//float3 n = 2.0f * (SurfaceNormal[coord] - float3(0.5f, 0.5f, 0.5f));
-	//n = normalize(n);
-
-
-	//this is more accurate, and probably is better at removing rectilinear artifacts, since we are sampling 8 neighbors
-	//but... slower
+float2 computeNormal(uint2 coord) {
 	uint4 nidx = getSafeNeighbors(coord);
 
 	float dzdx = ((InHeightMap[uint2(RIGHT(nidx), BOTTOM(nidx))] + 2 * InHeightMap[uint2(RIGHT(nidx), coord.y)] + InHeightMap[uint2(RIGHT(nidx), TOP(nidx))]) -
@@ -50,18 +44,16 @@ float3 computeNormal(uint2 coord) {
 	float dzdy = ((InHeightMap[uint2(LEFT(nidx), TOP(nidx))] + 2 * InHeightMap[uint2(coord.x, TOP(nidx))] + InHeightMap[uint2(RIGHT(nidx), TOP(nidx))]) -
 		(InHeightMap[uint2(LEFT(nidx), BOTTOM(nidx))] + 2 * InHeightMap[uint2(coord.x, BOTTOM(nidx))] + InHeightMap[uint2(RIGHT(nidx), BOTTOM(nidx))])) / 8.0f;
 
-	//float m = length(float2(dzdx, dzdy));
-	//return normalize(float3(dzdx, dzdy, m));
-	return normalize(float3(dzdx, dzdy, 2.0f));
+	return normalize(float2(terrainScale.y * dzdx * dxdy.z, terrainScale.y * dzdy * dxdy.w));
 }
 
 #pragma kernel WindSedimentErode
-[numthreads(8,8,1)]
+[numthreads(1,1,1)]
 void WindSedimentErode(uint3 id : SV_DispatchThreadID)
 {
-	float3 n = computeNormal(id.xy);
+	float2 n = computeNormal(id.xy);
 
-	float n_dot_w = max(-1.0f * dot(n.xy, WindVel[id.xy]), 0.0f);
+	float n_dot_w = max(-1.0f * dot(n, WindVel[id.xy] * dxdy.zw), 0.0f);
 
 	float pnw = pow(n_dot_w, SlopeFactor);
 	float sandBlast = AbrasivenessCoefficient * dt * InSediment[id.xy];
@@ -78,13 +70,15 @@ void WindSedimentErode(uint3 id : SV_DispatchThreadID)
 }
 
 #pragma kernel ApplyHeightfieldDrag
-[numthreads(8, 8, 1)]
+[numthreads(1, 1, 1)]
 void ApplyHeightfieldDrag(uint3 id : SV_DispatchThreadID)
 {
-	float3 n = computeNormal(id.xy);
+	float2 n = computeNormal(id.xy);
+
+	float2 scaledVel = normalize(WindVel[id.xy]);//WindVel[id.xy] * dxdy.zw;
 
 	//use the reflection vector between wind velocity and surface normal to drive "drag"
-	float2 r = WindVel[id.xy] - 2.0f * (dot(WindVel[id.xy], n.xy)) * n.xy;
+	float2 r = scaledVel - 2.0f * (dot(scaledVel, n)) * n;
 
 	float effectiveReflection = ReflectionCoefficient * dt;
 	float effectiveDrag = DragCoefficient * dt;

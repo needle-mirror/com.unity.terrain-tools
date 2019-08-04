@@ -65,7 +65,21 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("CloneBrushTool");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "CloneBrushTool" );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
+
 
         // variables for keeping track of mouse and key presses and painting states
         private bool m_lmb;
@@ -128,7 +142,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             commonUI.OnInspectorGUI(terrain, editContext);
 
-            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.controlHeader, m_ShowControls);
+            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controlHeader, m_ShowControls, cloneToolProperties.SetDefaults);
 
             if(m_ShowControls)
             {
@@ -387,6 +401,12 @@ namespace UnityEditor.Experimental.TerrainAPI
             paintMat.SetTexture("_BrushTex", brushTexture);
             paintMat.SetVector("_BrushParams", brushParams);
             paintMat.SetTexture("_CloneTex", sampleContext.sourceRenderTexture);
+
+            FilterContext fc = new FilterContext(targetTerrain, commonUI.raycastHitUnderCursor.point, commonUI.brushSize, commonUI.brushRotation);
+            fc.renderTextureCollection.GatherRenderTextures(targetContext.sourceRenderTexture.width, targetContext.sourceRenderTexture.height);
+            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, targetContext.sourceRenderTexture);
+            paintMat.SetTexture("_FilterTex", filterMaskRT);
+
             TerrainPaintUtility.SetupTerrainToolMaterialProperties(targetContext, targetXform, paintMat);
             Graphics.Blit(targetContext.sourceRenderTexture, targetContext.destinationRenderTexture, paintMat, (int)ShaderPasses.CloneHeightmap);
         }

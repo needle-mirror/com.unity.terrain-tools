@@ -4,7 +4,7 @@ using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
-    internal class ThermalErosionTool : TerrainPaintTool<ThermalErosionTool>
+    internal class ThermalErosionTool : TerrainPaintTool<ThermalErosionTool>, IValidationTests
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Thermal Erosion Tool", typeof(TerrainToolShortcutContext))]               // tells shortcut manager what to call the shortcut and what to pass as args
@@ -15,11 +15,23 @@ namespace UnityEditor.Experimental.TerrainAPI
 #endif
 
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("ThermalErosion");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "ThermalErosion" );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
 
         Erosion.ThermalEroder m_Eroder = null;
 
-        
         [SerializeField]
         private int m_MaterialPaintStrength = 50;
 
@@ -118,8 +130,11 @@ namespace UnityEditor.Experimental.TerrainAPI
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
+            commonUI.validationMessage = ValidateAndGenerateUserMessage(terrain);
 
-            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldout(Erosion.Styles.m_ThermalErosionControls, m_ShowControls);
+
+            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForErosion(Erosion.Styles.m_ThermalErosionControls, m_ShowControls, m_Eroder.ResetTool);
+
             if (m_ShowControls) {
 
                 EditorGUILayout.BeginVertical("GroupBox");
@@ -289,10 +304,16 @@ namespace UnityEditor.Experimental.TerrainAPI
                                                     terrain.terrainData.size.z / terrain.terrainData.heightmapResolution);
                     m_Eroder.ErodeHeightmap(terrain.terrainData.size, brushRect, texelSize);
 
+                    Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+                    FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+                    fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+                    RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+
                     Material mat = GetPaintMaterial();
                     Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, 0.0f, 0.0f);
                     mat.SetTexture("_BrushTex", editContext.brushTexture);
                     mat.SetTexture("_NewHeightTex", m_Eroder.outputTextures["Height"]);
+                    mat.SetTexture("_FilterTex", filterMaskRT);
                     mat.SetVector("_BrushParams", brushParams);
 
                     brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
@@ -304,6 +325,17 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
         #endregion
 
+        #region IValidationTests
+        public virtual string ValidateAndGenerateUserMessage(Terrain terrain)
+        {
+            if (terrain.terrainData.heightmapResolution < 1025)
+                return "Erosion tools work best with a heightmap resolution of 1025 or greater.";
+
+            return "";
 
         }
+
+        #endregion
+
+    }
 }

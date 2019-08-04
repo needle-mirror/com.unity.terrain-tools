@@ -19,6 +19,7 @@ Shader "Hidden/TerrainTools/CloneBrush"
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
             sampler2D _BrushTex;
+			sampler2D _FilterTex;
 
             float4 _BrushParams;
             #define BRUSH_STRENGTH      (_BrushParams[0])
@@ -84,7 +85,7 @@ Shader "Hidden/TerrainTools/CloneBrush"
                 float oob = all( saturate( brushUV ) == brushUV ) ? 1 : 0;
 
                 // get brush mask value
-                float b = oob * UnpackHeightmap( tex2D( _BrushTex, brushUV ) );
+                float b = oob * UnpackHeightmap( tex2D( _BrushTex, brushUV ) ) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
 
                 float currentAlpha = tex2D(_MainTex, i.pcUV).r;
                 float sampleAlpha = tex2D(_CloneTex, i.pcUV).r;
@@ -117,7 +118,7 @@ Shader "Hidden/TerrainTools/CloneBrush"
                 float oob = all( saturate( brushUV ) == brushUV ) ? 1 : 0;
 
                 // get brush mask value
-                float b = oob * UnpackHeightmap( tex2D( _BrushTex, brushUV ) );
+                float b = oob * UnpackHeightmap( tex2D( _BrushTex, brushUV ) ) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
 
                 float sampleHeight = UnpackHeightmap( tex2D( _CloneTex, i.pcUV ) ) + ( HeightOffset / TerrainMaxHeight );
 

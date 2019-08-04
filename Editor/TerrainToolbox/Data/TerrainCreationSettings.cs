@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEditor.Experimental.TerrainAPI;
 using UnityEngine;
 using UnityEngine.Experimental.TerrainAPI;
 
@@ -18,7 +19,7 @@ public class TerrainCreationSettings : ScriptableObject
 	public int GroupID = 0;
 	public bool AutoConnect = true;
 	public bool DrawInstanced = true;
-	public float PixelError = 5.0f;
+	public int PixelError = 5;
 	public int BaseMapDistance = 1024;	
 	public int BaseTextureResolution = 1000;
 	public int ControlTextureResolution = 512;
@@ -40,9 +41,14 @@ public class TerrainCreationSettings : ScriptableObject
 	public string BatchHeightmapFolder = string.Empty;
 	public string GlobalHeightmapPath = string.Empty;
 	public List<string> TileHeightmapPaths = new List<string>();
+	
+    // Gizmo Settings
+    public bool EnableGizmo = false;
+    public Color GizmoCubeColor = new Color(0f, 0.5f, 1f, 0.2f);
+    public Color GizmoWireColor = new Color(0f, 0.9f, 1f, 0.5f);
 
-	// other settings
-	public string TerrainAssetDirectory = "Assets/Terrain/";
+    // other settings
+    public string TerrainAssetDirectory = "Assets/Terrain/";
 	public bool EnableGuid = true;
 	public bool EnableClearExistingData = false;
 	public bool EnableLightingAutoBake = false;
@@ -51,5 +57,6 @@ public class TerrainCreationSettings : ScriptableObject
 	// UI
 	public bool ShowGroupSettings = false;
 	public bool ShowHeightmapSettings = false;
-	public bool ShowOptions = true;
+    public bool ShowGizmoSettings = false;
+    public bool ShowOptions = true;
 }

@@ -47,7 +47,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             public void SetDefaults()
             {
-                m_StampHeight = 0.0f;
+                m_StampHeight = 100.0f;
                 stampDown = false;
                 m_MaxBlendAdd = 0.0f;
             }
@@ -56,9 +56,21 @@ namespace UnityEditor.Experimental.TerrainAPI
         StampToolSerializedProperties stampToolProperties = new StampToolSerializedProperties();
 
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("StampTool");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "StampTool" );
+                    m_commonUI.OnEnterToolMode();
+                }
 
-        
+                return m_commonUI;
+            }
+        }
+
         public override string GetName()
         {
             return "Stamp Terrain";
@@ -85,6 +97,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
+
+            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+            mat.SetTexture("_FilterTex", filterMaskRT);
 
             renderer.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
             renderer.RenderBrush(paintContext, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.StampHeight);
@@ -114,8 +132,10 @@ namespace UnityEditor.Experimental.TerrainAPI
                     if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
                         PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds());
-                
+
                         ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, brushTexture, brushXform, terrain);
+
+                        
                     }
                 }
             }
@@ -194,7 +214,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             Styles styles = GetStyles();
             commonUI.OnInspectorGUI(terrain, editContext);
 
-            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldout(styles.controls, m_ShowControls);
+            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(styles.controls, m_ShowControls, stampToolProperties.SetDefaults);
 
             if(!m_ShowControls)
             {

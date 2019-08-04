@@ -17,13 +17,15 @@ namespace UnityEditor.Experimental.TerrainAPI
 		Terrain[] m_Terrains;
 		TerrainGroup[] m_TerrainGroups;
 		GameObject m_CurrentGroup = null;
+        const int kPixelErrorMax = 200;
+        const int kBaseMapDistMax = 2000;
 
-		// Preset
-		TerrainCreationSettings m_SelectedPreset;
+        // Preset
+        TerrainCreationSettings m_SelectedPreset;
 
 		public enum Platform { PC, Console, Mobile, LowMobile }
-		int[] HeightmapSize = new int[] { 32, 64, 128, 256, 512, 1024, 2048, 4096 };
-		string[] HeightmapSizeNames = new string[] { "32", "64", "128", "256", "512", "1024", "2048", "4096" };		
+		int[] HeightmapSize = new int[] { 33, 65, 129, 257, 513, 1025, 2049, 4097 };
+		string[] HeightmapSizeNames = new string[] { "33", "65", "129", "257", "513", "1025", "2049", "4097" };		
 
 		static class Styles
 		{
@@ -32,8 +34,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 			public static readonly GUIContent ImportHeightmap = EditorGUIUtility.TrTextContent("Import Heightmap", "Toggle to enable or disable import heightmap(s) on new terrains.");
 			public static readonly GUIContent Options = EditorGUIUtility.TrTextContent("Options");
 
-			public static readonly GUIContent TerrainWidth = EditorGUIUtility.TrTextContent("Terrain Width(m)", "Total width of the new terrain, along X axis.");
-			public static readonly GUIContent TerrainLength = EditorGUIUtility.TrTextContent("Terrain Length(m)", "Total length of the new terrain, along Z axis.");
+			public static readonly GUIContent TerrainWidth = EditorGUIUtility.TrTextContent("Total Terrain Width(m)", "Total width of the new terrain, along X axis.");
+			public static readonly GUIContent TerrainLength = EditorGUIUtility.TrTextContent("Total Terrain Length(m)", "Total length of the new terrain, along Z axis.");
 			public static readonly GUIContent TerrainHeight = EditorGUIUtility.TrTextContent("Terrain Height(m)", "Height of the new terrain, along Y axis.");
 			public static readonly GUIContent StartPosition = EditorGUIUtility.TrTextContent("Start Position", "The starting position of the new terrain.");
 			public static readonly GUIContent TilesXAxis = EditorGUIUtility.TrTextContent("Tiles X Axis", "Number of tiles along X axis.");
@@ -48,7 +50,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 			public static readonly GUIContent EnableHeightmapImport = EditorGUIUtility.TrTextContent("", "Enable/disable importing heightmap(s) for creating new terrain(s). If disabled, will generate terrain tiles with empty height values.");
 			public static readonly GUIContent HeightmapMode = EditorGUIUtility.TrTextContent("Heightmap Mode", "Select a heightmap import mode.");
-			public static readonly GUIContent SelectGlobalHeightmap = EditorGUIUtility.TrTextContent("Select Heightmap File", "Select a heightmap to import as global heightmap for the terrain.");
+			public static readonly GUIContent SelectGlobalHeightmap = EditorGUIUtility.TrTextContent("Select Heightmap File", "Select a heightmap to import as global heightmap for the terrain(s).");
 			public static readonly GUIContent SelectBatchHeightmapFolder = EditorGUIUtility.TrTextContent("Select Heightmap Folder", "Select the folder where heightmaps are. Heightmap files need to be named as NAME_INDEX-X-AXIS_INDEX-Z-AXIS. For example, heightmap_00_01");
 			public static readonly GUIContent HeightmapWidth = EditorGUIUtility.TrTextContent("Heightmap Width", "Width of the selected heightmap(s).");
 			public static readonly GUIContent HeightmapHeight = EditorGUIUtility.TrTextContent("Heightmap Height", "Width of the selected heightmap(s).");
@@ -65,8 +67,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 			public static readonly GUIContent RefreshPreset = EditorGUIUtility.TrTextContent("Refresh", "Load selected preset and apply to current creation settings");
 
 			public static readonly GUIContent Gizmo = EditorGUIUtility.TrTextContent("Gizmo", "In-scene view gizmo to help visualize the scale of the terrain to be created.");
+			public static readonly GUIContent EnableGizmo = EditorGUIUtility.TrTextContent("", "Enable/disable Gizmo");
 			public static readonly GUIContent ShowGizmo = EditorGUIUtility.TrTextContent("Show", "Make gizmo object visible.");
 			public static readonly GUIContent HideGizmo = EditorGUIUtility.TrTextContent("Hide", "Make gizmo object invisible.");
+			public static readonly GUIContent GizmoSettings = EditorGUIUtility.TrTextContent("Gizmo Settings");
+			public static readonly GUIContent CubeColor = EditorGUIUtility.TrTextContent("Cube Color");
+			public static readonly GUIContent CubeWireColor = EditorGUIUtility.TrTextContent("Cube Wire Color");
 
 			public static readonly GUIContent TerrainDataFolderPath = EditorGUIUtility.TrTextContent("TerrainData Directory", "Select or input a folder path where the new terrain data asset files will be saved.");
 			public static readonly GUIContent TerrainDataGuidEnable = EditorGUIUtility.TrTextContent("TerrainData Name Enable Guid", "Enable/disable adding guid to new terrain data asset files. Adding guid will make sure naming is unique.");
@@ -87,7 +93,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 		public void OnEnable()
 		{
-			
+
 		}
 
 		public void OnDisable()
@@ -117,23 +123,14 @@ namespace UnityEditor.Experimental.TerrainAPI
 				EditorGUI.EndDisabledGroup();
 			}
 			m_Settings.EnableHeightmapImport = importHeightmapToggle;
-
-			// Presets
-			ShowPresetGUI();
+			--EditorGUI.indentLevel;
 
 			// Gizmos
-			EditorGUILayout.BeginHorizontal();
-			EditorGUILayout.LabelField(Styles.Gizmo, EditorStyles.boldLabel);
-			if (GUILayout.Button(Styles.ShowGizmo))
-			{
-				ToolboxHelper.ShowGizmo();
-			}
-			if (GUILayout.Button(Styles.HideGizmo))
-			{
-				ToolboxHelper.HideGizmo();
-			}
-			EditorGUILayout.EndHorizontal();
-			EditorGUILayout.Space();
+			ShowGizmoGUI();
+
+			// Presets
+			++EditorGUI.indentLevel;
+			ShowPresetGUI();
 			EditorGUILayout.EndScrollView();
 
 			// Options
@@ -241,6 +238,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			return true;
 		}
 
+
 		void ShowGeneralGUI()
 		{
 			EditorGUILayout.LabelField("General", EditorStyles.boldLabel);
@@ -248,24 +246,18 @@ namespace UnityEditor.Experimental.TerrainAPI
 			++EditorGUI.indentLevel;
 			// Terrain Sizing
 			EditorGUI.BeginChangeCheck();
-			m_Settings.TerrainWidth = EditorGUILayout.IntField(Styles.TerrainWidth, m_Settings.TerrainWidth);
-			m_Settings.TerrainLength = EditorGUILayout.IntField(Styles.TerrainLength, m_Settings.TerrainLength);			
-			m_Settings.TerrainHeight = EditorGUILayout.IntField(Styles.TerrainHeight, m_Settings.TerrainHeight);
-			m_Settings.StartPosition = EditorGUILayout.Vector3Field(Styles.StartPosition, m_Settings.StartPosition);
-			if (EditorGUI.EndChangeCheck())
+            m_Settings.TerrainWidth = Mathf.Max(1, EditorGUILayout.IntField(Styles.TerrainWidth, m_Settings.TerrainWidth));
+			m_Settings.TerrainLength = Mathf.Max(1, EditorGUILayout.IntField(Styles.TerrainLength, m_Settings.TerrainLength));
+            m_Settings.TerrainHeight = Mathf.Max(1, EditorGUILayout.IntField(Styles.TerrainHeight, m_Settings.TerrainHeight));
+            m_Settings.StartPosition = EditorGUILayout.Vector3IntField(Styles.StartPosition, Vector3Int.RoundToInt(m_Settings.StartPosition));
+            if (EditorGUI.EndChangeCheck())
 			{
-				m_Settings.HeightmapRemapMax = m_Settings.TerrainHeight;
+                m_Settings.HeightmapRemapMax = m_Settings.TerrainHeight;
 			}
 
-			// Update Gizmo in scene
-			if (ToolboxHelper.GizmoEnabled)
-			{
-				ToolboxHelper.UpdateGizmos(m_Settings.TerrainWidth, m_Settings.TerrainHeight, m_Settings.TerrainLength, m_Settings.StartPosition, m_Settings.GroupID);
-			}
-
-			EditorGUI.BeginChangeCheck();
-			m_Settings.TilesX = EditorGUILayout.IntField(Styles.TilesXAxis, m_Settings.TilesX);
-			m_Settings.TilesZ = EditorGUILayout.IntField(Styles.TilesZAxis, m_Settings.TilesZ);
+            EditorGUI.BeginChangeCheck();
+			m_Settings.TilesX = Mathf.Max(1, EditorGUILayout.IntField(Styles.TilesXAxis, m_Settings.TilesX));
+			m_Settings.TilesZ = Mathf.Max(1, EditorGUILayout.IntField(Styles.TilesZAxis, m_Settings.TilesZ));
 			if (EditorGUI.EndChangeCheck() && m_Settings.EnableHeightmapImport)
 			{
 				UpdateHeightmapInformation(m_Settings.GlobalHeightmapPath);
@@ -276,8 +268,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_Settings.ShowGroupSettings = EditorGUILayout.Foldout(m_Settings.ShowGroupSettings, Styles.GroupSettings, true);
 			if (m_Settings.ShowGroupSettings)
 			{
-				m_Settings.PixelError = EditorGUILayout.FloatField(Styles.PixelError, m_Settings.PixelError);
-				m_Settings.BaseMapDistance = EditorGUILayout.IntField(Styles.BaseMapDistance, m_Settings.BaseMapDistance);
+                m_Settings.PixelError = EditorGUILayout.IntSlider(Styles.PixelError, m_Settings.PixelError, 0, kPixelErrorMax);
+                m_Settings.BaseMapDistance = EditorGUILayout.IntSlider(Styles.BaseMapDistance, m_Settings.BaseMapDistance, 0, kBaseMapDistMax);
 				m_Settings.MaterialOverride = EditorGUILayout.ObjectField(Styles.ShareMaterial, m_Settings.MaterialOverride, typeof(Material), false) as Material;
 				m_Settings.HeightmapResolution = EditorGUILayout.IntPopup("Tile Height Resolution", m_Settings.HeightmapResolution, HeightmapSizeNames, HeightmapSize);
 			}
@@ -438,6 +430,62 @@ namespace UnityEditor.Experimental.TerrainAPI
 			}
 		}
 
+		void ShowGizmoGUI()
+		{
+			TerrainToolboxUtilities.DrawSeperatorLine();
+			bool gizmoToggle = m_Settings.EnableGizmo && ToolboxHelper.GizmoGO != null ? true : false;
+			m_Settings.ShowGizmoSettings = TerrainToolGUIHelper.DrawToggleHeaderFoldout(Styles.Gizmo, m_Settings.ShowGizmoSettings, ref gizmoToggle, 0f);
+
+			if (gizmoToggle && !ToolboxHelper.GizmoEnabled)
+			{
+				ToolboxHelper.ShowGizmo();
+				ToolboxHelper.UpdateGizmos(m_Settings.TerrainWidth, m_Settings.TerrainHeight, m_Settings.TerrainLength, m_Settings.StartPosition, m_Settings.GroupID);
+			}
+			else if (!gizmoToggle && ToolboxHelper.GizmoEnabled)
+			{
+				ToolboxHelper.HideGizmo();
+			}
+
+			if (ToolboxHelper.GizmoEnabled && ToolboxHelper.GizmoGO != null)
+			{
+				if (GUI.changed)
+				{
+					ToolboxHelper.UpdateGizmos(m_Settings.TerrainWidth, m_Settings.TerrainHeight, m_Settings.TerrainLength, m_Settings.StartPosition, m_Settings.GroupID);
+				}
+				else if (ToolboxHelper.GizmoGO.transform.hasChanged)
+				{
+					Transform gizmoTransform = ToolboxHelper.GizmoGO.transform;
+					Vector3Int gizmoScale = Vector3Int.RoundToInt(gizmoTransform.localScale);
+					m_Settings.TerrainWidth = gizmoScale.x;
+					m_Settings.TerrainLength = gizmoScale.z;
+					m_Settings.TerrainHeight = gizmoScale.y;
+					m_Settings.StartPosition = ToolboxHelper.GetGizmoPosition();
+				}
+			}
+
+			
+
+			// Update gizmo colors
+			Color previousColor = m_Settings.GizmoCubeColor + m_Settings.GizmoWireColor;
+			if (m_Settings.ShowGizmoSettings)
+			{
+				EditorGUI.BeginDisabledGroup(!m_Settings.EnableGizmo);
+				EditorGUILayout.Space();
+				m_Settings.GizmoCubeColor = EditorGUILayout.ColorField(Styles.CubeColor, m_Settings.GizmoCubeColor);
+				m_Settings.GizmoWireColor = EditorGUILayout.ColorField(Styles.CubeWireColor, m_Settings.GizmoWireColor);
+				EditorGUI.EndDisabledGroup();
+			}
+			m_Settings.EnableGizmo = gizmoToggle;
+
+			if (previousColor != m_Settings.GizmoCubeColor + m_Settings.GizmoWireColor)
+			{
+				UnityEditor.SceneView.RepaintAll();
+			}
+
+			ToolboxHelper.SetGizmoColor(m_Settings.GizmoCubeColor, m_Settings.GizmoWireColor);
+
+		}
+
 		void UpdateHeightmapInformation(string path)
 		{
 			if (path == string.Empty)
@@ -562,13 +610,13 @@ namespace UnityEditor.Experimental.TerrainAPI
 				// create terrain grouping object
 				string groupName = "TerrainGroup_" + m_Settings.GroupID;				
 				GameObject terrainGroup = new GameObject(groupName);
-				TerrainGroup groupComp = terrainGroup.AddComponent<TerrainGroup>();				
+				TerrainGroup groupComp = terrainGroup.AddComponent<TerrainGroup>();	
 				terrainGroup.transform.position = m_Settings.StartPosition;
 				Heightmap globalHeightmap = null;
-				Vector2Int numHeightsPerTile = Vector2Int.zero;
 
 				Undo.RegisterCreatedObjectUndo(terrainGroup, "Create terrain");
 
+				// heightmap offset
 				if (m_Settings.UseGlobalHeightmap)
 				{
 					byte[] rawData = File.ReadAllBytes(m_Settings.GlobalHeightmapPath);
@@ -653,9 +701,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 						AssetDatabase.CreateAsset(terrainData, assetPath);
 
 						// finally, resize height resolution if needed
-						if (terrainData.heightmapResolution != (m_Settings.HeightmapResolution + 1))
+						if (terrainData.heightmapResolution != (m_Settings.HeightmapResolution))
 						{
-							ToolboxHelper.ResizeHeightmap(terrainData, (m_Settings.HeightmapResolution + 1));
+							ToolboxHelper.ResizeHeightmap(terrainData, (m_Settings.HeightmapResolution));
 						}						
 
 						Undo.RegisterCreatedObjectUndo(newGO, "Create terrain");
@@ -774,6 +822,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_SelectedPreset.HeightmapMode = m_Settings.HeightmapMode;
 			m_SelectedPreset.HeightmapDepth = m_Settings.HeightmapDepth;
 			m_SelectedPreset.FlipMode = m_Settings.FlipMode;
+			m_SelectedPreset.GizmoCubeColor = m_Settings.GizmoCubeColor;
+			m_SelectedPreset.GizmoWireColor = m_Settings.GizmoWireColor;
 			
 			if (m_Settings.HeightmapMode == Heightmap.Mode.Global)
 			{
@@ -818,8 +868,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_Settings.FlipMode = m_SelectedPreset.FlipMode;
 			m_Settings.GlobalHeightmapPath = m_SelectedPreset.GlobalHeightmapPath;
 			m_Settings.BatchHeightmapFolder = m_SelectedPreset.BatchHeightmapFolder;
+			m_Settings.GizmoCubeColor = m_SelectedPreset.GizmoCubeColor;
+			m_Settings.GizmoWireColor = m_SelectedPreset.GizmoWireColor;
 			m_Settings.TileHeightmapPaths.Clear();
 			m_Settings.TileHeightmapPaths = m_SelectedPreset.TileHeightmapPaths.ToList();
+			
 		}
 
 		void UpdateGroupSettings(TerrainGroup group)

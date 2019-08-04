@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 
 namespace Erosion {
+    public delegate void ResetTool();
+    
     public interface ITerrainEroder {
         void OnEnable();
 
@@ -9,5 +11,7 @@ namespace Erosion {
 
         Dictionary<string, RenderTexture> inputTextures { get; set; }
         Dictionary<string, RenderTexture> outputTextures { get; }
+
+        
     }
 }

@@ -101,7 +101,7 @@ float3 cubic( float4 p )
 
 **************************************************************************/
 
-float2 quintic( float1 p )
+float2 quintic( float p )
 {
     return p * p * p * ( p * (6 * p - 15) + 10 );
 }

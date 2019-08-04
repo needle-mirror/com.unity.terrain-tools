@@ -8,7 +8,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         private float m_BrushSpacing = 0.0f;
 
         private bool m_AllowPaint = true;
-
+        private bool m_ThresholdReached = false;
         private float m_DistanceTravelled = 0.0f;
         private Vector3 m_LastBrushPos;
 
@@ -40,8 +40,17 @@ namespace UnityEditor.Experimental.TerrainAPI
             Vector2 b = new Vector2(editContext.raycastHit.point.x, editContext.raycastHit.point.z);
             float d = Vector2.Distance(a, b);
 
-            m_DistanceTravelled += d;
+            float threshold = m_BrushSpacing * 200f; //TODO: make this scalar a user preference?
 
+            base.OnSceneGUI(currentEvent, controlId, terrain, editContext);
+
+            m_DistanceTravelled += d;
+            
+            if (m_DistanceTravelled > threshold) {
+                m_ThresholdReached = true;
+                m_LastBrushPos = editContext.raycastHit.point;
+                m_DistanceTravelled = 0.0f;
+            }
             m_LastBrushPos = editContext.raycastHit.point;
 
         }
@@ -53,18 +62,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext) {
             base.OnPaint(terrain, editContext);
-
-            if(m_DistanceTravelled >= m_BrushSpacing * 100.0f) {
-                m_DistanceTravelled = 0.0f;
-                m_AllowPaint = true;
-            } else {
-                m_AllowPaint = false;
+            
+            m_AllowPaint = m_ThresholdReached;
+            if (m_AllowPaint) {
+                m_ThresholdReached = false;
             }
 
-            // Hack to prevent smooth hotkey to also paint
-            if(Event.current.shift) {
-                m_AllowPaint = false;
-            }
 
             return true;
         }

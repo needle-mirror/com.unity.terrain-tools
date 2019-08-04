@@ -39,7 +39,7 @@ internal class SamplesLinkPackageManagerExtension : IPackageManagerExtension {
         if (samplesButton.parent != null)
             parent = samplesButton.parent;
 
-        bool shouldRender = packageInfo.name == TERRAIN_TOOLS_NAME;
+        bool shouldRender = packageInfo?.name == TERRAIN_TOOLS_NAME;
         if (!shouldRender) {
             samplesButton.RemoveFromHierarchy();
         }

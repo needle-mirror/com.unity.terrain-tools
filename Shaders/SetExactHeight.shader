@@ -15,6 +15,7 @@
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
             sampler2D _BrushTex;
+			sampler2D _FilterTex;
 
             float4 _BrushParams;
             #define BRUSH_STRENGTH      (_BrushParams[0])
@@ -81,7 +82,7 @@
 
                 float oldHeight = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
 				//float brushStrength = saturate(BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)));
-				float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV));
+				float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
 
                 float targetHeight = BRUSH_TARGETHEIGHT;
 
@@ -120,7 +121,8 @@
 
             float4 FillHeight( v2f i ) : SV_Target
             {
-                return PackHeightmap(BRUSH_TARGETHEIGHT);
+				float oldHeight = UnpackHeightmap(tex2D(_MainTex, i.pcUV));
+                return PackHeightmap(lerp(oldHeight, BRUSH_TARGETHEIGHT,  UnpackHeightmap(tex2D(_FilterTex, i.pcUV))));
             }
 
             ENDCG

@@ -2,33 +2,108 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
+using UnityEngine.Experimental.TerrainAPI;
 
-namespace UnityEditor.Experimental.TerrainAPI
-{
-	public abstract class BaseBrushUIGroup : IBrushUIGroup, IBrushEventHandler, IBrushTerrainCache
-	{
-		private bool m_ShowBrushTextures = true;
-		private bool m_ShowModifierControls = true;
+namespace UnityEditor.Experimental.TerrainAPI {
+    public abstract class BaseBrushUIGroup : IBrushUIGroup, IBrushEventHandler, IBrushTerrainCache {
+        private bool m_ShowBrushTextures = true;
+        private bool m_ShowModifierControls = true;
+		
+
 
 		private static readonly BrushShortcutHandler<BrushShortcutType> s_ShortcutHandler = new BrushShortcutHandler<BrushShortcutType>();
-		
-		private readonly string m_Name;
-		private readonly HashSet<Event> m_ConsumedEvents = new HashSet<Event>();
-		private readonly List<IBrushController> m_Controllers = new List<IBrushController>();
 
-		private IBrushSizeController m_BrushSizeController = null;
-		private IBrushRotationController m_BrushRotationController = null;
-		private IBrushStrengthController m_BrushStrengthController = null;
-		private IBrushSpacingController m_BrushSpacingController = null;
-		private IBrushScatterController m_BrushScatterController = null;
-		private IBrushModifierKeyController m_BrushModifierKeyController = null;
-		private IBrushSmoothController m_BrushSmoothController = null;
+        private readonly string m_Name;
+        private readonly HashSet<Event> m_ConsumedEvents = new HashSet<Event>();
+        private readonly List<IBrushController> m_Controllers = new List<IBrushController>();
 
-		public float brushSize
+        private IBrushSizeController m_BrushSizeController = null;
+        private IBrushRotationController m_BrushRotationController = null;
+        private IBrushStrengthController m_BrushStrengthController = null;
+        private IBrushSpacingController m_BrushSpacingController = null;
+        private IBrushScatterController m_BrushScatterController = null;
+        private IBrushModifierKeyController m_BrushModifierKeyController = null;
+        private IBrushSmoothController m_BrushSmoothController = null;
+
+		[ SerializeField ]
+        private FilterStack m_BrushMaskFilterStack = null;
+		public FilterStack brushMaskFilterStack
+		{
+			get
+			{
+				if( m_BrushMaskFilterStack == null )
+				{
+					if( File.Exists( getFilterStackFilePath ) )
+					{
+						m_BrushMaskFilterStack = LoadFilterStack();
+					}
+					else
+					{
+						// create the first filterstack if this is the first time this tool is being used
+						// because a save file has not been made yet for the filterstack
+						m_BrushMaskFilterStack = ScriptableObject.CreateInstance< FilterStack >();
+					}
+				}
+
+				return m_BrushMaskFilterStack;
+			}
+		}
+        private FilterStackView m_BrushMaskFilterStackView = null;
+		public FilterStackView brushMaskFilterStackView
+		{
+			get
+			{
+				// need to make the UI if the view hasnt been created yet or if the reference to the FilterStack SerializedObject has
+				// been lost, like when entering and exiting Play Mode
+				if( m_BrushMaskFilterStackView == null || m_BrushMaskFilterStackView.serializedFilterStack.targetObject == null )
+				{
+					m_BrushMaskFilterStackView = new FilterStackView(new GUIContent("Brush Mask Filters"), new SerializedObject( brushMaskFilterStack ) );
+					m_BrushMaskFilterStackView.onChanged += ( f ) =>
+					{
+						SaveFilterStack( f );
+					};
+				}
+
+				return m_BrushMaskFilterStackView;
+			}
+		}
+
+        RenderTextureCollection m_rtc = null;
+        private RenderTextureCollection rtc {
+            get {
+                if (m_rtc == null) {
+                    m_rtc = new RenderTextureCollection();
+                    m_rtc.AddRenderTexture(0, "heightMap", GraphicsFormat.R16_SFloat);
+                    m_rtc.AddRenderTexture(1, "output", GraphicsFormat.R16_SFloat);
+                }
+
+                return m_rtc;
+            }
+        }
+
+        public RenderTexture GetBrushMask(FilterContext filterContext, RenderTexture heightContext) {
+            rtc.AddRenderTexture(0, "heightMap", GraphicsFormat.R16_SFloat);
+            rtc.AddRenderTexture(1, "output", GraphicsFormat.R16_SFloat);
+            filterContext.renderTextureCollection = rtc;
+            filterContext.properties.Add("brushRotation", brushRotation);
+            filterContext.properties.Add("terrainScale", Mathf.Sqrt(filterContext.terrain.terrainData.size.x * filterContext.terrain.terrainData.size.x + filterContext.terrain.terrainData.size.z * filterContext.terrain.terrainData.size.z));
+
+            filterContext.renderTextureCollection.GatherRenderTextures(heightContext.width, heightContext.height);
+
+            Graphics.Blit(heightContext, filterContext.renderTextureCollection["heightMap"]);
+            filterContext.destinationRenderTexture = filterContext.renderTextureCollection["output"];
+
+            brushMaskFilterStack.Eval(filterContext);
+            return filterContext.renderTextureCollection["output"];
+        }
+
+        public float brushSize
 		{
 			get { return m_BrushSizeController?.brushSize ?? 25.0f; }
 			set { m_BrushSizeController.brushSize = value; }
@@ -45,7 +120,18 @@ namespace UnityEditor.Experimental.TerrainAPI
 		}
 		public float brushSpacing => m_BrushSpacingController?.brushSpacing ?? 0.0f;
 
-		public bool allowPaint => m_BrushSpacingController?.allowPaint ?? true;
+		private bool isSmoothing
+		{
+			get
+			{
+				if (m_BrushSmoothController != null)
+				{
+					return Event.current.shift;
+				}
+				return false;
+			}
+		}
+		public bool allowPaint => (m_BrushSpacingController?.allowPaint ?? true) && !isSmoothing;
 		public bool InvertStrength => m_BrushModifierKeyController?.ModifierActive(BrushModifierKey.BRUSH_MOD_INVERT) ?? false;
 		
 		public bool isInUse
@@ -65,6 +151,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 		}
 
 		private static bool s_MultipleControlShortcuts = true;
+
+
 
 		#region GUIStyles
 		private static class Styles
@@ -87,7 +175,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 		protected BaseBrushUIGroup(string name)
 		{
 			m_Name = name;
-		}
+        }
 
 		#region Shortcut Handling
         #if UNITY_2019_1_OR_NEWER
@@ -235,9 +323,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 editContext.ShowBrushesGUI(0, BrushGUIEditFlags.SelectAndInspect);
             }
 
-            // Removing this for now for cleaner UI / UX. If we want to bring this back, we should build a global
-            // Brush Settings dialog somewhere.s
-			//s_MultipleControlShortcuts = EditorGUILayout.Toggle(Styles.multipleControls, s_MultipleControlShortcuts);
+			brushMaskFilterStackView.OnGUI();
 			
 			m_ShowModifierControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.stroke, m_ShowModifierControls);
 			if (m_ShowModifierControls)
@@ -273,6 +359,43 @@ namespace UnityEditor.Experimental.TerrainAPI
 			}
 		}
 
+		private string getFilterStackFilePath
+		{
+			get { return Application.persistentDataPath + "/TerrainTools_" + m_Name + "_FilterStack.filterstack"; }
+		}
+
+		private FilterStack LoadFilterStack()
+		{
+			UnityEngine.Object[] obs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget( getFilterStackFilePath );
+
+			if( obs != null && obs.Length > 0 )
+			{
+				return obs[ 0 ] as FilterStack;
+			}
+
+			return null;
+		}
+
+		private void SaveFilterStack( FilterStack filterStack )
+		{
+			List< UnityEngine.Object > objList = new List< UnityEngine.Object >();
+			objList.Add( filterStack );
+			objList.AddRange( filterStack.filters );
+
+			filterStack.filters.ForEach( ( f ) =>
+			{
+				var l = f.GetObjectsToSerialize();
+				
+				if( l != null && l.Count > 0 )
+				{
+					objList.AddRange( l );
+				}
+			} );
+
+			// write to the file
+			UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget( objList.ToArray(), getFilterStackFilePath, true );
+		}
+
 		public virtual void OnEnterToolMode()
 		{
 			s_MultipleControlShortcuts = EditorPrefs.GetBool("TerrainTools.MultipleControlShortcuts", true);
@@ -287,6 +410,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_BrushModifierKeyController?.OnExitToolMode();
 			
 			EditorPrefs.SetBool("TerrainTools.MultipleControlShortcuts", s_MultipleControlShortcuts);
+
+			SaveFilterStack( brushMaskFilterStack );
 		}
 
         public static bool isRecording = false;
@@ -330,6 +455,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public virtual void OnPaint(Terrain terrain, IOnPaint editContext)
 		{
+            rtc.ReleaseRenderTextures();
+
             // Manage brush capture history for playback in tests
             if (isRecording)
 			{
@@ -340,15 +467,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             m_Controllers.ForEach((controller) => controller.OnPaint(terrain, editContext));
 
-
-			if (m_BrushSmoothController != null)
+			if (isSmoothing)
 			{
 				Vector2 uv = editContext.uv;
 
-				if(ScatterBrushStamp(ref terrain, ref uv)) {
-                    m_BrushSmoothController.kernelSize = 0.03f * m_BrushSizeController.brushSize;
-					m_BrushSmoothController.OnPaint(terrain, editContext, brushSize, brushRotation, brushStrength, uv);
-				}
+				m_BrushSmoothController.kernelSize = 0.03f * m_BrushSizeController.brushSize;
+				m_BrushSmoothController.OnPaint(terrain, editContext, brushSize, brushRotation, brushStrength, uv);
 			}
 
 			/// Ensure that we re-randomize where the next scatter operation will place the brush,
@@ -372,6 +496,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 		public virtual void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
 		{
+            rtc.ReleaseRenderTextures();
+
             Event currentEvent = Event.current;
 			int controlId = GUIUtility.GetControlID(BrushUITools.s_TerrainEditorHash, FocusType.Passive);
 
@@ -389,6 +515,14 @@ namespace UnityEditor.Experimental.TerrainAPI
             if (!isRecording && OnPaintOccurrence.history.Count != 0) {
                 SaveBrushData();
             }
+
+            brushMaskFilterStackView.OnSceneGUI( terrain, this );
+
+			if( editContext.hitValidTerrain && Event.current.keyCode == KeyCode.F && Event.current.type != EventType.Layout )
+			{
+				SceneView.currentDrawingSceneView.Frame( new Bounds() { center = raycastHitUnderCursor.point, size = new Vector3( brushSize, 1, brushSize ) }, false );
+				Event.current.Use();
+			}
         }
 
         private void SaveBrushData() {
@@ -412,11 +546,14 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public virtual void AppendBrushInfo(Terrain terrain, IOnSceneGUI editContext, StringBuilder builder)
 		{
-			builder.AppendLine($"Brush: {m_Name}");
+
+            builder.AppendLine($"Brush: {m_Name}");
 			builder.AppendLine();
 			
 			m_Controllers.ForEach((controller) => controller.AppendBrushInfo(terrain, editContext, builder));
-		}
+            builder.AppendLine();
+            builder.AppendLine(validationMessage);
+        }
 
 		public bool ScatterBrushStamp(ref Terrain terrain, ref Vector2 uv)
 		{
@@ -463,10 +600,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 		{
 			return m_BrushModifierKeyController?.ModifierActive(k) ?? false;
 		}
-		#endregion
 
-		#region IBrushTerrainCache
-		private int m_TerrainUnderCursorLockCount = 0;
+        #endregion
+
+        #region IBrushTerrainCache
+        private int m_TerrainUnderCursorLockCount = 0;
 		
 		public void LockTerrainUnderCursor(bool cursorVisible)
 		{
@@ -496,6 +634,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 		public Terrain terrainUnderCursor { get; private set; }
 		public bool isRaycastHitUnderCursorValid { get; private set; }
 		public RaycastHit raycastHitUnderCursor { get; private set; }
-		#endregion
-	}
+        public virtual string validationMessage { get; set; }
+        #endregion
+    }
 }

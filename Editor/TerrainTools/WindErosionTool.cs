@@ -49,7 +49,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     }
 
 
-    public class WindErosionTool : TerrainPaintTool<WindErosionTool>
+    public class WindErosionTool : TerrainPaintTool<WindErosionTool>, IValidationTests
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Wind Erosion Tool", typeof(TerrainToolShortcutContext))]                     // tells shortcut manager what to call the shortcut and what to pass as args
@@ -58,8 +58,22 @@ namespace UnityEditor.Experimental.TerrainAPI
             context.SelectPaintTool<WindErosionTool>();                                                  // set active tool
         }
 #endif
+
         [SerializeField]
-        IBrushUIGroup commonUI = new WindBrushUIGroup("WindErosion");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new WindBrushUIGroup( "WindErosion" );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
 
         Erosion.WindEroder m_Eroder = null;
 
@@ -157,6 +171,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             commonUI.OnInspectorGUI(terrain, editContext);
             m_Eroder.OnInspectorGUI();
 
+            commonUI.validationMessage = ValidateAndGenerateUserMessage(terrain);
+
             if (EditorGUI.EndChangeCheck()) {
                 Save(true);
             }
@@ -212,6 +228,17 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             return true;
         }
+        #endregion
+
+        #region IValidationTests
+        public virtual string ValidateAndGenerateUserMessage(Terrain terrain)
+        {
+            if (terrain.terrainData.heightmapResolution < 1025)
+                return "Erosion tools work best with a heightmap resolution of 1025 or greater.";
+            return "";
+
+        }
+
         #endregion
     }
 }

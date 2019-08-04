@@ -4,7 +4,7 @@ using UnityEditor;
 namespace UnityEditor.Experimental.TerrainAPI
 {
     [System.Serializable]
-    internal class MinFilter : Filter
+    public class MinFilter : Filter
     {
         [SerializeField]
         public float value;
@@ -14,11 +14,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Min";
         }
 
-        public override void Eval(RenderTexture src, RenderTexture dest, RenderTextureCollection rtCollection)
+        public override string GetToolTip()
+        {
+            return "Sets all pixels of the current mask to whichever is smaller, the current pixel value or the input value.";
+        }
+
+        public override void Eval(FilterContext fc)
         {
             FilterUtility.builtinMaterial.SetFloat("_Min", value);
 
-            Graphics.Blit( src, dest, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Min );
+            Graphics.Blit( fc.sourceRenderTexture, fc.destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Min );
         }
 
         public override void DoGUI(Rect rect)

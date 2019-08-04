@@ -27,13 +27,10 @@ namespace UnityEditor.Experimental.TerrainAPI
 			Preset = 2
 		};
 
-		// const values referenced from TerrainInspector.cs
-		const int kMinBaseTextureResolution = 16;
-		const int kMaxBaseTextureResolution = 2048;
-		const int kMinControlTextureResolution = 16;
-		const int kMaxControlTextureResolution = 2048;
-		const int kMinimumResolution = 33;
-		const int kMaximumResolution = 4097;
+        int[] m_GeneralTextureResolutions = new int[] { 32, 64, 128, 256, 512, 1024, 2048, 4096 };
+        string[] m_GeneralTextureResolutionNames = new string[] { "32", "64", "128", "256", "512", "1024", "2048", "4096" };
+        int[] m_HeightTextureResolutions = new int[] { 33, 65, 129, 257, 513, 1025, 2049, 4097 };
+        string[] m_HeightTextureResolutionNames = new string[] { "33", "65", "129", "257", "513", "1025", "2049", "4097" };
 
 		static class Styles
 		{
@@ -77,9 +74,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 			public static readonly GUIContent WavingGrassSpeed = EditorGUIUtility.TrTextContent("Size", "The size of the 'ripples' on grassy areas as the wind blows over them.");
 			public static readonly GUIContent WavingGrassAmount = EditorGUIUtility.TrTextContent("Bending", "The degree to which grass objects are bent over by the wind.");
 			public static readonly GUIContent WavingGrassTint = EditorGUIUtility.TrTextContent("Grass Tint", "Overall color tint applied to grass objects.");
-			public static readonly GUIContent BaseTextureRes = EditorGUIUtility.TrTextContent("Base Texture Resolution", $"Resolution of the composite texture used on the terrain when viewed from a distance greater than the Basemap Distance. Value range [{kMinBaseTextureResolution}, {kMaxBaseTextureResolution}]");
-			public static readonly GUIContent ControlTextureRes = EditorGUIUtility.TrTextContent("Control Texture Resolution", $"Resolution of the \"splatmap\" that controls the blending of the different terrain textures. Value range [{kMinControlTextureResolution}, {kMaxControlTextureResolution}]");
-			public static readonly GUIContent HeightTextureRes = EditorGUIUtility.TrTextContent("Heightmap Resolution", $"Pixel resolution of the terrain's heightmap (should be a power of two plus one, eg, 513 = 512 + 1). Value range [{kMinimumResolution}, {kMaximumResolution}]");
+			public static readonly GUIContent BaseTextureRes = EditorGUIUtility.TrTextContent("Base Texture Resolution", "Resolution of the composite texture used on the terrain when viewed from a distance greater than the Basemap Distance.");
+			public static readonly GUIContent ControlTextureRes = EditorGUIUtility.TrTextContent("Control Texture Resolution", "Resolution of the \"splatmap\" that controls the blending of the different terrain textures.");
+			public static readonly GUIContent HeightTextureRes = EditorGUIUtility.TrTextContent("Heightmap Resolution", "Pixel resolution of the terrain's heightmap (should be a power of two plus one, eg, 513 = 512 + 1).");
 			// warnings
 			public static readonly GUIContent DetailResolutionWarning = EditorGUIUtility.TrTextContent("You may reduce CPU draw call overhead by setting the detail resolution per patch as high as possible, relative to detail resolution.");
 			public static readonly GUIContent TerrainMaterialWarning = EditorGUIUtility.TrTextContent("Built in or default materials are not supported in scriptable rendering pipeline. Please use custom terrain material.");
@@ -92,7 +89,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 			// apply button
 			public static readonly GUIContent ApplySettingsBtn = EditorGUIUtility.TrTextContent("Apply to Selected Terrain(s)", "Start applying enabled settings to selected terrain(s).");
-			public static readonly GUIContent ApplySettingsToAllBtn = EditorGUIUtility.TrTextContent("Apply to All Terrain(s)", "Start applying enabled settings to all terrain(s) in scene.");
+			public static readonly GUIContent ApplySettingsToAllBtn = EditorGUIUtility.TrTextContent("Apply to All Terrain(s) in Scene", "Start applying enabled settings to all terrain(s) in scene.");
 		}
 
 		public void OnEnable()
@@ -139,8 +136,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			{
 				if (m_SettingsMode == SettingsMode.Default)
 				{
-					TerrainSettings defaultSettings = ScriptableObject.CreateInstance<TerrainSettings>();
-					m_Settings = defaultSettings;
+                    ResetToDefaultSettings();
 				}
 
 				if (m_SettingsMode == SettingsMode.SelectedTerrain)
@@ -243,7 +239,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			if (m_Settings.ShowTreeAndDetailSettings)
 			{
 				EditorGUI.BeginDisabledGroup(!m_Settings.EnableTreeSettings);
-				ShowTextureResolutionSettings();
+                ShowTreeAndDetailSettings();
 				EditorGUI.EndDisabledGroup();
 			}
 			--EditorGUI.indentLevel;
@@ -356,12 +352,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 		void ShowTextureResolutionSettings()
 		{
-			m_Settings.BaseTextureResolution = EditorGUILayout.IntField(Styles.BaseTextureRes, m_Settings.BaseTextureResolution);
-			m_Settings.BaseTextureResolution = Mathf.Clamp(Mathf.ClosestPowerOfTwo(m_Settings.BaseTextureResolution), kMinBaseTextureResolution, kMaxBaseTextureResolution);
-			m_Settings.AlphaMapResolution = EditorGUILayout.IntField(Styles.ControlTextureRes, m_Settings.AlphaMapResolution);
-			m_Settings.AlphaMapResolution = Mathf.Clamp(Mathf.ClosestPowerOfTwo(m_Settings.AlphaMapResolution), kMinControlTextureResolution, kMaxControlTextureResolution);
-			m_Settings.HeightMapResolution = EditorGUILayout.IntField(Styles.HeightTextureRes, m_Settings.HeightMapResolution);
-			m_Settings.HeightMapResolution = Mathf.Clamp(m_Settings.HeightMapResolution, kMinimumResolution, kMaximumResolution);
+			m_Settings.BaseTextureResolution = EditorGUILayout.IntPopup(Styles.BaseTextureRes.text, m_Settings.BaseTextureResolution, m_GeneralTextureResolutionNames, m_GeneralTextureResolutions);
+            m_Settings.AlphaMapResolution = EditorGUILayout.IntPopup(Styles.ControlTextureRes.text, m_Settings.AlphaMapResolution, m_GeneralTextureResolutionNames, m_GeneralTextureResolutions);
+            m_Settings.HeightMapResolution = EditorGUILayout.IntPopup(Styles.HeightTextureRes.text, m_Settings.HeightMapResolution, m_HeightTextureResolutionNames, m_HeightTextureResolutions);
 		}
 
 		void ShowTreeAndDetailSettings()
@@ -439,6 +432,22 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_Settings.WavingGrassAmount = terrain.terrainData.wavingGrassAmount;
 			m_Settings.WavingGrassTint = terrain.terrainData.wavingGrassTint;
 		}
+
+        void ResetToDefaultSettings()
+        {
+            TerrainSettings defaultSettings = ScriptableObject.CreateInstance<TerrainSettings>();
+            defaultSettings.ShowBasicTerrainSettings = m_Settings.ShowBasicTerrainSettings;
+            defaultSettings.ShowMeshResolutionSettings = m_Settings.ShowMeshResolutionSettings;
+            defaultSettings.ShowTextureResolutionSettings = m_Settings.ShowTextureResolutionSettings;
+            defaultSettings.ShowTreeAndDetailSettings = m_Settings.ShowTreeAndDetailSettings;
+            defaultSettings.ShowGrassWindSettings = m_Settings.ShowGrassWindSettings;
+            defaultSettings.EnableBasicSettings = m_Settings.EnableBasicSettings;
+            defaultSettings.EnableMeshResSettings = m_Settings.EnableMeshResSettings;
+            defaultSettings.EnableTextureResSettings = m_Settings.EnableTextureResSettings;
+            defaultSettings.EnableTreeSettings = m_Settings.EnableTreeSettings;
+            defaultSettings.EnableWindSettings = m_Settings.EnableWindSettings;
+            m_Settings = defaultSettings;
+        }
 
 		void ApplySettingsToAllTerrains()
 		{

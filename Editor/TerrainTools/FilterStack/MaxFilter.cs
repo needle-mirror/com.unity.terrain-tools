@@ -4,7 +4,7 @@ using UnityEditor;
 namespace UnityEditor.Experimental.TerrainAPI
 {
     [System.Serializable]
-    internal class MaxFilter : Filter
+    public class MaxFilter : Filter
     {
         [SerializeField]
         public float value;
@@ -14,11 +14,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Max";
         }
 
-        public override void Eval(RenderTexture src, RenderTexture dest, RenderTextureCollection rtCollection)
+        public override string GetToolTip()
+        {
+            return "Sets all pixels of the current mask to whichever is greater, the current pixel value or the input value.";
+        }
+
+        public override void Eval(FilterContext fc)
         {
             FilterUtility.builtinMaterial.SetFloat("_Max", value);
 
-            Graphics.Blit( src, dest, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Max );
+            Graphics.Blit( fc.sourceRenderTexture, fc.destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Max );
         }
 
         public override void DoGUI(Rect rect)

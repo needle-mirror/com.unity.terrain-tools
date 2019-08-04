@@ -21,12 +21,14 @@ namespace UnityEditor.Experimental.TerrainAPI
 		{
 			CreateTerrain = 0,
 			Settings = 1,
-			Utilities = 2
+			Utilities = 2,
+			Visualization = 3
 		}
 
 		TerrainToolboxCreateTerrain m_CreateTerrainMode;
 		TerrainToolboxSettings m_TerrainSettingsMode;
 		TerrainToolboxUtilities m_TerrainUtilitiesMode;
+		TerrainToolboxVisualization m_TerrainVisualizationMode;
 
 		const string PrefName = "TerrainToolbox.Window.Mode";
 
@@ -36,7 +38,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 			{
 				EditorGUIUtility.TrTextContent("Create New Terrain"),
 				EditorGUIUtility.TrTextContent("Terrain Settings"),
-				EditorGUIUtility.TrTextContent("Terrain Utilities")
+				EditorGUIUtility.TrTextContent("Terrain Utilities"),
+				EditorGUIUtility.TrTextContent("Terrain Visualization")
 			};
 
 			public static readonly GUIStyle ButtonStyle = "LargeButton";
@@ -47,11 +50,13 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_CreateTerrainMode = new TerrainToolboxCreateTerrain();
 			m_TerrainSettingsMode = new TerrainToolboxSettings();
 			m_TerrainUtilitiesMode = new TerrainToolboxUtilities();
-			
+			m_TerrainVisualizationMode = new TerrainToolboxVisualization();
+
 			m_CreateTerrainMode.LoadSettings();
 			m_TerrainSettingsMode.LoadSettings();
 			m_TerrainUtilitiesMode.LoadSettings();
 			m_TerrainUtilitiesMode.OnLoad();
+			m_TerrainVisualizationMode.LoadSettings();
 			LoadSettings();
 		}
 
@@ -60,6 +65,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_CreateTerrainMode.SaveSettings();
 			m_TerrainSettingsMode.SaveSettings();
 			m_TerrainUtilitiesMode.SaveSettings();
+			m_TerrainVisualizationMode.SaveSettings();
 			SaveSettings();
 		}
 
@@ -78,9 +84,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.Space();
 
+			this.autoRepaintOnSceneChange = false;
 			switch (m_SelectedMode)
 			{
 				case TerrainManagerMode.CreateTerrain:
+					this.autoRepaintOnSceneChange = true;
 					m_CreateTerrainMode.OnGUI();
 					break;
 
@@ -90,6 +98,10 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 				case TerrainManagerMode.Utilities:
 					m_TerrainUtilitiesMode.OnGUI();
+					break;
+
+				case TerrainManagerMode.Visualization:
+					m_TerrainVisualizationMode.OnGUI();
 					break;
 			}
 		}
@@ -108,6 +120,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 			GUILayout.FlexibleSpace();
 			EditorGUILayout.EndHorizontal();
+		}
+
+		void OnLostFocus()
+		{
+			m_TerrainUtilitiesMode.OnLostFocus();
 		}
 
 		void SaveSettings()

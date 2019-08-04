@@ -40,6 +40,7 @@ namespace Erosion {
         private ComputeShader m_ThermalCS = null;
 
 
+
         private ComputeShader GetHydraulicCS() {
             if (m_HydraulicCS == null) {
                 m_HydraulicCS = (ComputeShader)Resources.Load("Hydraulic");
@@ -98,7 +99,7 @@ namespace Erosion {
                 Graphics.Blit(Texture2D.blackTexture, m_WaterVelRT[i]);
                 Graphics.Blit(Texture2D.blackTexture, m_FluxRT[i]);
                 Graphics.Blit(Texture2D.blackTexture, m_SedimentRT[i]);
-                
+
             }
             Graphics.Blit(Texture2D.blackTexture, m_ErodedRT);
             Graphics.Blit(Texture2D.blackTexture, m_HardnessRT);
@@ -111,6 +112,7 @@ namespace Erosion {
         public Dictionary<string, RenderTexture> inputTextures { get; set; } = new Dictionary<string, RenderTexture>();
         public Dictionary<string, RenderTexture> outputTextures { get; private set; } = new Dictionary<string, RenderTexture>();
 
+        
         [SerializeField]
         private bool m_ShowControls = true;
         [SerializeField]
@@ -124,23 +126,15 @@ namespace Erosion {
         [SerializeField]
         private bool m_ShowRiverBankUI = false;
 
-        [SerializeField]
-        public AnimationCurve m_HeightScaleCurve = AnimationCurve.Linear(0, 1, 1, 1);
-
-        [NonSerialized]
-        Texture2D m_HeightScaleTex = null;
-        [NonSerialized]
-        Vector2 m_HeightScaleRange = new Vector2();
-
-        public void OnEnable() {
-            m_HeightScaleTex = new Texture2D(256, 1, TextureFormat.RFloat, false, true);
-        }
+        public void OnEnable() {}
 
         #region GUI
         public void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext) {
-            m_ShowControls = EditorGUILayout.Foldout(m_ShowControls, "Hydraulic Erosion Controls");
-            if (m_ShowControls) {
 
+            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForErosion(Erosion.Styles.m_HydroErosionControls, m_ShowControls, ResetToolVar);
+
+
+            if (m_ShowControls) {
                 EditorGUILayout.BeginVertical("GroupBox");
                 m_ErosionSettings.m_SimScale.DrawInspectorGUI();
 
@@ -192,8 +186,15 @@ namespace Erosion {
             }
         }
 
+        
+        public void ResetToolVar()
+        {
+            m_ErosionSettings.Reset();
+        }
+
         public void OnMaterialInspectorGUI(Terrain terrain, IOnInspectorGUI editContext) {
             m_ShowControls = EditorGUILayout.Foldout(m_ShowControls, "Hydraulic Erosion Controls");
+
             if (m_ShowControls) {
 
                 EditorGUILayout.BeginVertical("GroupBox");
@@ -224,8 +225,7 @@ namespace Erosion {
                             break;
                     }
                 }
-
-                m_HeightScaleCurve = EditorGUILayout.CurveField("Height -> Coverage", m_HeightScaleCurve);
+                
 
                 m_ErosionSettings.m_MaterialOpacity = EditorGUILayout.Slider(Erosion.Styles.m_MaterialOpacity, m_ErosionSettings.m_MaterialOpacity, 0.0f, 1.0f);
 
@@ -279,7 +279,6 @@ namespace Erosion {
         #endregion
 
         public void ErodeHeightmap(Vector3 terrainDimensions, Rect domainRect, Vector2 texelSize, bool invertEffect = false) {
-            m_HeightScaleRange = TerrainTools.Utility.AnimationCurveToRenderTexture(m_HeightScaleCurve, ref m_HeightScaleTex);
             ErodeHelper(terrainDimensions, domainRect, texelSize, invertEffect, false);
         }
 
@@ -368,8 +367,6 @@ namespace Erosion {
             float simScale = 0.001f * Mathf.Max(m_ErosionSettings.m_SimScale.value, 0.000001f);
             float dx = (float)texelSize.x * simScale;
             float dy = (float)texelSize.y * simScale;
-            //float dx2 = (1.0f / simScale) * (float)domainRes.x / (terrainScale.x * domainRect.width);//commonUI.brushSizer.brushSize);
-            //float dy2 = (1.0f / simScale) * (float)domainRes.y / (terrainScale.z * domainRect.height);//commonUI.brushSizer.brushSize);
             float dxdy = Mathf.Sqrt(dx * dx + dy * dy);
 
             float effectScalar = m_ErosionSettings.m_IterationBlendScalar.value;
@@ -383,7 +380,6 @@ namespace Erosion {
             hydraulicCS.SetVector("RiverBedScalars", new Vector4(m_ErosionSettings.m_RiverBedDissolveRate.value, m_ErosionSettings.m_RiverBedDepositRate.value, m_ErosionSettings.m_RiverBankDissolveRate.value, m_ErosionSettings.m_RiverBankDepositRate.value));
             hydraulicCS.SetVector("terrainDim", new Vector4(terrainScale.x, terrainScale.y, terrainScale.z));
             hydraulicCS.SetVector("texDim", new Vector4((float)domainRes.x, (float)domainRes.y, 0.0f, 0.0f));
-            hydraulicCS.SetVector("HeightToScaleRange", new Vector4(m_HeightScaleRange[0], m_HeightScaleRange[1], 0.0f, 0.0f));
 
             if (m_ErosionSettings.m_DoThermal) {
                 //thermal kernel inputs
@@ -414,7 +410,6 @@ namespace Erosion {
                 #region Water Velocity Step
 
                 //flow kernel textures
-                hydraulicCS.SetTexture(flowKernelIdx, "HeightToScale", m_HeightScaleTex);
                 hydraulicCS.SetTexture(flowKernelIdx, "TerrainHeightPrev", m_HeightmapRT[a]);
                 hydraulicCS.SetTexture(flowKernelIdx, "WaterPrev", m_WaterRT[a]);
                 hydraulicCS.SetTexture(flowKernelIdx, "Water", m_WaterRT[b]);
@@ -432,7 +427,6 @@ namespace Erosion {
                 #region Sediment Transport Step
 
                 //sediment kernel textures
-                hydraulicCS.SetTexture(sedimentKernelIdx, "HeightToScale", m_HeightScaleTex);
                 hydraulicCS.SetTexture(sedimentKernelIdx, "TerrainHeightPrev", m_HeightmapRT[a]);
                 hydraulicCS.SetTexture(sedimentKernelIdx, "TerrainHeight", m_HeightmapRT[b]);
                 hydraulicCS.SetTexture(sedimentKernelIdx, "Water", m_WaterRT[a]);

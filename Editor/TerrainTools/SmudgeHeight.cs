@@ -15,7 +15,20 @@ namespace UnityEditor.Experimental.TerrainAPI
 #endif
 
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("SmudgeTool");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "SmudgeTool" );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
 
         EventType m_PreviousEvent = EventType.Ignore;
         Vector2 m_PrevBrushPos = new Vector2(0.0f, 0.0f);
@@ -98,7 +111,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             commonUI.OnInspectorGUI(terrain, editContext);
 
-            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.controls, m_ShowControls);
+            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controls, m_ShowControls, Reset);
             if (m_ShowControls)
             {
                 EditorGUILayout.BeginHorizontal("GroupBox");
@@ -116,6 +129,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                 Save(true);
             }
         }
+
+        private void Reset()
+        {
+            m_AffectMaterials = true;
+            m_AffectHeight = true;
+         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
@@ -154,8 +173,15 @@ namespace UnityEditor.Experimental.TerrainAPI
                             if (layer == null) continue; // nothing to paint if the layer is NULL
 
                             PaintContext sampleContext = TerrainPaintUtility.BeginPaintTexture(terrain, brushXform.GetBrushXYBounds(), layer);
+
+                            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+                            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+                            fc.renderTextureCollection.GatherRenderTextures(sampleContext.sourceRenderTexture.width, sampleContext.sourceRenderTexture.height);
+                            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, sampleContext.sourceRenderTexture);
+                            mat.SetTexture("_FilterTex", filterMaskRT);
+
                             Graphics.Blit(sampleContext.sourceRenderTexture, sampleContext.destinationRenderTexture, mat, 0);
-                            TerrainPaintUtility.EndPaintTexture(sampleContext, "Terrain Paint - Twist Brush (Texture)");
+                            TerrainPaintUtility.EndPaintTexture(sampleContext, "Terrain Paint - Smudge Brush (Texture)");
                         }
                     }
 
@@ -163,9 +189,16 @@ namespace UnityEditor.Experimental.TerrainAPI
                     if (m_AffectHeight)
                     {
                         PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
+
+                        Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+                        FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+                        fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+                        RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+                        mat.SetTexture("_FilterTex", filterMaskRT);
+
                         TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                         Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, 0);
-                        TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Twist Brush (Height)");
+                        TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Smudge Brush (Height)");
                     }
 
                     m_PrevBrushPos = uv;

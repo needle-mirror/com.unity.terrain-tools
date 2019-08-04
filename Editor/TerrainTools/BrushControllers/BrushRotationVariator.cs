@@ -11,7 +11,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         private const float kDefaultBrushRotation = 0.0f;
         private const float kDefaultMouseSensitivity = 1.0f;
 
-        private readonly TerrainFloatMinMaxValue m_BrushRotation = new TerrainFloatMinMaxValue(styles.brushRotation, kDefaultBrushRotation, kMinBrushRotation, kMaxBrushRotation, false, kDefaultMouseSensitivity);
+        private readonly TerrainFloatMinMaxValue m_BrushRotation = new TerrainFloatMinMaxValue(styles.brushRotation, kDefaultBrushRotation, kMinBrushRotation, kMaxBrushRotation, false);
         private readonly TerrainFloatMinMaxValue m_SmoothJitterFreq = new TerrainFloatMinMaxValue(styles.jitterFreq, 1.0f, 0.0001f, 10.0f);
         private bool m_FollowMouse;
         private bool m_AdjustingRotation;

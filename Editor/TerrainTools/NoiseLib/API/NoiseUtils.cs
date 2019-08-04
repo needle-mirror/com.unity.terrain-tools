@@ -128,8 +128,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         /*=========================================================================
 
-            Blit
-                - Blit raw noise data into texture
+            Blit raw noise data into texture
 
         =========================================================================*/
 

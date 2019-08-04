@@ -4,7 +4,7 @@ using UnityEditor;
 namespace UnityEditor.Experimental.TerrainAPI
 {
     [System.Serializable]
-    internal class AddFilter : Filter
+    public class AddFilter : Filter
     {
         [SerializeField]
         public float value;
@@ -14,11 +14,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Add";
         }
 
-        public override void Eval(RenderTexture src, RenderTexture dest, RenderTextureCollection rtCollection)
+        public override string GetToolTip()
+        {
+            return "Adds a constant to the Brush Mask filter stack";
+        }
+
+        public override void Eval(FilterContext fc)
         {
             FilterUtility.builtinMaterial.SetFloat("_Add", value);
 
-            Graphics.Blit( src, dest, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Add );
+            Graphics.Blit( fc.sourceRenderTexture, fc.destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Add );
         }
 
         public override void DoGUI(Rect rect)

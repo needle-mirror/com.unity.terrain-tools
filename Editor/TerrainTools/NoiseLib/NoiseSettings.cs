@@ -134,6 +134,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         [Tooltip("Settings for noise domain")]
         public NoiseDomainSettings          domainSettings;
 
+        public bool useTextureForPositions;
+        public Texture positionTexture;
+
         // /// <summary>
         // /// MISSING
         // /// </summary>
@@ -225,6 +228,16 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             noiseType?.SetupMaterial(mat, domainSettings.noiseTypeParams);
             fractalType?.SetupMaterial(mat, domainSettings.fractalTypeParams);
+
+            if( useTextureForPositions )
+            {
+                mat.EnableKeyword( "USE_NOISE_TEXTURE" );
+                mat.SetTexture( "_NoiseTex", positionTexture );
+            }
+            else
+            {
+                mat.DisableKeyword( "USE_NOISE_TEXTURE" );
+            }
         }
 
         /// <summary>

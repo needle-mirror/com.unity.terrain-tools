@@ -18,7 +18,29 @@ namespace UnityEditor.Experimental.TerrainAPI
 #endif
 
         [SerializeField]
-        IBrushUIGroup commonUI = new DefaultBrushUIGroup("PaintHeight");
+        IBrushUIGroup m_commonUI;
+        private IBrushUIGroup commonUI
+        {
+            get
+            {
+                if( m_commonUI == null )
+                {
+                    m_commonUI = new DefaultBrushUIGroup( "PaintHeight" );
+                    m_commonUI.OnEnterToolMode();
+                }
+
+                return m_commonUI;
+            }
+        }
+
+
+        Material m_PaintHeightMat;
+        Material GetPaintHeightMaterial() {
+            if(m_PaintHeightMat == null) {
+                m_PaintHeightMat = new Material(Shader.Find("Hidden/TerrainEngine/PaintHeight"));
+            }
+            return m_PaintHeightMat;
+        }
 
         public override string GetName()
         {
@@ -47,12 +69,19 @@ namespace UnityEditor.Experimental.TerrainAPI
             commonUI.OnInspectorGUI(terrain, editContext);
         }
 
-        private void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushTransform)
+        private void ApplyBrushInternal(Terrain terrain, IPaintContextRender renderer, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushTransform)
         {
-            Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
-            
+            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
+            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
+
+            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
+            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
+
+            Material mat = GetPaintHeightMaterial();
+
             Vector4 brushParams = new Vector4(0.05f * brushStrength, 0.0f, 0.0f, 0.0f);
             mat.SetTexture("_BrushTex", brushTexture);
+            mat.SetTexture("_FilterTex", filterMaskRT);
             mat.SetVector("_BrushParams", brushParams);
 
             renderer.SetupTerrainToolMaterialProperties(paintContext, brushTransform, mat);
@@ -93,7 +122,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                         // draw result preview
                         {
                             float s = Event.current.control ? -commonUI.brushStrength : commonUI.brushStrength;
-                            ApplyBrushInternal(brushRender, paintContext, s, editContext.brushTexture, brushXform);
+                            ApplyBrushInternal(terrain, brushRender, paintContext, s, editContext.brushTexture, brushXform);
 
                             // restore old render target
                             RenderTexture.active = paintContext.oldRenderTexture;
@@ -121,7 +150,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                         PaintContext paintContext = brushRender.AcquireHeightmap(true, brushTransform.GetBrushXYBounds());
                         float s = Event.current.control ? -commonUI.brushStrength : commonUI.brushStrength;
                     
-                        ApplyBrushInternal(brushRender, paintContext, s, brushTexture, brushTransform);
+                        ApplyBrushInternal(terrain, brushRender, paintContext, s, brushTexture, brushTransform);
                     }
                 }
             }

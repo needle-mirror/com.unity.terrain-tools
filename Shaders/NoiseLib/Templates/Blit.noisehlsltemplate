@@ -62,7 +62,7 @@ Shader ${ShaderCategory}
         //     ENDHLSL
         // }
 
-        Pass // ${NoiseName} Noise
+        Pass // 0 - 2D ${NoiseName} Noise
         {
             Name "${NoiseName} Raw Noise Blit (2D)"
 
@@ -70,8 +70,15 @@ Shader ${ShaderCategory}
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature USE_NOISE_TEXTURE
 
             ${Includes}
+
+#if USE_NOISE_TEXTURE
+
+            sampler2D _NoiseTex;
+
+#endif
 
             float4 frag( v2f i ) : SV_Target
             {
@@ -79,10 +86,17 @@ Shader ${ShaderCategory}
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
                 uv +=  + float3(.5, 0, .5) * _MainTex_TexelSize.xxy; // offset by half a texel so we are sampling noise for the center of the texel
 
-                float3 pos3D = ApplyNoiseTransform( uv.xyz );
-                float2 pos2D = ApplyNoiseTransform( uv.xz );
+#if USE_NOISE_TEXTURE
+                
+                float pos = tex2D( _NoiseTex, i.uv ).r * _NoiseTransform._m00 + _NoiseTransform._m13;
 
-                float n = noise_${VariantName}( pos3D, ${GetInputs} );
+#else
+
+                float3 pos = ApplyNoiseTransform( uv.xyz );
+
+#endif
+
+                float n = noise_${VariantName}( pos, ${GetInputs} );
 
                 return n;
             }
@@ -90,7 +104,7 @@ Shader ${ShaderCategory}
             ENDHLSL
         }
 
-        Pass
+        Pass // 1 - 3D ${NoiseName} Noise
         {
             Name "${NoiseName} Raw Noise Blit (3D)"
 
@@ -98,14 +112,29 @@ Shader ${ShaderCategory}
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature _ USE_NOISE_TEXTURE
 
             ${Includes}
+
+#if USE_NOISE_TEXTURE
+
+            sampler3D _NoiseTex;
+
+#endif
 
             float _UVY;
 
             float4 frag( v2f i ) : SV_Target
             {
+#if USE_NOISE_TEXTURE
+
+                float pos = tex3D( _NoiseTex, float3(i.uv.x, _UVY, i.uv.y) ).r;
+
+#else
+
                 float3 pos = ApplyNoiseTransform( float3(i.uv.x, _UVY, i.uv.y) - float3(.5, 0, .5) );
+
+#endif
 
                 float n = noise_${VariantName}( pos, ${GetInputs} );
 
