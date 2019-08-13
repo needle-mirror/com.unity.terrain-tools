@@ -19,13 +19,16 @@ Texture2D<float>  Hardness;
 RWTexture2D<float>  TerrainHeight;      //terrain heightmap
 RWTexture2D<float>  Sediment;           //suspended sediment concentration (being transported by the water)
 
-
 float dt;                    //the time step for the simulation
 float EffectScalar;
 
 float4 texDim;     //the dimensions of all of our textures (they must all be the same dimensions)
 float3 terrainDim; //the dimensions of the terrain in world units
 
+#define LEFT(C) C.y
+#define RIGHT(C) C.x
+#define TOP(C) C.z
+#define BOTTOM(C) C.w
 
 uint4 getSafeNeighbors(uint2 coord) {
 	return uint4(
@@ -41,23 +44,24 @@ uint4 getSafeNeighbors(uint2 coord) {
 // Thermal Erosion
 //
 float4 angleOfRepose; //actually tan(theta), which is slope (m)
-float4 dxdy; //<dx, dy, dxy, 0.0>
-int numThermalIterations;
+float4 dxdy; //<dx, dy, 1.0f / dx, 1.0f / dy>
+float InvDiagMag;
 
 
 void simulateThermalErosion(uint2 coord) {
 	uint4 neigh = getSafeNeighbors(coord);
 
-	float4 hCardinal = float4(TerrainHeightPrev[uint2(neigh.y, coord.y)],  //left
-							  TerrainHeightPrev[uint2(neigh.x, coord.y)],  //right
-							  TerrainHeightPrev[uint2(coord.x, neigh.z)],  //up
-							  TerrainHeightPrev[uint2(coord.x, neigh.w)]); //down
+	float4 hCardinal = float4(TerrainHeightPrev[uint2(LEFT(neigh), coord.y)],  //left
+							  TerrainHeightPrev[uint2(RIGHT(neigh), coord.y)],  //right
+							  TerrainHeightPrev[uint2(coord.x, TOP(neigh))],  //up
+							  TerrainHeightPrev[uint2(coord.x, BOTTOM(neigh))]); //down
 
-	float4 hDiagonal = float4(TerrainHeightPrev[uint2(neigh.x, neigh.z)],  //top left
-							  TerrainHeightPrev[uint2(neigh.y, neigh.z)],  //top right
-							  TerrainHeightPrev[uint2(neigh.y, neigh.w)],  //bottom left
-							  TerrainHeightPrev[uint2(neigh.x, neigh.w)]); //bottom right
+	float4 hDiagonal = float4(TerrainHeightPrev[uint2(LEFT(neigh), TOP(neigh))],  //top left
+							  TerrainHeightPrev[uint2(RIGHT(neigh), TOP(neigh))],  //top right
+							  TerrainHeightPrev[uint2(LEFT(neigh), BOTTOM(neigh))],  //bottom left
+							  TerrainHeightPrev[uint2(RIGHT(neigh), BOTTOM(neigh))]); //bottom right
 
+	/*
 	float4 hardnessCardinal = saturate(float4(Hardness[uint2(neigh.y, coord.y)],
 									 Hardness[uint2(neigh.x, coord.y)],
 									 Hardness[uint2(coord.x, neigh.z)],
@@ -67,6 +71,7 @@ void simulateThermalErosion(uint2 coord) {
 		                             Hardness[uint2(neigh.x, neigh.z)],
 		                             Hardness[uint2(neigh.y, neigh.w)],
 		                             Hardness[uint2(neigh.x, neigh.w)]));
+	*/
 
 	float4 h = float4(TerrainHeightPrev[coord], TerrainHeightPrev[coord], TerrainHeightPrev[coord], TerrainHeightPrev[coord]);
 
@@ -76,6 +81,7 @@ void simulateThermalErosion(uint2 coord) {
 	float4 sCardinal = -1.0f * min(sign(dhCardinal), 0.0f);
 	float4 sDiagonal = -1.0f * min(sign(dhDiagonal), 0.0f);
 
+	/*
 	float4 cHardness = saturate(Hardness[coord]);
 	float4 hardness = lerp(cHardness, hardnessCardinal, sCardinal);
 
@@ -83,10 +89,11 @@ void simulateThermalErosion(uint2 coord) {
 
 	hardness = lerp(cHardness, hardnessDiagonal, sDiagonal);
 	dhDiagonal *= 1.0f - hardness;
+	*/
 
 	//compute slopes
-	float4 mCardinal = abs(dhCardinal / float4(dxdy.x, dxdy.x, dxdy.y, dxdy.y));
-	float4 mDiagonal = abs(dhDiagonal / float4(dxdy.z, dxdy.z, dxdy.z, dxdy.z));
+	float4 mCardinal = abs(dhCardinal * float4(dxdy.z, dxdy.z, dxdy.w, dxdy.w));
+	float4 mDiagonal = abs(dhDiagonal * float4(InvDiagMag, InvDiagMag, InvDiagMag, InvDiagMag));
 
 	float tau = angleOfRepose.x;
 
@@ -103,7 +110,7 @@ void simulateThermalErosion(uint2 coord) {
 	if (mDiagonal.z > tau) { dv += 0.707f * dhDiagonal.z; }
 	if (mDiagonal.w > tau) { dv += 0.707f * dhDiagonal.w; }
 
-	float halfHeight = TerrainHeightPrev[coord] / 2.0f;
+	float halfHeight = 0.5f * TerrainHeightPrev[coord];
 	dv = clamp(0.0625f * dt * dv, -halfHeight, halfHeight);
 
 	TerrainHeight[coord] = TerrainHeightPrev[coord] - dv;

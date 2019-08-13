@@ -155,7 +155,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 				}
 				else
 				{
-					if (m_Settings.HeightmapMode == Heightmap.Mode.Global && File.Exists(m_Settings.GlobalHeightmapPath))
+					if (m_Settings.EnableHeightmapImport && m_Settings.HeightmapMode == Heightmap.Mode.Global 
+						&& File.Exists(m_Settings.GlobalHeightmapPath))
 					{
 						m_Settings.UseGlobalHeightmap = true;
 					}
@@ -772,10 +773,17 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 		void CreateNewPreset()
 		{
-			string filePath = EditorUtility.SaveFilePanelInProject("Create Terrain Creation Settings", "New Terrain Creation.asset", "asset", "");			
-			m_SelectedPreset = ScriptableObject.CreateInstance<TerrainCreationSettings>();
-			m_SelectedPreset = m_Settings;
-			AssetDatabase.CreateAsset(m_SelectedPreset, filePath);
+			string filePath = EditorUtility.SaveFilePanelInProject("Create Terrain Creation Settings", "New Terrain Creation.asset", "asset", "");
+			if (string.IsNullOrEmpty(filePath))
+			{
+				return;
+			}
+			m_SelectedPreset = null;
+			var newPreset = ScriptableObject.CreateInstance<TerrainCreationSettings>();
+			newPreset = m_Settings;
+			AssetDatabase.CreateAsset(newPreset, filePath);
+			m_SelectedPreset = newPreset;
+
 			AssetDatabase.SaveAssets();
 			AssetDatabase.Refresh();
 		}

@@ -4,7 +4,15 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.0.1-preview] - 2019-08-14
+
+- Fixed a bug of Terrain Gizmo. Now tools and selection only runs in Editor mode.
+- Fixed a bug of saving Layer Palette asset in the Paint Texture Tool. 
+- Thermal erosion improvements. 
+- Test updates. 
+
 ## [2.0.0-preview] - 2019-08-05
+
 - Brush Mask Filter Stack and Filters
 - Added Brush Mask Filter Stack to each tool
 - New noise type "Strata"

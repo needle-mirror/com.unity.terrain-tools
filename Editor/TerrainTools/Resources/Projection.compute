@@ -21,7 +21,8 @@ void Divergence(uint3 id : SV_DispatchThreadID)
 	float2 b = VelocityTex2D[uint2(id.x, id.y - 1)];
 	float2 t = VelocityTex2D[uint2(id.x, id.y + 1)];
 
-	DivergenceTex2D[id.xy] = 0.5f * dxdy.x * ((r.x - l.x) + (t.y - b.y));
+	//assumes square resolution & tile dimensions :(
+	DivergenceTex2D[id.xy] = 0.5f * dxdy.z * ((r.x - l.x) + (t.y - b.y));
 }
 
 #pragma kernel GradientSubtract
@@ -33,5 +34,6 @@ void GradientSubtract(uint3 id : SV_DispatchThreadID)
 	float b = PressureTex2D[uint2(id.x, id.y - 1)];
 	float t = PressureTex2D[uint2(id.x, id.y + 1)];
 
-	VelocityOutTex2D[id.xy] = VelocityTex2D[id.xy] - 0.5f * dxdy.x * float2(r - l, t - b);
+	//assumes square resolution & tile dimensions. :(
+	VelocityOutTex2D[id.xy] = VelocityTex2D[id.xy] - 0.5f * dxdy.z * float2(r - l, t - b);
 }

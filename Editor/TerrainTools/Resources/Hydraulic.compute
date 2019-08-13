@@ -23,12 +23,13 @@ RWTexture2D<float>  SedimentPrev;
 RWTexture2D<float>  Eroded;      //how much sediment was eroded this frame
 
 float EffectScalar;
+float DT;
 
-float4 dxdydt; //<dx, dy, dxy, dt>
-#define DX	dxdydt.x
-#define DY	dxdydt.y
-#define DXY dxdydt.dxy
-#define DT	dxdydt.w
+float4 dxdy; //<dx, dy, 1 / dx, 1 / dy>
+#define DX	dxdy.x
+#define DY	dxdy.y
+#define INV_DX dxdy.z
+#define INV_DY dxdy.w
 
 float4 WaterTransportScalars; //(WaterLevelScale, precipRate, flowRate, evapRate)
 #define WATER_LEVEL_SCALE	WaterTransportScalars.x
@@ -168,17 +169,14 @@ void SimulateWaterFlow(uint3 id : SV_DispatchThreadID)
 //
 // Hydraulic Erosion
 //
-void simulateErosion(uint2 coord, float simScale, out float newSediment, out float newHeight) {
-	float cellArea = (dxdydt.x * dxdydt.y) / simScale;
+void simulateErosion(uint2 coord, out float newSediment, out float newHeight) {
+	float cellArea = dxdy.x * dxdy.y;
 
 	float kc = cellArea * SEDIMENT_CAP;
 
 	float h = TerrainHeightPrev[coord];
-	float s = SedimentPrev[coord] / SEDIMENT_SCALE;
+	float s = SedimentPrev[coord];// / SEDIMENT_SCALE;
 	float w = WaterPrev[coord] / WATER_LEVEL_SCALE;
-
-	//TODO: provide user control
-	float2 vel = WaterVel[coord].xy / (dxdydt.xy / simScale * simScale);
 
 	float3 n = computeNormal(coord);
 	
@@ -192,7 +190,7 @@ void simulateErosion(uint2 coord, float simScale, out float newSediment, out flo
 	// calculate how much sediment we will dissolve
 	// the cos function here is just to blend between the maximum dissolve rate (when no sediment is suspended)
 	// and zero, when the suspended sediment amount equals the sediment capacity
-	float hardness = 0.0f;// Hardness[coord];
+	float hardness = 0.0f;// Hardness[coord]; //TODO
 	float effectiveDissolveRate = saturate(hardness) * slopeDissolveScalar * flowSpeed * SEDIMENT_DISSOLVE_RATE * cos(0.5f * 3.14159f * (s / kc));
 	float dissolved = clamp(DT * effectiveDissolveRate, 0.0f, kc);
 
@@ -202,15 +200,14 @@ void simulateErosion(uint2 coord, float simScale, out float newSediment, out flo
 
 	newSediment = max(s + EffectScalar * (dissolved - deposited), 0.0f);
 	newHeight =  max(h + EffectScalar * (deposited - dissolved), 0.0f);
-	//newSediment = h - newHeight;
 }
 
-//TODO: general-purpose advection kernel?
-void simulateSedimentTransport(uint2 coord, float simScale, out float transportedSediment) {
+//TODO: general-purpose advection kernel? (use Advection compute shader instead, for consistency)
+void simulateSedimentTransport(uint2 coord, out float transportedSediment) {
 	float WaterSpeed = 1.0f; //user param?
 	float speed = WaterSpeed * DT;
 
-	float2 vel = WaterVel[coord].xy / (dxdydt.xy / simScale * simScale);
+	float2 vel = WaterVel[coord].xy * dxdy.xy;
 	
 	float x = clamp((float)coord.x - (speed * vel.x), 0.0f, texDim[0] - 1);
 	float y = clamp((float)coord.y - (speed * vel.y), 0.0f, texDim[1] - 1);
@@ -228,7 +225,7 @@ void simulateSedimentTransport(uint2 coord, float simScale, out float transporte
 	// sample from 4 backtraced voxels, in proportions based on where the exact backtraced position landed
 	// essentially doing bilinear interpolation here
 	transportedSediment = (s0 * (t0 * SedimentPrev[uv0] + t1 * SedimentPrev[uint2(uv0.x, uv1.y)]) +
-		                   s1 * (t1 * SedimentPrev[uint2(uv1.x, uv0.x)] + t1 * SedimentPrev[uv1])) / SEDIMENT_SCALE;
+		s1 * (t1 * SedimentPrev[uint2(uv1.x, uv0.x)] + t1 * SedimentPrev[uv1]));// / SEDIMENT_SCALE;
 }
 
 #pragma kernel HydraulicErosion
@@ -239,10 +236,11 @@ void HydraulicErosion(uint3 id : SV_DispatchThreadID)
 	float transportedSediment = 0.0f;
 	float newHeight = 0.0f;
 
-	simulateErosion(id.xy, 1.0f, dissolvedSediment, newHeight);
-	simulateSedimentTransport(id.xy, 1.0f, transportedSediment);
+	simulateErosion(id.xy, dissolvedSediment, newHeight);
+	simulateSedimentTransport(id.xy, transportedSediment); //doesn't appear to have a visual result
 
-	Eroded[id.xy] = Eroded[id.xy] + 100.0f * max(TerrainHeightPrev[id.xy] - newHeight, 0.0f);
-	Sediment[id.xy] = SEDIMENT_SCALE * (dissolvedSediment + transportedSediment);
+	//TODO: Figure out why these values are so screwy
+	//Eroded[id.xy] = Eroded[id.xy] + 100.0f * max(TerrainHeightPrev[id.xy] - newHeight, 0.0f);
+	Sediment[id.xy] = /*SEDIMENT_SCALE * */(dissolvedSediment + transportedSediment);
 	TerrainHeight[id.xy] = newHeight;
 }

@@ -149,7 +149,7 @@ namespace Erosion {
 
             m_DoThermal = true;
             m_ThermalIterations = 3;
-            m_ThermalTimeDelta = 0.004f;
+            m_ThermalTimeDelta = 0.005f;
             m_ThermalReposeAngle = 85;
 
             m_AffectHeight = true;

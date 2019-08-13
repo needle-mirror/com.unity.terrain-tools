@@ -17,6 +17,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 		public int TileXAxis = 2;
 		public int TileZAxis = 2;
 		public bool AutoUpdateSettings = true;
+		public bool KeepOldTerrains = true;
 		public string TerrainAssetDir = "Assets/Terrain";
 
 		// Layers
@@ -69,7 +70,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 		Terrain[] m_SplatExportTerrains;
 		// Terrain Edit
 		Terrain[] m_Terrains;
-        Material[] m_TerrainMaterials;
+		Material[] m_TerrainMaterials;
 		// Terrain Split
 		Terrain[] m_SplitTerrains;
 		// Layers
@@ -91,19 +92,19 @@ namespace UnityEditor.Experimental.TerrainAPI
 		int m_SelectedSplatMap = 0;
 		bool m_PreviewIsDirty = false;
 		MaterialPropertyBlock m_PreviewMaterialPropBlock = new MaterialPropertyBlock();
-        ToolboxHelper.RenderPipeline m_ActiveRenderPipeline = ToolboxHelper.RenderPipeline.None;
+		ToolboxHelper.RenderPipeline m_ActiveRenderPipeline = ToolboxHelper.RenderPipeline.None;
 
 		//Visualization
 		Material m_PreviewMaterial;
 		bool m_ShowSplatmapPreview = false;
 #if UNITY_2019_2_OR_NEWER
 #else
-        Terrain.MaterialType m_TerrainMaterialType;
-        float m_TerrainLegacyShininess;
-        Color m_TerrainLegacySpecular;
+		Terrain.MaterialType m_TerrainMaterialType;
+		float m_TerrainLegacyShininess;
+		Color m_TerrainLegacySpecular;
 #endif
 
-        int m_MaxLayerCount = 0;
+		int m_MaxLayerCount = 0;
 		int m_MaxSplatmapCount = 0;
 
 		const int kMaxLayerHD = 8; // HD allows up to 8 layers with 2 splat alpha maps
@@ -160,6 +161,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			public static readonly GUIContent TilesX = EditorGUIUtility.TrTextContent("Tiles X Axis", "Number of tiles along X axis.");
 			public static readonly GUIContent TilesZ = EditorGUIUtility.TrTextContent("Tiles Z Axis", "Number of tiles along Z axis.");
 			public static readonly GUIContent AutoUpdateSetting = EditorGUIUtility.TrTextContent("Auto Update Terrain Settings", "Automatically copy terrain settings to new tiles from original tiles upon create.");
+			public static readonly GUIContent KeepOldTerrains = EditorGUIUtility.TrTextContent("Keep Original Terrain", "Keep original terrain while splitting.");
 			public static readonly GUIContent SplitTerrainBtn = EditorGUIUtility.TrTextContent("Split", "Start splitting original terrain into small tiles.");
 
 			public static readonly GUIContent ExportHeightmapsBtn = EditorGUIUtility.TrTextContent("Export Heightmaps", "Start exporting raw heightmaps for selected terrain(s).");
@@ -286,6 +288,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_Settings.TileXAxis = EditorGUILayout.IntField(Styles.TilesX, m_Settings.TileXAxis);
 			m_Settings.TileZAxis = EditorGUILayout.IntField(Styles.TilesZ, m_Settings.TileZAxis);
 			m_Settings.AutoUpdateSettings = EditorGUILayout.Toggle(Styles.AutoUpdateSetting, m_Settings.AutoUpdateSettings);
+			m_Settings.KeepOldTerrains = EditorGUILayout.Toggle(Styles.KeepOldTerrains, m_Settings.KeepOldTerrains);
 			EditorGUILayout.BeginHorizontal();
 			EditorGUILayout.Space();
 			if (GUILayout.Button(Styles.SplitTerrainBtn, GUILayout.Height(30), GUILayout.Width(200)))
@@ -464,11 +467,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 			if (EditorGUI.EndChangeCheck())
 			{
 				m_PreviewIsDirty = true;
-                if(m_ShowSplatmapPreview)
-                {
-                    GetAndSetActiveRenderPipelineSettings();
-                }
-            }
+				if(m_ShowSplatmapPreview)
+				{
+					GetAndSetActiveRenderPipelineSettings();
+				}
+			}
 			EditorStyles.label.fontStyle = FontStyle.Normal;
 
 			++EditorGUI.indentLevel;
@@ -515,10 +518,10 @@ namespace UnityEditor.Experimental.TerrainAPI
 				}
 				else if (ValidatePreviewTexture())
 				{
-                    m_PreviewMaterial.DisableKeyword("_HEATMAP");
+					m_PreviewMaterial.DisableKeyword("_HEATMAP");
 					m_PreviewMaterial.EnableKeyword("_SPLATMAP_PREVIEW");
-                    UpdateAdjustedSplatmaps();
-                }
+					UpdateAdjustedSplatmaps();
+				}
 				m_PreviewIsDirty = false;
 			}
 		}
@@ -731,9 +734,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 					var newPixels = splatMap.GetPixels(tileOffset.x, tileOffset.y, resolution.x, resolution.y);
 #if UNITY_2019_2_OR_NEWER
 #else
-                    sortedTerrains[index].materialType = Terrain.MaterialType.Custom;
+					sortedTerrains[index].materialType = Terrain.MaterialType.Custom;
 #endif
-                    sortedTerrains[index].materialTemplate = m_PreviewMaterial;
+					sortedTerrains[index].materialTemplate = m_PreviewMaterial;
 					texture.SetPixels(newPixels);
 					texture.Apply();
 
@@ -979,68 +982,77 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 		void SplitTerrains()
 		{
-			m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene();
+			var terrainsFrom = ToolboxHelper.GetSelectedTerrainsInScene();
 
-			if (m_Terrains == null || m_Terrains.Length == 0)
+			if (terrainsFrom == null || terrainsFrom.Length == 0)
 			{
 				EditorUtility.DisplayDialog("Error", "No terrain selected. Please select and try again.", "OK");
 				return;
 			}
 
+			if (!m_Settings.KeepOldTerrains)
+			{
+				if (!EditorUtility.DisplayDialog("Warning", "About to split selected terrain(s), and this process is not undoable! You can enable Keep Original Terrain option to keep a copy of selected terrain(s). Are you sure to continue without a copy?", "Continue","Cancel"))
+				{
+					return;
+				}
+			}
+
 			// check if multiple grouping ids selected
-			if (MultipleIDExist(m_Terrains.ToList()))
+			if (MultipleIDExist(terrainsFrom.ToList()))
 			{
 				EditorUtility.DisplayDialog("Error", "The terrains selected have inconsistent Grouping IDs.", "OK");
 				return;
 			}
 
-			int new_id = GetGroupIDForSplittedNewTerrain(m_Terrains);
+			int new_id = GetGroupIDForSplittedNewTerrain(terrainsFrom);
 
-			foreach (var terrain in m_Terrains)
+			try
 			{
-				TerrainData terrainData = terrain.terrainData;
-				Vector3 startPosition = terrain.transform.position;
-				float tileWidth = terrainData.size.x / m_Settings.TileXAxis;
-				float tileLength = terrainData.size.z / m_Settings.TileZAxis;
-				float tileHeight = terrainData.size.y;
-				Vector2Int tileResolution = new Vector2Int((int)(terrainData.size.x / m_Settings.TileXAxis), (int)(terrainData.size.z / m_Settings.TileZAxis));
-				Vector2Int heightOffset = Vector2Int.zero;
-				Vector2Int controlOffset = Vector2Int.zero;
-				Vector3 tilePosition = terrain.transform.position;
-
-				// get terrain group
-				GameObject groupGO = null;
-				if (terrain.transform.parent != null && terrain.transform.parent.gameObject != null)
+				foreach (var terrain in terrainsFrom)
 				{
-					var parent = terrain.transform.parent.gameObject;
-					var groupComp = parent.GetComponent<TerrainGroup>();
-					if (parent != null && groupComp != null)
+					TerrainData terrainData = terrain.terrainData;
+					Vector3 startPosition = terrain.transform.position;
+					float tileWidth = terrainData.size.x / m_Settings.TileXAxis;
+					float tileLength = terrainData.size.z / m_Settings.TileZAxis;
+					float tileHeight = terrainData.size.y;
+					Vector2Int tileResolution = new Vector2Int((int)(terrainData.size.x / m_Settings.TileXAxis), (int)(terrainData.size.z / m_Settings.TileZAxis));
+					Vector2Int heightOffset = Vector2Int.zero;
+					Vector2Int controlOffset = Vector2Int.zero;
+					Vector3 tilePosition = terrain.transform.position;
+
+					// get terrain group
+					GameObject groupGO = null;
+					if (terrain.transform.parent != null && terrain.transform.parent.gameObject != null)
 					{
-						groupGO = parent;
+						var parent = terrain.transform.parent.gameObject;
+						var groupComp = parent.GetComponent<TerrainGroup>();
+						if (parent != null && groupComp != null)
+						{
+							groupGO = parent;
+						}
 					}
-				}
 
-				int newHeightmapRes = (terrainData.heightmapResolution - 1) / m_Settings.TileXAxis;
-				if (!ToolboxHelper.IsPowerOfTwo(newHeightmapRes))
-				{
-					EditorUtility.DisplayDialog("Error", "Heightmap resolution of new tiles is not power of 2 with current settings.", "OK");
-					return;
-				}
+					int newHeightmapRes = (terrainData.heightmapResolution - 1) / m_Settings.TileXAxis;
+					if (!ToolboxHelper.IsPowerOfTwo(newHeightmapRes))
+					{
+						EditorUtility.DisplayDialog("Error", "Heightmap resolution of new tiles is not power of 2 with current settings.", "OK");
+						return;
+					}
 
-				// control map resolution
-				int newControlRes = terrainData.alphamapResolution / m_Settings.TileXAxis;
-				if (!ToolboxHelper.IsPowerOfTwo(newControlRes))
-				{
-					EditorUtility.DisplayDialog("Error", "Splat control map resolution of new tiles is not power of 2 with current settings.", "OK");
-					return;
-				}
+					// control map resolution
+					int newControlRes = terrainData.alphamapResolution / m_Settings.TileXAxis;
+					if (!ToolboxHelper.IsPowerOfTwo(newControlRes))
+					{
+						EditorUtility.DisplayDialog("Error", "Splat control map resolution of new tiles is not power of 2 with current settings.", "OK");
+						return;
+					}
 
-				int tileIndex = 0;
-				int tileCount = m_Settings.TileXAxis * m_Settings.TileZAxis;
-				Terrain[] terrains = new Terrain[tileCount];
+					int tileIndex = 0;
+					int tileCount = m_Settings.TileXAxis * m_Settings.TileZAxis;
+					Terrain[] terrainsNew = new Terrain[tileCount];
 
-				try
-				{
+
 					for (int x = 0; x < m_Settings.TileXAxis; x++, heightOffset.x += newHeightmapRes, controlOffset.x += newControlRes, tilePosition.x += tileWidth)
 					{
 						heightOffset.y = 0;
@@ -1095,27 +1107,30 @@ namespace UnityEditor.Experimental.TerrainAPI
 								ApplySettingsFromSourceToTargetTerrain(terrain, newTerrain);
 							}
 
-							terrains[tileIndex] = newTerrain;
+							terrainsNew[tileIndex] = newTerrain;
 							tileIndex++;
 
 							Undo.RegisterCreatedObjectUndo(newGO, "Split terrain");
 						}
 					}
-					m_SplitTerrains = terrains;
+					m_SplitTerrains = terrainsNew;
 					ToolboxHelper.CalculateAdjacencies(m_SplitTerrains, m_Settings.TileXAxis, m_Settings.TileZAxis);
 				}
-				finally
-				{
-					AssetDatabase.SaveAssets();
-					AssetDatabase.Refresh();
-					EditorUtility.ClearProgressBar();
-					EditorSceneManager.SaveOpenScenes();
+			}
+			finally
+			{
+				AssetDatabase.SaveAssets();
+				AssetDatabase.Refresh();
+				EditorUtility.ClearProgressBar();
+				EditorSceneManager.SaveOpenScenes();
 
-					foreach (var t in m_Terrains)
+				if (!m_Settings.KeepOldTerrains)
+				{
+					foreach (var t in terrainsFrom)
 					{
 						GameObject.DestroyImmediate(t.gameObject);
 					}
-				}
+				}				
 			}
 		}
 
@@ -1629,35 +1644,35 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 		void RevertPreviewMaterial()
 		{
-            if(m_PreviewMaterial == null)
-            {
-                GetAndSetActiveRenderPipelineSettings();
-            }
-            m_PreviewMaterial.DisableKeyword("_SPLATMAP_PREVIEW");
-            for (int i = 0; i < m_Terrains.Length; i++)
-            {
-                if(m_Terrains[i] != null)
-                {
+			if(m_PreviewMaterial == null)
+			{
+				GetAndSetActiveRenderPipelineSettings();
+			}
+			m_PreviewMaterial.DisableKeyword("_SPLATMAP_PREVIEW");
+			for (int i = 0; i < m_Terrains.Length; i++)
+			{
+				if(m_Terrains[i] != null)
+				{
 #if UNITY_2019_2_OR_NEWER
-                    m_Terrains[i].materialTemplate = m_TerrainMaterials[i];
+					m_Terrains[i].materialTemplate = m_TerrainMaterials[i];
 #else
-                    m_Terrains[i].materialType = m_TerrainMaterialType;
-                    if (m_TerrainMaterialType == Terrain.MaterialType.Custom)
-                    {
-                        m_Terrains[i].materialTemplate = m_TerrainMaterials[i];
-                    }
-                    else if (m_TerrainMaterialType == Terrain.MaterialType.BuiltInLegacySpecular)
-                    {
-                        m_Terrains[i].legacyShininess = m_TerrainLegacyShininess;
-                        m_Terrains[i].legacySpecular = m_TerrainLegacySpecular;
-                        m_Terrains[i].materialTemplate = null;
-                    }
-                    else
-                    {
-                        m_Terrains[i].materialTemplate = null;
-                    }
+					m_Terrains[i].materialType = m_TerrainMaterialType;
+					if (m_TerrainMaterialType == Terrain.MaterialType.Custom)
+					{
+						m_Terrains[i].materialTemplate = m_TerrainMaterials[i];
+					}
+					else if (m_TerrainMaterialType == Terrain.MaterialType.BuiltInLegacySpecular)
+					{
+						m_Terrains[i].legacyShininess = m_TerrainLegacyShininess;
+						m_Terrains[i].legacySpecular = m_TerrainLegacySpecular;
+						m_Terrains[i].materialTemplate = null;
+					}
+					else
+					{
+						m_Terrains[i].materialTemplate = null;
+					}
 #endif
-                }
+				}
 			}
 			m_ShowSplatmapPreview = false;
 		}
@@ -1667,13 +1682,13 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_ActiveRenderPipeline = ToolboxHelper.GetRenderPipeline();
 			m_PreviewMaterial = AssetDatabase.LoadAssetAtPath<Material>("Packages/com.unity.terrain-tools/editor/terraintoolbox/materials/terrainvisualization.mat");
 
-            m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene();
-            m_TerrainMaterials = new Material[m_Terrains.Length];
-            for(int i = 0; i < m_TerrainMaterials.Length; i++)
-            {
-                m_TerrainMaterials[i] = m_Terrains[i].materialTemplate;
-            }
-            switch (m_ActiveRenderPipeline)
+			m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene();
+			m_TerrainMaterials = new Material[m_Terrains.Length];
+			for(int i = 0; i < m_TerrainMaterials.Length; i++)
+			{
+				m_TerrainMaterials[i] = m_Terrains[i].materialTemplate;
+			}
+			switch (m_ActiveRenderPipeline)
 			{
 				case ToolboxHelper.RenderPipeline.HD:
 					m_MaxLayerCount = kMaxLayerHD;
@@ -1693,20 +1708,19 @@ namespace UnityEditor.Experimental.TerrainAPI
 					m_MaxLayerCount = kMaxNoLimit;
 					m_MaxSplatmapCount = kMaxNoLimit;
 					if (m_Terrains == null || m_Terrains.Length == 0)
-                    {
-                        break;
-                    }               
-
+					{
+						break;
+					}
 #if UNITY_2019_2_OR_NEWER
 #else
-                    m_TerrainMaterialType = m_Terrains[0].materialType;
-                    if (m_TerrainMaterialType == Terrain.MaterialType.BuiltInLegacySpecular)
-                    {
-                        m_TerrainLegacyShininess = m_Terrains[0].legacyShininess;
-                        m_TerrainLegacySpecular = m_Terrains[0].legacySpecular;
-                    }
+					m_TerrainMaterialType = m_Terrains[0].materialType;
+					if (m_TerrainMaterialType == Terrain.MaterialType.BuiltInLegacySpecular)
+					{
+						m_TerrainLegacyShininess = m_Terrains[0].legacyShininess;
+						m_TerrainLegacySpecular = m_Terrains[0].legacySpecular;
+					}
 #endif
-                    m_PreviewMaterial.shader = Shader.Find("Hidden/Builtin_TerrainVisualization");
+					m_PreviewMaterial.shader = Shader.Find("Hidden/Builtin_TerrainVisualization");
 					break;
 			}
 		}
@@ -1714,12 +1728,19 @@ namespace UnityEditor.Experimental.TerrainAPI
 		void CreateNewPalette()
 		{
 			string filePath = EditorUtility.SaveFilePanelInProject("Create New Palette", "New Layer Palette.asset", "asset", "");
-			m_SelectedLayerPalette = ScriptableObject.CreateInstance<TerrainPalette>();
+			if (string.IsNullOrEmpty(filePath))
+			{
+				return;
+			}
+			m_SelectedLayerPalette = null;
+			var newPalette = ScriptableObject.CreateInstance<TerrainPalette>();			
 			foreach (var layer in m_PaletteLayers)
 			{
-				m_SelectedLayerPalette.PaletteLayers.Add(layer.AssignedLayer);
+				newPalette.PaletteLayers.Add(layer.AssignedLayer);
 			}
-			AssetDatabase.CreateAsset(m_SelectedLayerPalette, filePath);
+			AssetDatabase.CreateAsset(newPalette, filePath);
+			m_SelectedLayerPalette = newPalette;
+
 			AssetDatabase.SaveAssets();
 			AssetDatabase.Refresh();
 		}
@@ -1771,9 +1792,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 			string filePath = ToolboxHelper.GetPrefFilePath(ToolboxHelper.ToolboxPrefsUtility);
 			string utilitySettings = JsonUtility.ToJson(m_Settings);
 			File.WriteAllText(filePath, utilitySettings);
-            RevertPreviewMaterial();
-            SceneView.RepaintAll();
-        }
+			RevertPreviewMaterial();
+			SceneView.RepaintAll();
+		}
 
 		public void LoadSettings()
 		{
@@ -1795,8 +1816,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 			GetAndSetActiveRenderPipelineSettings();
 			EditorSceneManager.sceneSaving += OnSceneSaving;
-            EditorSceneManager.sceneOpened += OnSceneOpened;
-            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+			EditorSceneManager.sceneOpened += OnSceneOpened;
+			EditorApplication.playModeStateChanged += OnPlayModeChanged;
 		}
 
 		public void OnLostFocus()
@@ -1824,18 +1845,18 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 		void OnSceneSaving(UnityEngine.SceneManagement.Scene scene, string path)
 		{
-            if(m_ShowSplatmapPreview)
-            {
-                RevertPreviewMaterial();
-            }
-        }
+			if(m_ShowSplatmapPreview)
+			{
+				RevertPreviewMaterial();
+			}
+		}
 
-        void OnSceneOpened(UnityEngine.SceneManagement.Scene scene, OpenSceneMode open)
-        {
-            m_PaletteLayers.Clear();
-        }
+		void OnSceneOpened(UnityEngine.SceneManagement.Scene scene, OpenSceneMode open)
+		{
+			m_PaletteLayers.Clear();
+		}
 
-        void OnPlayModeChanged(PlayModeStateChange state)
+		void OnPlayModeChanged(PlayModeStateChange state)
 		{
 			RevertPreviewMaterial();
 		}

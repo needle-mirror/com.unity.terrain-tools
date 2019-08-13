@@ -190,13 +190,11 @@ namespace Erosion {
             float dy = (float)texelSize.y * m_SimulationScale.value;
 
             float dxy = Mathf.Sqrt(dx * dx + dy * dy);
-            float gridScale = 0.5f / dx;
             Vector4 dxdy = new Vector4(dx, dy, 1.0f / dx, 1.0f / dy); //TODO: make this the same for all compute shaders
 
             advectionCS.SetFloat("dt", m_dt.value);
             advectionCS.SetFloat("velScale", m_AdvectionVelScale.value);
             advectionCS.SetVector("dxdy", dxdy);
-            advectionCS.SetVector("domainDim", new Vector4(domainRect.width, domainRect.height, 0.0f, 0.0f));
             advectionCS.SetVector("DomainRes", new Vector4((float)xRes, (float)yRes, 1.0f / (float)xRes, 1.0f / (float)yRes));
 
             diffusionCS.SetFloat("dt", m_dt.value);
@@ -210,7 +208,7 @@ namespace Erosion {
             aeolianCS.SetFloat("DragCoefficient", m_DragCoefficient.value);
             aeolianCS.SetFloat("ReflectionCoefficient", m_ReflectionCoefficient.value);
             aeolianCS.SetFloat("AbrasivenessCoefficient", m_AbrasivenessCoefficient.value * 1000.0f);
-            aeolianCS.SetVector("texDim", new Vector4((float)xRes, (float)yRes, 0.0f, 0.0f));
+            aeolianCS.SetVector("DomainDim", new Vector4((float)xRes, (float)yRes, 0.0f, 0.0f));
             aeolianCS.SetVector("terrainScale", new Vector4(terrainScale.x, terrainScale.y, terrainScale.z, 0.0f));
             aeolianCS.SetVector("dxdy", dxdy);
 
@@ -301,7 +299,8 @@ namespace Erosion {
 
                 #region Thermal / Diffusion
                 thermalCS.SetFloat("dt", m_ThermalTimeDelta.value * m_dt.value);
-                thermalCS.SetVector("dxdy", new Vector4(dx, dy, Mathf.Sqrt(dx * dx + dy * dy), 0.0f));
+                thermalCS.SetFloat("InvDiagMag", 1.0f / Mathf.Sqrt(dx * dx + dy * dy));
+                thermalCS.SetVector("dxdy", new Vector4(dx, dy, 1.0f / dx, 1.0f / dy));
                 thermalCS.SetVector("terrainDim", new Vector4(terrainScale.x, terrainScale.y, terrainScale.z));
                 thermalCS.SetVector("texDim", new Vector4((float)xRes, (float)yRes, 0.0f, 0.0f));
 
@@ -393,13 +392,13 @@ namespace Erosion {
         }
         public void ResetSettings()
         {
-            m_WindSpeed.value = 50.0f;
+            m_WindSpeed.value = 100.0f;
             m_WindSpeed.minValue = 0.0f;
-            m_WindSpeed.maxValue = 100.0f;
+            m_WindSpeed.maxValue = 500.0f;
             
             m_WindSpeedJitter = 0.0f;
 
-            m_dt.value = 0.0005f;
+            m_dt.value = 0.001f;
             m_dt.minValue = 0.00001f;
             m_dt.maxValue = 0.05f;
            
@@ -430,15 +429,15 @@ namespace Erosion {
             m_AdvectionVelScale.minValue = 0.0f;
             m_AdvectionVelScale.maxValue = 25.0f;
 
-            m_SuspensionRate.value = 1.5f;
+            m_SuspensionRate.value = 100.0f;
             m_SuspensionRate.minValue = 0.0f;
-            m_SuspensionRate.maxValue = 25.0f;
+            m_SuspensionRate.maxValue = 200.0f;
 
-            m_DepositionRate.value = 10.0f;
+            m_DepositionRate.value = 25.0f;
             m_DepositionRate.minValue = 0.0f;
-            m_DepositionRate.maxValue = 25.0f;
+            m_DepositionRate.maxValue = 200.0f;
 
-            m_SlopeFactor.value = 1.2f;
+            m_SlopeFactor.value = 1.0f;
             m_SlopeFactor.minValue = 0.5f;
             m_SlopeFactor.maxValue = 4.0f;
 

@@ -32,12 +32,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         Erosion.ThermalEroder m_Eroder = null;
 
-        [SerializeField]
-        private int m_MaterialPaintStrength = 50;
-
-        [SerializeField]
-        UnityEngine.TerrainLayer m_SelectedTerrainLayer = null;
-
         public override void OnEnable() {
             base.OnEnable();
             m_Eroder = new Erosion.ThermalEroder();
@@ -69,14 +63,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             if (m_SplatMaterial == null)
                 m_SplatMaterial = new Material(Shader.Find("Hidden/TerrainTools/SedimentSplat"));
             return m_SplatMaterial;
-        }
-
-        ComputeShader m_ComputeShader = null;
-        ComputeShader GetComputeShader() {
-            if (m_ComputeShader == null) {
-                m_ComputeShader = (ComputeShader)Resources.Load("Hidden/TerrainTools/TerraceErosion");
-            }
-            return m_ComputeShader;
         }
         #endregion
 
@@ -132,18 +118,11 @@ namespace UnityEditor.Experimental.TerrainAPI
             commonUI.OnInspectorGUI(terrain, editContext);
             commonUI.validationMessage = ValidateAndGenerateUserMessage(terrain);
 
-
             m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForErosion(Erosion.Styles.m_ThermalErosionControls, m_ShowControls, m_Eroder.ResetTool);
 
             if (m_ShowControls) {
 
                 EditorGUILayout.BeginVertical("GroupBox");
-
-                /*m_AffectHeight = EditorGUILayout.Toggle(Erosion.Styles.m_AffectHeight, m_AffectHeight);
-
-                if (m_AffectHeight) {
-                    m_AddHeightAmt = EditorGUILayout.IntSlider(Erosion.Styles.m_AddHeight, m_AddHeightAmt, 0, 100);
-                }*/
 
                 string[] matNames = {
                     "Custom",
@@ -194,32 +173,9 @@ namespace UnityEditor.Experimental.TerrainAPI
                         m_Eroder.m_MatPreset = 0; //we changed the angle of repose, so now we should switch the UI to "Custom"
                     }
 
-
                     m_Eroder.m_ReposeJitter = EditorGUILayout.IntSlider(Erosion.Styles.m_AngleOfReposeJitter, (int)m_Eroder.m_ReposeJitter, 0, 100);
-                    //m_ReposeNoiseScale = EditorGUILayout.Slider("Material Variation Scale", m_ReposeNoiseScale, 0.0001f, 1.0f);
-                    //m_ReposeNoiseAmount = EditorGUILayout.Slider("Material Variation Amount", m_ReposeNoiseAmount, 0.0f, 1.0f);
                 }
 
-                /*
-                m_ShowMaterialUI = EditorGUILayout.Foldout(m_ShowMaterialUI, "Material");
-                if (m_ShowMaterialUI) {
-                    m_AffectMaterial = EditorGUILayout.Toggle(Erosion.Styles.m_AffectMaterial, m_AffectMaterial);
-                    if (m_AffectMaterial) {
-                        m_MaterialPaintStrength = EditorGUILayout.IntSlider(Erosion.Styles.m_MaterialPaintStrength, m_MaterialPaintStrength, -100, 100);
-
-                        EditorGUI.BeginChangeCheck();
-
-                        int layerIndex = TerrainPaintUtility.FindTerrainLayerIndex(terrain, m_SelectedTerrainLayer);
-                        layerIndex = TerrainLayerUtility.ShowTerrainLayersSelectionHelper(terrain, layerIndex);
-                        if (EditorGUI.EndChangeCheck()) {
-                            if (layerIndex != -1)
-                                m_SelectedTerrainLayer = terrain.terrainData.terrainLayers[layerIndex];
-
-                            Save(true);
-                        }
-                    }
-                }
-                */
                 EditorGUILayout.EndVertical();
             }
 
@@ -230,29 +186,6 @@ namespace UnityEditor.Experimental.TerrainAPI
         #endregion
 
         #region Paint
-        private void PaintSplatMap(Terrain terrain, IOnPaint editContext, RenderTexture sedimentRT) {
-            using(IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "ThermalErosion", editContext.brushTexture))
-            {
-                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
-                {
-                    PaintContext paintContext = brushRender.AcquireTexture(true, brushXform.GetBrushXYBounds(), m_SelectedTerrainLayer);
-                    if (paintContext == null)
-                        return;
-
-                    Material mat = GetSplatMaterial();
-
-                    // apply brush
-                    float splatStrength = Mathf.Lerp(-1000.0f, 1000.0f, 0.005f * (float)(m_MaterialPaintStrength + 100));
-                    Vector4 brushParams = new Vector4(commonUI.brushStrength, splatStrength, 0.0f, 0.0f);
-                    mat.SetTexture("_BrushTex", editContext.brushTexture);
-                    mat.SetTexture("_MaskTex", sedimentRT);
-                    mat.SetVector("_BrushParams", brushParams);
-
-                    brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
-                    brushRender.RenderBrush(paintContext, mat, 0);
-                }
-            }
-        }
 
         private void AddHeight(Terrain terrain, IOnPaint editContext) {
             using(IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "ThermalErosion", editContext.brushTexture))
@@ -283,8 +216,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             commonUI.OnPaint(terrain, editContext);
 
             if(!commonUI.allowPaint) { return false; }
-
-            ComputeShader cs = GetComputeShader();
 
             int[] numWorkGroups = { 8, 8, 1 };
 

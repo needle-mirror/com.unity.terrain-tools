@@ -18,8 +18,9 @@ namespace UnityEngine.Experimental.TerrainAPI
 			Gizmos.color = CubeWireColor;
 			Gizmos.DrawWireCube(Vector3.zero, Vector3.one);
 
-            //Disable rotate tool
-            if(Selection.Contains(this.gameObject))
+#if UNITY_EDITOR
+			//Disable rotate tool
+			if(Selection.Contains(this.gameObject))
             {
                 Tools.hidden = Tools.current == Tool.Rotate ? true : false;
             }
@@ -27,6 +28,7 @@ namespace UnityEngine.Experimental.TerrainAPI
             {
                 Tools.hidden = false;
             }
-        }
+#endif
+		}
     }
 }

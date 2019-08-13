@@ -168,15 +168,14 @@ namespace UnityEditor.Experimental.TerrainAPI
 			{
 				if (m_SelectedPreset == null)
 				{
-					if (EditorUtility.DisplayDialog("Confirm", "Update settings with selected preset?", "Continue", "Cancel"))
+					if (EditorUtility.DisplayDialog("Confirm", "No preset selected. Create a new preset?", "Continue", "Cancel"))
 					{
 						CreateNewPreset();
 					}
 				}
 				else
 				{
-					m_SelectedPreset = m_Settings;
-					SaveSettings();
+					SavePresetSettings();
 				}
 			}
 			if (GUILayout.Button(Styles.SaveAsPreset))
@@ -570,11 +569,22 @@ namespace UnityEditor.Experimental.TerrainAPI
 		}
 
 		void CreateNewPreset()
-		{
+		{			
 			string filePath = EditorUtility.SaveFilePanelInProject("Save Terrain Setting Preset", "New Terrain Settings Preset.asset", "asset", "");
-			m_SelectedPreset = ScriptableObject.CreateInstance<TerrainSettings>();
-			m_SelectedPreset = m_Settings;
-			AssetDatabase.CreateAsset(m_SelectedPreset, filePath);
+			if (string.IsNullOrEmpty(filePath))
+			{
+				return;
+			}
+
+			if (!File.Exists(filePath))
+			{
+				m_SelectedPreset = null;
+				var newPreset = ScriptableObject.CreateInstance<TerrainSettings>();
+				newPreset = m_Settings;
+				AssetDatabase.CreateAsset(newPreset, filePath);
+			}
+			
+			m_SelectedPreset = AssetDatabase.LoadAssetAtPath<TerrainSettings>(filePath);
 			SavePresetSettings();
 		}
 

@@ -98,11 +98,6 @@ namespace UnityEditor.Experimental.TerrainAPI
                 m_Settings.TerrainMaxHeight = m_Terrains[0].terrainData.size.y;
             }
 
-            if (m_selectedMode != VISUALIZERMODE.None && m_selectedMode != m_previousMode)
-            {
-                GetAndSetActiveRenderPipelineSettings();
-            }
-
             switch (m_selectedMode)
             {
                 case VISUALIZERMODE.AltitudeHeatmap:
@@ -219,7 +214,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         void UpdateHeatmapSettings()
         {
-            MaterialPropertyBlock heatmapBlock = new MaterialPropertyBlock();
+			GetAndSetActiveRenderPipelineSettings();
+
+			MaterialPropertyBlock heatmapBlock = new MaterialPropertyBlock();
             Vector4 shaderParams = new Vector4(m_Settings.MinDistance, m_Settings.MaxDistance, m_Settings.SeaLevel, 0);
 
             if (m_Settings.ReferenceSpace == TerrainVisualizationSettings.REFERENCESPACE.WorldSpace 
@@ -372,7 +369,9 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 GetAndSetActiveRenderPipelineSettings();
             }
+
             m_VisualizationMaterial.DisableKeyword("_HEATMAP");
+
             for(int i = 0; i < m_Terrains.Count; i++)
             {
                 if (m_Terrains[i] != null && m_TerrainMaterials[i] != null)
@@ -406,8 +405,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             ToolboxHelper.RenderPipeline m_ActiveRenderPipeline = ToolboxHelper.GetRenderPipeline();
             m_VisualizationMaterial = AssetDatabase.LoadAssetAtPath<Material>("Packages/com.unity.terrain-tools/editor/terraintoolbox/materials/terrainvisualization.mat");
 
-            //Get materials to revert to
-            m_TerrainMaterials.Clear();
+			//Get terrains
+			if (m_Terrains == null || GameObject.FindObjectsOfType<Terrain>().Length != m_Terrains.Count || m_Terrains[0] == null)
+			{
+				m_Terrains.Clear();
+				m_Terrains.AddRange(ToolboxHelper.GetAllTerrainsInScene());
+				m_Settings.TerrainMaxHeight = m_Terrains[0].terrainData.size.y;
+			}
+
+			//Get materials to revert to
+			m_TerrainMaterials.Clear();
             foreach(Terrain terrain in m_Terrains)
             {
                 m_TerrainMaterials.Add(terrain.materialTemplate);

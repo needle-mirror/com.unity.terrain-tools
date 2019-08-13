@@ -196,7 +196,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 {
                     if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
-                        PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
+                        PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 4);
                         paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
 
                         //paintContext.sourceRenderTexture = input heightmap

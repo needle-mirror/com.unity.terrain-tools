@@ -41,7 +41,7 @@ namespace UnityEditor.Experimental.TerrainAPI {
 
         public override string GetToolTip()
         {
-            return "Uses the slope (first derivative) of the heightmap to mask the effect of the chosen Brush.";
+            return "Uses the slope angle of the heightmap to mask the effect of the chosen Brush.";
         }
 
         public override void Eval(FilterContext fc) {

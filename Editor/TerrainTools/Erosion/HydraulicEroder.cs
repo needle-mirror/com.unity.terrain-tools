@@ -152,7 +152,7 @@ namespace Erosion {
                     m_ShowThermalUI = EditorGUILayout.Foldout(m_ShowThermalUI, "Thermal Smoothing");
                     if (m_ShowThermalUI) {
                         //m_ErosionSettings.m_DoThermal = EditorGUILayout.Toggle(Erosion.Styles.m_DoThermal, m_ErosionSettings.m_DoThermal);
-                        m_ErosionSettings.m_ThermalTimeDelta = EditorGUILayout.Slider(Erosion.Styles.m_ThermalDTScalar, m_ErosionSettings.m_ThermalTimeDelta, 0.0000f, 0.01f);
+                        m_ErosionSettings.m_ThermalTimeDelta = EditorGUILayout.Slider(Erosion.Styles.m_ThermalDTScalar, m_ErosionSettings.m_ThermalTimeDelta, 0.0001f, 10.0f);
                         m_ErosionSettings.m_ThermalIterations = EditorGUILayout.IntSlider(Erosion.Styles.m_NumIterations, m_ErosionSettings.m_ThermalIterations, 0, 100);
                         m_ErosionSettings.m_ThermalReposeAngle = EditorGUILayout.IntSlider(Erosion.Styles.m_AngleOfRepose, m_ErosionSettings.m_ThermalReposeAngle, 0, 90);
                     }
@@ -374,7 +374,8 @@ namespace Erosion {
 
             //constants for both kernels
             hydraulicCS.SetFloat("EffectScalar", invertEffect ? effectScalar : -effectScalar);
-            hydraulicCS.SetVector("dxdydt", new Vector4(dx, dy, dxdy, m_ErosionSettings.m_HydroTimeDelta.value));
+            hydraulicCS.SetFloat("DT", m_ErosionSettings.m_HydroTimeDelta.value);
+            hydraulicCS.SetVector("dxdy", new Vector4(dx, dy, 1.0f / dx, 1.0f / dy));
             hydraulicCS.SetVector("WaterTransportScalars", new Vector4(m_ErosionSettings.m_WaterLevelScale, precipRate, flowRate * m_ErosionSettings.m_GravitationalConstant, evaporationRate));
             hydraulicCS.SetVector("SedimentScalars", new Vector4(m_ErosionSettings.m_SedimentScale, sedimentCap, sedimentDissolveRate, sedimentDepositRate));
             hydraulicCS.SetVector("RiverBedScalars", new Vector4(m_ErosionSettings.m_RiverBedDissolveRate.value, m_ErosionSettings.m_RiverBedDepositRate.value, m_ErosionSettings.m_RiverBankDissolveRate.value, m_ErosionSettings.m_RiverBankDepositRate.value));
@@ -388,9 +389,8 @@ namespace Erosion {
                 thermalCS.SetFloat("dt", m_ErosionSettings.m_ThermalTimeDelta * m_ErosionSettings.m_HydroTimeDelta.value);
                 thermalCS.SetFloat("EffectScalar", invertEffect ? effectScalar : -effectScalar);
                 thermalCS.SetVector("angleOfRepose", new Vector4(thermal_m.x, thermal_m.y, 0.0f, 0.0f));
-                thermalCS.SetFloat("NoiseScale", 50 * 0.005f);
-                thermalCS.SetFloat("NoiseAmount", 0.0f);
-                thermalCS.SetVector("dxdy", new Vector4(dx, dy, dxdy));
+                thermalCS.SetVector("dxdy", new Vector4(dx, dy, 1.0f / dx, 1.0f / dy));
+                thermalCS.SetFloat("InvDiagMag", 1.0f / Mathf.Sqrt(dx * dx + dy * dy));
                 thermalCS.SetVector("terrainDim", new Vector4(terrainScale.x, terrainScale.y, terrainScale.z));
                 thermalCS.SetVector("texDim", new Vector4((float)domainRes.x, (float)domainRes.y, 0.0f, 0.0f));
 

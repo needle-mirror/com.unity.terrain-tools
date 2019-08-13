@@ -777,8 +777,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			{
 				if (EditorUtility.DisplayDialog("Error", "No layer palette found, create a new one?", "OK", "Cancel"))
 				{
-					CreateNewPalette();
-					return true;
+					return CreateNewPalette();
 				}
 				else
 				{
@@ -809,9 +808,13 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_SelectedTerrain.terrainData.SetTerrainLayersRegisterUndo(terrainLayers.ToArray(), "Load Palette");
 		}
 
-		void CreateNewPalette()
+		bool CreateNewPalette()
 		{
 			string filePath = EditorUtility.SaveFilePanelInProject("Create New Palette", "New Layer Palette.asset", "asset", "");
+			if (string.IsNullOrEmpty(filePath))
+			{
+				return false;
+			}
 			m_SelectedLayerPalette = CreateInstance<TerrainPalette>();
 			foreach (var layer in m_PaletteLayers)
 			{
@@ -820,6 +823,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 			AssetDatabase.CreateAsset(m_SelectedLayerPalette, filePath);
 			AssetDatabase.SaveAssets();
 			AssetDatabase.Refresh();
+
+			return true;
 		}
 
 		void GetAndSetActiveRenderPipelineSettings()
