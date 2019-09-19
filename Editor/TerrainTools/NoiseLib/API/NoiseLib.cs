@@ -710,11 +710,31 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         private static void GatherGenerators()
         {
-            List<Type> generatorTypes = new List<Type>(
-                AppDomain.CurrentDomain.GetAssemblies().SelectMany(
-                    asm => GetSubclassesOfGenericType( asm.GetTypes(), typeof(NoiseShaderGenerator<>) )
-                )
+            var gatheredAsmTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(
+                asm =>
+                {
+                    Type[] asmTypes = null;
+                    List< Type > types = null;
+
+                    try
+                    {
+                        asmTypes = asm.GetTypes();
+                        if( asmTypes != null )
+                        {
+                            types = new List< Type >( GetSubclassesOfGenericType( asmTypes, typeof( NoiseShaderGenerator<> ) ) );
+                        }
+                    }
+                    catch( Exception )
+                    {
+                        asmTypes = null;
+                        types = null;
+                    }
+
+                    return types == null ? new List< Type >() : types;
+                }
             );
+            
+            List<Type> generatorTypes = new List<Type>( gatheredAsmTypes );
 
             s_generators = new Dictionary<Type, INoiseShaderGenerator>();
             

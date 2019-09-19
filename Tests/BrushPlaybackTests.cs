@@ -146,8 +146,8 @@ namespace UnityEditor.Experimental.TerrainAPI {
         {
             float[,] heights = GetFullTerrainHeights(terrain);
 
-            for (int x = 0; x < terrain.terrainData.heightmapWidth; x++) {
-                for (int y = 0; y < terrain.terrainData.heightmapHeight; y++) {
+            for (int x = 0; x < terrain.terrainData.heightmapResolution; x++) {
+                for (int y = 0; y < terrain.terrainData.heightmapResolution; y++) {
                     heights[x, y] = 0;
                 }
             }
@@ -180,8 +180,8 @@ namespace UnityEditor.Experimental.TerrainAPI {
         
         private float[,] GetFullTerrainHeights(Terrain terrain)
         {
-            int terrainWidth = terrain.terrainData.heightmapWidth;
-            int terrainHeight = terrain.terrainData.heightmapHeight;
+            int terrainWidth = terrain.terrainData.heightmapResolution;
+            int terrainHeight = terrain.terrainData.heightmapResolution;
             return terrain.terrainData.GetHeights(
                 0, 0,
                 terrainWidth,

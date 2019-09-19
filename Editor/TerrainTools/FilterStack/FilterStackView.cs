@@ -46,11 +46,36 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         static FilterStackView()
         {
-            List<Type> filterTypes = new List<Type>(
-                AppDomain.CurrentDomain.GetAssemblies().SelectMany(
-                    asm => { return asm.GetTypes().Where( t => t != typeof(Filter) && t.BaseType == typeof(Filter) ); }
-                )
+            var gatheredFilterTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(
+                asm =>
+                {
+                    Type[] asmTypes = null;
+                    List< Type > types = null;
+
+                    try
+                    {
+                        asmTypes = asm.GetTypes();
+                        var whereTypes = asmTypes.Where( t =>
+                            {
+                                return t != typeof(Filter) && t.BaseType == typeof(Filter);
+                            } );
+                        
+                        if( whereTypes != null )
+                        {
+                            types = new List< Type >( whereTypes );
+                        }
+                    }
+                    catch( Exception )
+                    {
+                        asmTypes = null;
+                        types = null;
+                    }
+
+                    return types == null ? new List< Type >() : types;
+                }
             );
+
+            List<Type> filterTypes = gatheredFilterTypes.ToList();
 
             List<string> paths = new List<string>();
             List<GUIContent> displayNames = new List<GUIContent>();
