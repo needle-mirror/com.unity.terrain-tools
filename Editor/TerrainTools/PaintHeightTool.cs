@@ -37,7 +37,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         Material m_PaintHeightMat;
         Material GetPaintHeightMaterial() {
             if(m_PaintHeightMat == null) {
-                m_PaintHeightMat = new Material(Shader.Find("Hidden/TerrainEngine/PaintHeight"));
+                m_PaintHeightMat = new Material(Shader.Find("Hidden/TerrainEngine/PaintHeightTool"));
             }
             return m_PaintHeightMat;
         }

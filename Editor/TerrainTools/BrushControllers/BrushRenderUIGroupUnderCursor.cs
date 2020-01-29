@@ -92,6 +92,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 			return m_BrushRenderWithTerrain.AcquireNormalmap(writable, m_TerrainAtCreation, boundsInTerrainSpace, extraBorderPixels);
 		}
 
+		public PaintContext AquireHolesTexture(bool writable, Rect boudsInTerrainSpace, int extraBorderPixels = 0)
+		{
+			return m_BrushRenderWithTerrain.AcquireHolesTexture(writable, m_TerrainAtCreation, boudsInTerrainSpace, extraBorderPixels);
+		}
+
 		public void Release(PaintContext paintContext)
 		{
 			m_BrushRenderWithTerrain.Release(paintContext);

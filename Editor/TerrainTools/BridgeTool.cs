@@ -92,13 +92,16 @@ namespace UnityEditor.Experimental.TerrainAPI
                     return;
                 }
 
-                float endWidth = Mathf.Abs(bridgeToolProperties.widthProfile.Evaluate(1.0f));
+				if (bridgeToolProperties != null && bridgeToolProperties.widthProfile != null)
+				{
+					float endWidth = Mathf.Abs(bridgeToolProperties.widthProfile.Evaluate(1.0f));
 
-                BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, commonUI.raycastHitUnderCursor.textureCoord, commonUI.brushSize * endWidth, commonUI.brushRotation);
-                PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
-                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
-                TerrainPaintUtility.ReleaseContextResources(ctx);
-            }
+					BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, commonUI.raycastHitUnderCursor.textureCoord, commonUI.brushSize * endWidth, commonUI.brushRotation);
+					PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
+					TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
+					TerrainPaintUtility.ReleaseContextResources(ctx);
+				}                
+			}
 
             if (Event.current.type != EventType.Repaint)
             {

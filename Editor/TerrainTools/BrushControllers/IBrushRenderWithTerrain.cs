@@ -79,6 +79,17 @@ namespace UnityEditor.Experimental.TerrainAPI
 		PaintContext AcquireNormalmap(bool writable, Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0);
 
 		/// <summary>
+		/// Gets the PaintContext for the holes at the bounds specified,
+		/// you need to say whether this is to be writable upon acquisition.
+		/// </summary>
+		/// <param name="writable">"true" if we wish to allow writing to the normal-map, "false" otherwise.</param>
+		/// <param name="terrain">The initial terrain to acquire the normal-map for..</param>
+		/// <param name="boundsInTerrainSpace">The bounds of the normal-map to use (in pixels).</param>
+		/// <param name="extraBorderPixels">Extra padding on the bounds specified.</param>
+		/// <returns>The paint context created.</returns>
+		PaintContext AcquireHolesTexture(bool writable, Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0);
+
+		/// <summary>
 		/// Releases the PaintContext specified, if this was made writable when
 		/// acquired then we write back into the texture at this point.
 		/// </summary>

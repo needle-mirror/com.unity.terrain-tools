@@ -76,11 +76,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 			ToggleManagerMode();
 
-			//if (GUILayout.Button("Wiki", GUILayout.Width(60)))
-			//{
-			//	System.Diagnostics.Process.Start("https://github.com/Unity-Technologies/TerrainTools/wiki");
-			//}
-
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.Space();
 

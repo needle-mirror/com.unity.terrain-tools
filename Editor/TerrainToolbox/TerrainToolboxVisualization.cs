@@ -4,6 +4,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Rendering;
+using System.Linq;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -25,7 +26,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         float m_TerrainLegacyShininess;
         Color m_TerrainLegacySpecular;
 #endif
-        int m_HeatLevels;
+		bool m_ModeWarning = false;
+		string m_PresetPath = string.Empty;
+		float m_TerrainMaxHeight = 0f;
 
         // Preset
         TerrainVisualizationSettings m_SelectedPreset;
@@ -52,6 +55,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public void OnGUI()
         {
+			RefreshTerrainInScene();
+
             // scroll view of settings
             EditorGUIUtility.hierarchyMode = true;
             TerrainToolboxUtilities.DrawSeperatorLine();
@@ -60,62 +65,45 @@ namespace UnityEditor.Experimental.TerrainAPI
             EditorGUILayout.LabelField(Styles.VisualizationSettings, EditorStyles.boldLabel);
             m_selectedMode = (VISUALIZERMODE)EditorGUILayout.EnumPopup(m_selectedMode);
             EditorGUILayout.EndHorizontal();
-            switch (m_selectedMode)
-            {
-                case VISUALIZERMODE.AltitudeHeatmap:
-                    ShowHeatmapGUI();
-                    break;
-                default:
-                    break;
-            }
+			if (m_selectedMode == VISUALIZERMODE.AltitudeHeatmap)
+			{
+				ShowHeatmapGUI();
+			}
 
-            if (m_Settings.ModeWarning)
+            if (m_ModeWarning)
             {
                 EditorGUILayout.HelpBox(Styles.ModeWarningSettings, MessageType.Warning);
             }
 
             if (EditorGUI.EndChangeCheck())
             {
-                EnableVisualization();
+                ToggleVisulization();
             }
 
             ShowPresetGUI();
         }
 
-        public void EnableVisualization()
+        public void ToggleVisulization()
         {
-            if (GameObject.FindObjectOfType<Terrain>() == null)
-            {
-                m_selectedMode = VISUALIZERMODE.None;
-                m_Settings.ModeWarning = true;
-                return;
-            }
-
-            if (m_Terrains == null || GameObject.FindObjectsOfType<Terrain>().Length != m_Terrains.Count || m_Terrains[0] == null)
-            {
-                m_Terrains.Clear();
-                m_Terrains.AddRange(ToolboxHelper.GetAllTerrainsInScene());
-                m_Settings.TerrainMaxHeight = m_Terrains[0].terrainData.size.y;
-            }
-
             switch (m_selectedMode)
             {
                 case VISUALIZERMODE.AltitudeHeatmap:
                     UpdateHeatmapSettings();
                     break;
-                default:
+                case VISUALIZERMODE.None:
                     RevertMaterial();
                     break;
+				default:
+					break;
             }
 
-            m_Settings.ModeWarning = false;
+            m_ModeWarning = false;
             m_previousMode = m_selectedMode;
         }
 
         void ShowPresetGUI()
         {
             TerrainToolboxUtilities.DrawSeperatorLine();
-            //--EditorGUI.indentLevel;
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(Styles.Preset, EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
@@ -129,9 +117,20 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
             if (GUILayout.Button(Styles.SavePreset))
             {
-                UpdateVisualizationSettings();
-                AssetDatabase.SaveAssets();
-            }
+				if (m_SelectedPreset == null)
+				{
+					if (EditorUtility.DisplayDialog("Confirm", "No preset selected. Create a new preset?", "Continue", "Cancel"))
+					{
+						CreateNewPreset();
+					}
+				}
+				else
+				{
+					TransferSettings(m_Settings, m_SelectedPreset);
+					AssetDatabase.SaveAssets();
+					AssetDatabase.Refresh();
+				}
+			}
             if (GUILayout.Button(Styles.SaveAsPreset))
             {
                 CreateNewPreset();
@@ -143,9 +142,9 @@ namespace UnityEditor.Experimental.TerrainAPI
             EditorGUILayout.EndHorizontal();
         }
 
-        void ShowHeatmapGUI()
-        {
-            m_HeatLevels = m_Settings.DistanceSelection.Count;
+		void ShowHeatmapGUI()
+		{
+			m_Settings.HeatLevels = m_Settings.DistanceSelection.Count;
             EditorGUILayout.BeginFadeGroup(Mathf.Clamp((int)m_selectedMode, 0, 1));
 
             //Color chooser GUI
@@ -156,55 +155,63 @@ namespace UnityEditor.Experimental.TerrainAPI
                 m_Settings.SeaLevel = EditorGUILayout.FloatField(Styles.SeaLevel, m_Settings.SeaLevel, GUILayout.ExpandWidth(false));
             }
 
+			// Measure GUI
             EditorGUI.BeginChangeCheck();
             m_Settings.CurrentMeasure = (TerrainVisualizationSettings.MEASUREMENTS)EditorGUILayout.EnumPopup(Styles.MeasurementUnit, m_Settings.CurrentMeasure);
             if (EditorGUI.EndChangeCheck())
             {
                 ConvertUnits();
             }
+
+			// Heat Levels GUI
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(Styles.HeatLevels, GUILayout.MaxWidth(100));
-            m_HeatLevels = EditorGUILayout.IntSlider(m_HeatLevels, 1, 8);
+			EditorGUI.BeginChangeCheck();
+            m_Settings.HeatLevels = EditorGUILayout.IntSlider(m_Settings.HeatLevels, 1, 8);
+			if (EditorGUI.EndChangeCheck())
+			{
+				ConfigureHeatLevels();
+			}
             EditorGUILayout.EndHorizontal();
-
             
-
-            ConfigureHeatLevels();
             GUILayout.BeginHorizontal();
             GUILayout.Space(20f);
             EditorGUILayout.BeginVertical("Box");
-            float min = m_Settings.DistanceSelection[0];
-            float max = m_Settings.DistanceSelection[m_HeatLevels - 1];
-            for (int i = 0; i < m_HeatLevels; i++)
-            {
-                float distance = (float)System.Math.Round(m_Settings.DistanceSelection[i], 2);
+			if (m_Settings.DistanceSelection.Count > 0 && m_Settings.HeatLevels > 0)
+			{
+				float min = m_Settings.DistanceSelection[0];
+				float max = m_Settings.DistanceSelection[m_Settings.HeatLevels - 1];
+				for (int i = 0; i < m_Settings.HeatLevels; i++)
+				{
+					float distance = (float)System.Math.Round(m_Settings.DistanceSelection[i], 2);
 
-                EditorGUILayout.BeginHorizontal();
-                if (m_Settings.ReferenceSpace == TerrainVisualizationSettings.REFERENCESPACE.WorldSpace)
-                    m_Settings.DistanceSelection[i] = EditorGUILayout.FloatField(distance, GUILayout.Width(70));
-                else
-                    m_Settings.DistanceSelection[i] = Mathf.Clamp(EditorGUILayout.FloatField(distance, GUILayout.Width(70)), 0, m_Settings.TerrainMaxHeight);
+					EditorGUILayout.BeginHorizontal();
+					if (m_Settings.ReferenceSpace == TerrainVisualizationSettings.REFERENCESPACE.WorldSpace)
+						m_Settings.DistanceSelection[i] = EditorGUILayout.FloatField(distance, GUILayout.Width(70));
+					else
+						m_Settings.DistanceSelection[i] = Mathf.Clamp(EditorGUILayout.FloatField(distance, GUILayout.Width(70)), 0, m_TerrainMaxHeight);
 
-                float height = m_Settings.DistanceSelection[i];
+					float height = m_Settings.DistanceSelection[i];
 
-                //Compare the distaances
-                EditorGUI.indentLevel--;
-                if (m_Settings.CurrentMeasure == TerrainVisualizationSettings.MEASUREMENTS.Feet)
-                {
-                    EditorGUILayout.LabelField(new GUIContent("ft"), GUILayout.Width(30));
-                    height /= TerrainVisualizationSettings.CONVERSIONNUM;
-                }
-                else
-                {
-                    EditorGUILayout.LabelField(new GUIContent("m"), GUILayout.Width(30));
-                }
-                m_Settings.MaxDistance = Mathf.Max(height, max);
-                m_Settings.MinDistance = Mathf.Min(height, min);
-                EditorGUI.indentLevel--;
+					//Compare the distances
+					EditorGUI.indentLevel--;
+					if (m_Settings.CurrentMeasure == TerrainVisualizationSettings.MEASUREMENTS.Feet)
+					{
+						EditorGUILayout.LabelField(new GUIContent("ft"), GUILayout.Width(30));
+						height /= TerrainVisualizationSettings.CONVERSIONNUM;
+					}
+					else
+					{
+						EditorGUILayout.LabelField(new GUIContent("m"), GUILayout.Width(30));
+					}
+					m_Settings.MaxDistance = Mathf.Max(height, max);
+					m_Settings.MinDistance = Mathf.Min(height, min);
+					EditorGUI.indentLevel--;
 
-                m_Settings.ColorSelection[i] = EditorGUILayout.ColorField(m_Settings.ColorSelection[i]);
-                EditorGUI.indentLevel += 2;
-                EditorGUILayout.EndHorizontal();
+					m_Settings.ColorSelection[i] = EditorGUILayout.ColorField(m_Settings.ColorSelection[i]);
+					EditorGUI.indentLevel += 2;
+					EditorGUILayout.EndHorizontal();
+				}
             }
             EditorGUILayout.EndVertical();
             EditorGUILayout.EndHorizontal();
@@ -214,6 +221,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         void UpdateHeatmapSettings()
         {
+			RefreshTerrainInScene();
+
 			GetAndSetActiveRenderPipelineSettings();
 
 			MaterialPropertyBlock heatmapBlock = new MaterialPropertyBlock();
@@ -251,6 +260,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 heatmapBlock.Clear();
                 heatmapBlock.SetTexture("_HeatHeightmap", terrain.terrainData.heightmapTexture);
                 terrain.SetSplatMaterialPropertyBlock(heatmapBlock);
+				EditorUtility.SetDirty(terrain);
             }
         }
 
@@ -258,20 +268,20 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             if (m_Settings.CurrentMeasure == TerrainVisualizationSettings.MEASUREMENTS.Feet)
             {
-                for (int i = 0; i < m_HeatLevels; i++)
+                for (int i = 0; i < m_Settings.HeatLevels; i++)
                 {
                     m_Settings.DistanceSelection[i] *= TerrainVisualizationSettings.CONVERSIONNUM;
                 }
-                m_Settings.TerrainMaxHeight *= TerrainVisualizationSettings.CONVERSIONNUM;
+                m_TerrainMaxHeight *= TerrainVisualizationSettings.CONVERSIONNUM;
 
             }
             else
             {
-                for (int i = 0; i < m_HeatLevels; i++)
+                for (int i = 0; i < m_Settings.HeatLevels; i++)
                 {
                     m_Settings.DistanceSelection[i] /= TerrainVisualizationSettings.CONVERSIONNUM;
                 }
-                m_Settings.TerrainMaxHeight /= TerrainVisualizationSettings.CONVERSIONNUM;
+                m_TerrainMaxHeight /= TerrainVisualizationSettings.CONVERSIONNUM;
             }
 
         }
@@ -279,10 +289,12 @@ namespace UnityEditor.Experimental.TerrainAPI
         void ConfigureHeatLevels()
         {
             int currentLevels = m_Settings.DistanceSelection.Count;
+			if (currentLevels <= 0) return;
+
             float height;
-            if (m_HeatLevels != currentLevels)
+            if (m_Settings.HeatLevels != currentLevels)
             {
-                int num = m_HeatLevels - currentLevels;
+                int num = m_Settings.HeatLevels - currentLevels;
                 if (num > 0) //Add color and int field
                 {
                     for (int i = 0; i < num; i++)
@@ -336,7 +348,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 }
                 else
                 {
-                    step = distance / m_Terrains[0].terrainData.size.y;
+                    step = distance / m_TerrainMaxHeight;
                 }
 
                 colorKeys[i].color = colors[i];
@@ -365,12 +377,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public void RevertMaterial()
         {
-            if(m_VisualizationMaterial == null)
-            {
-                GetAndSetActiveRenderPipelineSettings();
-            }
+			GetAndSetActiveRenderPipelineSettings();
 
-            m_VisualizationMaterial.DisableKeyword("_HEATMAP");
+			if (m_VisualizationMaterial != null)
+            {
+				m_VisualizationMaterial.DisableKeyword("_HEATMAP");
+			}
 
             for(int i = 0; i < m_Terrains.Count; i++)
             {
@@ -400,25 +412,31 @@ namespace UnityEditor.Experimental.TerrainAPI
             SceneView.RepaintAll();
         }
 
+		void RefreshTerrainInScene()
+		{
+			m_Terrains.Clear();
+			m_Terrains.AddRange(ToolboxHelper.GetAllTerrainsInScene());
+			if (m_Terrains.Count == 0)
+			{
+				m_ModeWarning = true;
+				return;
+			}
+
+			m_TerrainMaxHeight = m_Terrains.Max(t => t.terrainData.size.y);
+
+			m_TerrainMaterials.Clear();
+			foreach (Terrain terrain in m_Terrains)
+			{
+				m_TerrainMaterials.Add(terrain.materialTemplate);
+			}
+
+			m_ModeWarning = false;
+		}
+
         void GetAndSetActiveRenderPipelineSettings()
         {
             ToolboxHelper.RenderPipeline m_ActiveRenderPipeline = ToolboxHelper.GetRenderPipeline();
             m_VisualizationMaterial = AssetDatabase.LoadAssetAtPath<Material>("Packages/com.unity.terrain-tools/editor/terraintoolbox/materials/terrainvisualization.mat");
-
-			//Get terrains
-			if (m_Terrains == null || GameObject.FindObjectsOfType<Terrain>().Length != m_Terrains.Count || m_Terrains[0] == null)
-			{
-				m_Terrains.Clear();
-				m_Terrains.AddRange(ToolboxHelper.GetAllTerrainsInScene());
-				m_Settings.TerrainMaxHeight = m_Terrains[0].terrainData.size.y;
-			}
-
-			//Get materials to revert to
-			m_TerrainMaterials.Clear();
-            foreach(Terrain terrain in m_Terrains)
-            {
-                m_TerrainMaterials.Add(terrain.materialTemplate);
-            }
 
             switch (m_ActiveRenderPipeline)
             {
@@ -428,6 +446,9 @@ namespace UnityEditor.Experimental.TerrainAPI
                 case ToolboxHelper.RenderPipeline.LW:
                     m_VisualizationMaterial.shader = Shader.Find("Hidden/LWRP_TerrainVisualization");
                     break;
+				case ToolboxHelper.RenderPipeline.Universal:
+					m_VisualizationMaterial.shader = Shader.Find("Hidden/Universal_TerrainVisualization");
+					break;
                 default:
                     if (m_Terrains == null || m_Terrains.Count == 0)
                     {
@@ -457,10 +478,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             m_SelectedPreset = ScriptableObject.CreateInstance<TerrainVisualizationSettings>();
 			TransferSettings(m_Settings, m_SelectedPreset);
-            if (m_selectedMode != VISUALIZERMODE.None)
-            {
-                EnableVisualization();
-            }
+            ToggleVisulization();
 			AssetDatabase.CreateAsset(m_SelectedPreset, filePath);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -484,13 +502,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             return true;
         }
 
-        void UpdateVisualizationSettings()
-        {
-            if (!GetVisualizationSettingsPreset()) return;
-
-            m_SelectedPreset = m_Settings;
-        }
-
         void LoadVisualizationSettings()
         {
             if (m_SelectedPreset == null)
@@ -501,8 +512,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             else
             {
 				TransferSettings(m_SelectedPreset, m_Settings);
-				if (m_selectedMode != VISUALIZERMODE.None)
-                    EnableVisualization();
+				ToggleVisulization();
             }
         }
 
@@ -510,43 +520,40 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             if (m_SelectedPreset != null)
             {
-                m_Settings.PresetPath = AssetDatabase.GetAssetPath(m_SelectedPreset);
+                m_PresetPath = AssetDatabase.GetAssetPath(m_SelectedPreset);
             }
             else
             {
-                m_Settings.PresetPath = string.Empty;
+                m_PresetPath = string.Empty;
             }
 
-            string filePath = ToolboxHelper.GetPrefFilePath(ToolboxHelper.ToolboxPrefsSettings);
+            string filePath = ToolboxHelper.GetPrefFilePath(ToolboxHelper.ToolboxPrefsVisualization);
             string settingsData = JsonUtility.ToJson(m_Settings);
             File.WriteAllText(filePath, settingsData);
-            RevertMaterial();
-			m_selectedMode = VISUALIZERMODE.None;
 			SceneView.RepaintAll();
         }
 
         public void LoadSettings()
         {
-            string filePath = ToolboxHelper.GetPrefFilePath(ToolboxHelper.ToolboxPrefsSettings);
+            string filePath = ToolboxHelper.GetPrefFilePath(ToolboxHelper.ToolboxPrefsVisualization);
             if (File.Exists(filePath))
             {
                 string settingsData = File.ReadAllText(filePath);
                 JsonUtility.FromJsonOverwrite(settingsData, m_Settings);
             }
 
-            if (m_Settings.PresetPath == string.Empty)
+            if (m_PresetPath == string.Empty)
             {
                 m_SelectedPreset = null;
             }
             else
             {
-                m_SelectedPreset = AssetDatabase.LoadAssetAtPath(m_Settings.PresetPath, typeof(TerrainVisualizationSettings)) as TerrainVisualizationSettings;
+                m_SelectedPreset = AssetDatabase.LoadAssetAtPath(m_PresetPath, typeof(TerrainVisualizationSettings)) as TerrainVisualizationSettings;
             }
             EditorSceneManager.sceneSaving += OnSceneSaving;
             EditorSceneManager.sceneSaved += OnSceneSaved;
             EditorSceneManager.sceneOpened += OnSceneOpened;
             EditorApplication.playModeStateChanged += PlayModeChanged;
-            Undo.undoRedoPerformed += OnUndo;
         }
 
 		void TransferSettings(TerrainVisualizationSettings fromSettings, TerrainVisualizationSettings toSettings)
@@ -555,15 +562,21 @@ namespace UnityEditor.Experimental.TerrainAPI
 			toSettings.DistanceSelection.Clear();
 			toSettings.ColorSelection.AddRange(fromSettings.ColorSelection.ToArray());
 			toSettings.DistanceSelection.AddRange(fromSettings.DistanceSelection.ToArray());
-			toSettings.ModeWarning = fromSettings.ModeWarning;
 			toSettings.CurrentMeasure = fromSettings.CurrentMeasure;
 			toSettings.HeatLevels = fromSettings.HeatLevels;
 			toSettings.SeaLevel = fromSettings.SeaLevel;
-			toSettings.TerrainMaxHeight = fromSettings.TerrainMaxHeight;
 			toSettings.MaxDistance = fromSettings.MaxDistance;
 			toSettings.MinDistance = fromSettings.MinDistance;
 			toSettings.ReferenceSpace = fromSettings.ReferenceSpace;
 			toSettings.WorldSpace = fromSettings.WorldSpace;
+		}
+
+		void Reset()
+		{
+			m_selectedMode = VISUALIZERMODE.None;
+			m_VisualizationMaterial = null;
+			m_Terrains.Clear();
+			m_TerrainMaterials.Clear();
 		}
 
         void OnSceneSaving(Scene scene, string path)
@@ -575,17 +588,13 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         void OnSceneSaved(Scene scene)
-        { 
-            EnableVisualization();
-        }
+        {
+			Reset();
+		}
 
         void OnSceneOpened(Scene scene, OpenSceneMode open)
         {
-            if (m_selectedMode != VISUALIZERMODE.None)
-            {
-                m_selectedMode = VISUALIZERMODE.None;
-                m_VisualizationMaterial = null;
-            }
+			Reset();
         }
 
         void PlayModeChanged(PlayModeStateChange state)
@@ -593,14 +602,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             if (m_selectedMode != VISUALIZERMODE.None)
             {
                 RevertMaterial();
-            }
-        }
-
-        void OnUndo()
-        {
-            if(m_selectedMode != VISUALIZERMODE.None)
-            {
-                EnableVisualization();
             }
         }
     }

@@ -361,7 +361,7 @@ namespace Erosion {
                 //m_WindSpeedJitter = (float)EditorGUILayout.IntSlider(Erosion.Styles.m_WindSpeedJitter, (int)m_WindSpeedJitter, 0, 100);
 
                 EditorGUI.indentLevel++;
-                m_ShowAdvancedUI = EditorGUILayout.Foldout(m_ShowAdvancedUI, "Advanced");
+                m_ShowAdvancedUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Advanced"), m_ShowAdvancedUI);
                 if (m_ShowAdvancedUI) {
                     m_dt.DrawInspectorGUI();
                     m_Iterations.DrawInspectorGUI();
@@ -377,10 +377,10 @@ namespace Erosion {
                     m_AbrasivenessCoefficient.DrawInspectorGUI();
 
                     m_Viscosity.DrawInspectorGUI();
-                    //m_DiffuseSteps = EditorGUILayout.IntSlider("Diffusion Steps", m_DiffuseSteps, 0, 20);
-                    //m_ProjectionSteps = EditorGUILayout.IntSlider("Projection Steps", m_ProjectionSteps, 0, 20);
-
-                    m_ShowThermalUI = EditorGUILayout.Foldout(m_ShowThermalUI, "Thermal Smoothing");
+					//m_DiffuseSteps = EditorGUILayout.IntSlider("Diffusion Steps", m_DiffuseSteps, 0, 20);
+					//m_ProjectionSteps = EditorGUILayout.IntSlider("Projection Steps", m_ProjectionSteps, 0, 20);
+					EditorGUI.indentLevel++;
+					m_ShowThermalUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Thermal Smoothing"), m_ShowThermalUI, 1);
                     if (m_ShowThermalUI) {
                         m_ThermalIterations = EditorGUILayout.IntSlider("# Iterations", m_ThermalIterations, 0, 100);
                         m_ThermalTimeDelta.DrawInspectorGUI();

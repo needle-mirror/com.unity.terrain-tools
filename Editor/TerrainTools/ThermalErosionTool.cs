@@ -162,7 +162,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 }
 
                 EditorGUI.indentLevel++;
-                m_ShowAdvancedUI = EditorGUILayout.Foldout(m_ShowAdvancedUI, "Advanced");
+                m_ShowAdvancedUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Advanced"), m_ShowAdvancedUI);
                 if (m_ShowAdvancedUI) {
                     m_Eroder.m_ThermalIterations = EditorGUILayout.IntSlider(Erosion.Styles.m_NumIterations, m_Eroder.m_ThermalIterations, 1, 1000);
                     m_Eroder.m_dt = EditorGUILayout.Slider(Erosion.Styles.m_TimeDelta, m_Eroder.m_dt, 0.00001f, 0.05f);

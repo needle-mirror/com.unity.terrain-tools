@@ -1,4 +1,4 @@
-    Shader "Hidden/TerrainEngine/PaintHeight" {
+    Shader "Hidden/TerrainEngine/PaintHeightTool" {
 
     Properties { _MainTex ("Texture", any) = "" {} }
 
@@ -251,10 +251,13 @@
 			float4 PaintHoles(v2f i) : SV_Target
 			{
 				float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
+				
 				// out of bounds multiplier
-				float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
+				float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;				
+				float filter = UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
 				float brushStrength = BRUSH_STRENGTH * oob;
-				brushStrength = UnpackHeightmap(tex2D(_BrushTex, brushUV)) > (1.0f - abs(brushStrength)) ? sign(brushStrength) : 0.0f;
+				brushStrength = ((UnpackHeightmap(tex2D(_BrushTex, brushUV)) > (1.0f - abs(brushStrength))) && (filter > 0.5f)) ? sign(brushStrength) : 0.0f;
+				
 				float holes = tex2D(_MainTex, i.pcUV).r;
 				holes += brushStrength;
 				return holes;

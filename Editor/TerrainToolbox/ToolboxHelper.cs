@@ -79,7 +79,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 		{
 			None,
 			HD,
-			LW
+			LW,
+			Universal
 		}
 
 		const string GizmoGOName = "TERRAIN_GIZMO";
@@ -263,6 +264,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 			RenderTexture oldHeightmap = RenderTexture.GetTemporary(terrainData.heightmapTexture.descriptor);
 			Graphics.Blit(terrainData.heightmapTexture, oldHeightmap);
+#if UNITY_2019_3_OR_NEWER
+			// terrain holes
+			RenderTexture oldHoles = RenderTexture.GetTemporary(terrainData.holesTexture.width, terrainData.holesTexture.height);
+			Graphics.Blit(terrainData.holesTexture, oldHoles);
+#endif
 
 			Undo.RegisterCompleteObjectUndo(terrainData, "Resize heightmap");
 
@@ -292,9 +298,18 @@ namespace UnityEditor.Experimental.TerrainAPI
 			Graphics.Blit(oldHeightmap, terrainData.heightmapTexture, scale, offset);
 			RenderTexture.ReleaseTemporary(oldHeightmap);
 
+#if UNITY_2019_3_OR_NEWER
+			oldHoles.filterMode = FilterMode.Point;
+			Graphics.Blit(oldHoles, (RenderTexture)terrainData.holesTexture);
+			RenderTexture.ReleaseTemporary(oldHoles);
+#endif
+
 			RenderTexture.active = oldRT;
 
 			terrainData.DirtyHeightmapRegion(new RectInt(0, 0, terrainData.heightmapTexture.width, terrainData.heightmapTexture.height), TerrainHeightmapSyncControl.HeightAndLod);
+#if UNITY_2019_3_OR_NEWER
+			terrainData.DirtyTextureRegion(TerrainData.HolesTextureName, new RectInt(0, 0, terrainData.holesTexture.width, terrainData.holesTexture.height), false);
+#endif
 		}
 
 		// Unity PNG encoder does not support 16bit export, change will come later 2019
@@ -460,9 +475,14 @@ namespace UnityEditor.Experimental.TerrainAPI
 				return RenderPipeline.None;
 			}
 			else if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset.GetType().FullName
-				== "UnityEngine.Experimental.Rendering.HDPipeline.HDRenderPipelineAsset")
+				== "UnityEngine.Rendering.HighDefinition.HDRenderPipelineAsset")
 			{
 				return RenderPipeline.HD;
+			}
+			else if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset.GetType().FullName
+				== "UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset")
+			{
+				return RenderPipeline.Universal;
 			}
 			else if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset.GetType().FullName
 				== "UnityEngine.Rendering.LWRP.LightweightRenderPipelineAsset")

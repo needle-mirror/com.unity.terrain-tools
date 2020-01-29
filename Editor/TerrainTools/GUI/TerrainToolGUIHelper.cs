@@ -101,16 +101,16 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
         Rect totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
         Rect labelRect = new Rect(totalRect.x, totalRect.y, EditorGUIUtility.labelWidth - indentOffset, totalRect.height);
 
-        Rect foldoutRect = new Rect(labelRect.xMax - 8, labelRect.y, 8, totalRect.height);
-        Rect sliderRect = new Rect(foldoutRect.xMax, labelRect.y, totalRect.width - labelRect.width, totalRect.height);
+		Rect foldoutRect = new Rect(labelRect.xMax - 15, labelRect.y, 15, totalRect.height);
+        Rect sliderRect = new Rect(foldoutRect.xMax, foldoutRect.y, totalRect.width - labelRect.width, totalRect.height);
         int rectHeight = 1;
         
         EditorGUI.PrefixLabel(labelRect, m_Label);
         m_Value = EditorGUI.Slider(sliderRect, m_Value, minValue, maxValue);
         if (m_EditRange)
         {
-            m_Expanded = EditorGUI.Foldout(foldoutRect, m_Expanded, GUIContent.none);
-            if (m_Expanded)
+			m_Expanded = GUI.Toggle(foldoutRect, m_Expanded, GUIContent.none, EditorStyles.foldout);
+			if (m_Expanded)
             {
                 if (m_EditRange)
                 {
@@ -197,8 +197,8 @@ public class TerrainIntMinMaxValue : IIntMinMaxSlider {
         EditorGUI.PrefixLabel(labelRect, m_Label);
         m_Value = EditorGUI.IntSlider(sliderRect, m_Value, minValue, maxValue);
 
-        m_Expanded = EditorGUI.Foldout(foldoutRect, m_Expanded, new GUIContent());
-        if (m_Expanded) {
+		m_Expanded = GUI.Toggle(foldoutRect, m_Expanded, GUIContent.none, EditorStyles.foldout);
+		if (m_Expanded) {
             totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
             Rect rangeLabelRect = new Rect(sliderRect.x, sliderRect.yMax, sliderRect.width / 2, totalRect.height);
             Rect minRect = new Rect(totalRect.xMax - 2 * fieldWidth + indentOffset, totalRect.y, fieldWidth, totalRect.height);
@@ -399,6 +399,16 @@ public static class TerrainToolGUIHelper
         return state;
     }
 
+	public static bool DrawSimpleFoldout(GUIContent label, bool state, int indentLevel = 0, float width = 10f)
+	{
+		EditorGUILayout.BeginHorizontal();
+		GUILayout.Space(indentLevel * 15);
+		state = GUILayout.Toggle(state, GUIContent.none, EditorStyles.foldout, GUILayout.Width(width));
+		GUILayout.Label(label);
+		EditorGUILayout.EndHorizontal();
+
+		return state;
+	}
 
     public static bool DrawHeaderFoldoutForErosion(GUIContent title, bool state, ResetTool resetMethod)
     {

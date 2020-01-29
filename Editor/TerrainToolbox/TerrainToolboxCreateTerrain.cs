@@ -394,8 +394,18 @@ namespace UnityEditor.Experimental.TerrainAPI
 			}
 			if (GUILayout.Button(Styles.SavePreset))
 			{
-				UpdateCreationSettings();
-				AssetDatabase.SaveAssets();
+				if (m_SelectedPreset == null)
+				{
+					if (EditorUtility.DisplayDialog("Confirm", "No preset selected. Create a new preset?", "Continue", "Cancel"))
+					{
+						CreateNewPreset();
+					}
+				}
+				else
+				{
+					UpdateCreationSettings();
+					AssetDatabase.SaveAssets();
+				}
 			}
 			if (GUILayout.Button(Styles.SaveAsPreset))
 			{
@@ -463,8 +473,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 					m_Settings.StartPosition = ToolboxHelper.GetGizmoPosition();
 				}
 			}
-
-			
 
 			// Update gizmo colors
 			Color previousColor = m_Settings.GizmoCubeColor + m_Settings.GizmoWireColor;

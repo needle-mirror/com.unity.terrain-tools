@@ -741,7 +741,10 @@ namespace UnityEditor.Experimental.TerrainAPI
 			bool[] selectedList = new bool[m_PaletteLayers.Count];
 			for(int i = 0; i < m_PaletteLayers.Count; i++)
 			{
-				selectedList[i] = m_PaletteLayers[i].IsSelected;
+				if (m_PaletteLayers[i] != null)
+				{
+					selectedList[i] = m_PaletteLayers[i].IsSelected;
+				}				
 			}
 
 			m_PaletteLayers.Clear();

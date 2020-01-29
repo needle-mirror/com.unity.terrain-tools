@@ -656,25 +656,25 @@ namespace UnityEditor.Experimental.TerrainAPI
 				m_Settings.HeightmapFolderPath = EditorUtility.OpenFolderPanel("Select a folder...", m_Settings.HeightmapFolderPath, "");
 			}
 			EditorGUILayout.EndHorizontal();
-			EditorGUILayout.LabelField("Heightmap Format: .raw");
-			EditorGUILayout.BeginHorizontal();
-			m_SelectedDepth = EditorGUILayout.Popup(Styles.HeightmapBitDepth, m_SelectedDepth, m_DepthOptions.Keys.ToArray());
-			EditorGUILayout.EndHorizontal();
-			EditorGUILayout.BeginHorizontal();
-			m_Settings.HeightmapByteOrder = (ToolboxHelper.ByteOrder)EditorGUILayout.EnumPopup(Styles.HeightmapByteOrder, m_Settings.HeightmapByteOrder);
-			EditorGUILayout.EndHorizontal();
+			//EditorGUILayout.LabelField("Heightmap Format: .raw");
+			//EditorGUILayout.BeginHorizontal();
+			//m_SelectedDepth = EditorGUILayout.Popup(Styles.HeightmapBitDepth, m_SelectedDepth, m_DepthOptions.Keys.ToArray());
+			//EditorGUILayout.EndHorizontal();
+			//EditorGUILayout.BeginHorizontal();
+			//m_Settings.HeightmapByteOrder = (ToolboxHelper.ByteOrder)EditorGUILayout.EnumPopup(Styles.HeightmapByteOrder, m_Settings.HeightmapByteOrder);
+			//EditorGUILayout.EndHorizontal();
 
 			//Future to support PNG and TGA. 
-			//m_Settings.HeightFormat = (Heightmap.Format)EditorGUILayout.EnumPopup(Styles.HeightmapSelectedFormat, m_Settings.HeightFormat);
-			//if (m_Settings.HeightFormat == Heightmap.Format.RAW)
-			//{
-			//	EditorGUILayout.BeginHorizontal();
-			//	m_Settings.HeightmapDepth = (Heightmap.Depth)EditorGUILayout.EnumPopup(Styles.HeightmapBitDepth, m_Settings.HeightmapDepth);
-			//	EditorGUILayout.EndHorizontal();
-			//	EditorGUILayout.BeginHorizontal();
-			//	m_Settings.HeightmapByteOrder = (ToolboxHelper.ByteOrder)EditorGUILayout.EnumPopup(Styles.HeightmapByteOrder, m_Settings.HeightmapByteOrder);
-			//	EditorGUILayout.EndHorizontal();
-			//}
+			m_Settings.HeightFormat = (Heightmap.Format)EditorGUILayout.EnumPopup(Styles.HeightmapSelectedFormat, m_Settings.HeightFormat);
+			if (m_Settings.HeightFormat == Heightmap.Format.RAW)
+			{
+				EditorGUILayout.BeginHorizontal();
+				m_Settings.HeightmapDepth = (Heightmap.Depth)EditorGUILayout.EnumPopup(Styles.HeightmapBitDepth, m_Settings.HeightmapDepth);
+				EditorGUILayout.EndHorizontal();
+				EditorGUILayout.BeginHorizontal();
+				m_Settings.HeightmapByteOrder = (ToolboxHelper.ByteOrder)EditorGUILayout.EnumPopup(Styles.HeightmapByteOrder, m_Settings.HeightmapByteOrder);
+				EditorGUILayout.EndHorizontal();
+			}
 			EditorGUILayout.BeginHorizontal();
 			EditorGUILayout.MinMaxSlider(Styles.HeightmapRemap, ref m_Settings.HeightmapRemapMin, ref m_Settings.HeightmapRemapMax, 0f, 1.0f);
 			EditorGUILayout.LabelField(Styles.HeightmapRemapMin, GUILayout.Width(40.0f));
@@ -1052,7 +1052,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 					int tileCount = m_Settings.TileXAxis * m_Settings.TileZAxis;
 					Terrain[] terrainsNew = new Terrain[tileCount];
 
-
+#if UNITY_2019_3_OR_NEWER
+					// holes render texture
+					RenderTexture rt = RenderTexture.GetTemporary(terrainData.holesTexture.width, terrainData.holesTexture.height);
+					Graphics.Blit(terrainData.holesTexture, rt);
+					rt.filterMode = FilterMode.Point;
+#endif
 					for (int x = 0; x < m_Settings.TileXAxis; x++, heightOffset.x += newHeightmapRes, controlOffset.x += newControlRes, tilePosition.x += tileWidth)
 					{
 						heightOffset.y = 0;
@@ -1081,7 +1086,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 							// get and set heights
 							terrainDataNew.heightmapResolution = newHeightmapRes + 1;
-							var heightData = terrainData.GetHeights(heightOffset.x, heightOffset.y, (newHeightmapRes + 1), ((newHeightmapRes + 1)));
+							var heightData = terrainData.GetHeights(heightOffset.x, heightOffset.y, (newHeightmapRes + 1), (newHeightmapRes + 1));
 							terrainDataNew.SetHeights(0, 0, heightData);
 							terrainDataNew.size = new Vector3(tileWidth, tileHeight, tileLength);
 
@@ -1100,7 +1105,17 @@ namespace UnityEditor.Experimental.TerrainAPI
 							float[,,] alphamap = terrainData.GetAlphamaps(controlOffset.x, controlOffset.y, newControlRes, newControlRes);
 							terrainDataNew.alphamapResolution = newControlRes;
 							terrainDataNew.SetAlphamaps(0, 0, alphamap);
-
+#if UNITY_2019_3_OR_NEWER
+							// get and set holes, however there's currently a bug in GetHoles() so using render texture blit instead
+							//var holes = terrainData.GetHoles(heightOffset.x, heightOffset.y, newHeightmapRes, newHeightmapRes);
+							//terrainDataNew.SetHoles(0, 0, holes);							
+							float divX = 1f / m_Settings.TileXAxis;
+							float divZ = 1f / m_Settings.TileZAxis;
+							Vector2 scale = new Vector2(divX, divZ);
+							Vector2 offset = new Vector2(divX * x, divZ * y);
+							Graphics.Blit(rt, (RenderTexture)terrainDataNew.holesTexture, scale, offset);							
+							terrainDataNew.DirtyTextureRegion(TerrainData.HolesTextureName, new RectInt(0, 0, terrainDataNew.holesTexture.width, terrainDataNew.holesTexture.height), false);
+#endif
 							// update other terrain settings
 							if (m_Settings.AutoUpdateSettings)
 							{
@@ -1115,6 +1130,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 					}
 					m_SplitTerrains = terrainsNew;
 					ToolboxHelper.CalculateAdjacencies(m_SplitTerrains, m_Settings.TileXAxis, m_Settings.TileZAxis);
+#if UNITY_2019_3_OR_NEWER
+					RenderTexture.ReleaseTemporary(rt);
+#endif
 				}
 			}
 			finally
@@ -1703,6 +1721,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 					m_MaxLayerCount = kMaxNoLimit;
 					m_MaxSplatmapCount = kMaxNoLimit;
 					m_PreviewMaterial.shader = Shader.Find("Hidden/LWRP_TerrainVisualization");
+					break;
+				case ToolboxHelper.RenderPipeline.Universal:
+					m_MaxLayerCount = kMaxNoLimit;
+					m_MaxSplatmapCount = kMaxNoLimit;
+					m_PreviewMaterial.shader = Shader.Find("Hidden/Universal_TerrainVisualization");
 					break;
 				default:
 					m_MaxLayerCount = kMaxNoLimit;

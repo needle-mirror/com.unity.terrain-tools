@@ -298,7 +298,7 @@ namespace UnityEditor.Experimental.TerrainAPI {
         [UnityTest]
         [TestCase("SetHeightHistory", 204f, ExpectedResult = null)]
         public IEnumerator Test_SetHeight_Playback(string recordingFilePath, float targetHeight) {
-            yield return null;
+            yield break;
 
             InitTerrainTypesWithReflection("SetHeightTool");
             onPaintHistory = LoadDataFile(recordingFilePath);
@@ -338,7 +338,7 @@ namespace UnityEditor.Experimental.TerrainAPI {
         [UnityTest]
         [TestCase("SmileHistory", "VerticalZigzagHistory", 100.0f, ExpectedResult = null)]
         public IEnumerator Test_SmoothHeight_Playback(string setHeightFilePath, string smoothFilePath, float setHeightScalar) {
-            yield return null;
+            yield break;
             // Paint with the SetHeightTool first to have something to smooth from
 
             InitTerrainTypesWithReflection("SetHeightTool");

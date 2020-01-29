@@ -4,15 +4,14 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [2.0.2-preview] - 2019-09-20
-- Fixed TypeLoadExceptions for NoiseLib and Filters
+## [3.0.0-preview] - 2020-01-30
 
-## [2.0.1-preview] - 2019-08-14
-
-- Fixed a bug of Terrain Gizmo. Now tools and selection only runs in Editor mode.
-- Fixed a bug of saving Layer Palette asset in the Paint Texture Tool. 
-- Thermal erosion improvements. 
-- Test updates. 
+- Added Common Brush Controls and Brush Mask Filters to Paint Holes tool
+- Added Terrain Visualization tool support for Universal Render Pipeline
+- Added world space height support for Set Height tool
+- Fixed bugs for foldout UI
+- Toolbox Split Terrain tool bug fixing and added support for terrain holes
+- Added terrain holes support to Toolbox Heightmap resolution change
 
 ## [2.0.0-preview] - 2019-08-05
 
