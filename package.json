@@ -1,7 +1,7 @@
 {
   "name": "com.unity.terrain-tools",
   "displayName": "Terrain Tools",
-  "version": "3.0.0-preview",
+  "version": "3.0.1-preview",
   "unity": "2019.3",
   "description": "The Terrain Tools package adds additonal terrain sculpting brushes and tools to your project to help create stunning terrain assets and ease the workflows.",
   "keywords": [
@@ -15,6 +15,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Unity-Technologies/TerrainTools.git",
-    "revision": "f04795a678d17617845bf8db58d0c83b03a926af"
+    "revision": "01bfe4406c13bc9e6241a9ef3f41fbe07d3a0e47"
   }
 }

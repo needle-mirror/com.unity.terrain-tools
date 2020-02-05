@@ -103,9 +103,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 #if UNITY_2019_3_OR_NEWER
 			m_HolesContext = TerrainPaintUtility.BeginPaintHoles(terrain, boundsInTerrainSpace, extraBorderPixels);
 			return m_HolesContext;
-#endif
-
+#else
 			return null;
+#endif
 		}
 
 		public void Release(PaintContext paintContext)
