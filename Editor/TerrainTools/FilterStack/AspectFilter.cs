@@ -1,8 +1,11 @@
 ﻿using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.Experimental.TerrainAPI {
+namespace UnityEditor.Experimental.TerrainAPI
+{
     [System.Serializable]
-    public class AspectFilter : Filter {
+    public class AspectFilter : Filter
+    {
         static readonly int RemapTexWidth = 1024;
 
         [SerializeField]
@@ -13,63 +16,89 @@ namespace UnityEditor.Experimental.TerrainAPI {
         //We bake an AnimationCurve to a texture to control value remapping
         [SerializeField]
         private AnimationCurve m_RemapCurve = new AnimationCurve(new Keyframe(0, 0), new Keyframe(1, 1));
-        Texture2D m_RemapTex = null;
+        Texture2D m_RemapTex;
 
-        Texture2D GetRemapTexture() {
-            if (m_RemapTex == null) {
+        Texture2D GetRemapTexture()
+        {
+            if (m_RemapTex == null)
+            {
                 m_RemapTex = new Texture2D(RemapTexWidth, 1, TextureFormat.RFloat, false, true);
                 m_RemapTex.wrapMode = TextureWrapMode.Clamp;
 
-                TerrainTools.Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref m_RemapTex);
+                Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref m_RemapTex);
             }
             
             return m_RemapTex;
         }
 
         //Compute Shader resource helper
-        ComputeShader m_AspectCS = null;
-        ComputeShader GetComputeShader() {
-            if (m_AspectCS == null) {
+        ComputeShader m_AspectCS;
+        ComputeShader GetComputeShader()
+        {
+            if (m_AspectCS == null)
+            {
                 m_AspectCS = (ComputeShader)Resources.Load("Aspect");
             }
             return m_AspectCS;
         }
 
-        public override string GetDisplayName() {
-            return "Aspect";
-        }
-
-        public override string GetToolTip()
+        public override string GetDisplayName() => "Aspect";
+        public override string GetToolTip() => "Uses the slope aspect of the heightmap to mask the effect of the chosen Brush, and uses Brush rotation to control the aspect direction.";
+        public override bool ValidateFilter(FilterContext filterContext, out string message)
         {
-            return "Uses the slope aspect of the heightmap to mask the effect of the chosen Brush, and uses Brush rotation to control the aspect direction.";
+            message = string.Empty;
+
+            if (!SystemInfo.supportsComputeShaders)
+            {
+                message = "The current Graphics API does not support compute shaders.";
+                return false;
+            }
+
+            if (!SystemInfo.IsFormatSupported(filterContext.targetFormat, FormatUsage.LoadStore))
+            {
+                message = $"The current Graphics API does not support UAV resource access for GraphicsFormat.{filterContext.targetFormat}.";
+                return false;
+            }
+            
+            return true;
         }
 
-        public override void Eval(FilterContext fc) {
-            ComputeShader cs = GetComputeShader();
-            int kidx = cs.FindKernel("AspectRemap");
+        protected override void OnEval(FilterContext fc, RenderTexture source, RenderTexture dest)
+        {
+            var desc = dest.descriptor;
+            desc.enableRandomWrite = true;
+            var sourceHandle = RTUtils.GetTempHandle(desc);
+            var destHandle = RTUtils.GetTempHandle(desc);
+            using (sourceHandle.Scoped())
+            using (destHandle.Scoped())
+            {
+                Graphics.Blit(source, sourceHandle);
+                Graphics.Blit(dest, destHandle);
 
-            //using 1s here so we don't need a multiple-of-8 texture in the compute shader (probably not optimal?)
-            int[] numWorkGroups = { 1, 1, 1 };
+                ComputeShader cs = GetComputeShader();
+                int kidx = cs.FindKernel("AspectRemap");
 
-            Texture2D remapTex = GetRemapTexture();
+                Texture2D remapTex = GetRemapTexture();
 
-            float rotRad = (fc.properties["brushRotation"] - 90.0f) * Mathf.Deg2Rad;
+                float rotRad = (fc.brushRotation - 90.0f) * Mathf.Deg2Rad;
 
-            cs.SetTexture(kidx, "In_BaseMaskTex", fc.sourceRenderTexture);
-            cs.SetTexture(kidx, "In_HeightTex", fc.renderTextureCollection["heightMap"]);
-            cs.SetTexture(kidx, "OutputTex", fc.destinationRenderTexture);
-            cs.SetTexture(kidx, "RemapTex", remapTex);
-            cs.SetInt("RemapTexRes", remapTex.width);
-            cs.SetFloat("EffectStrength", m_EffectStrength);
-            cs.SetVector("TextureResolution", new Vector4(fc.sourceRenderTexture.width, fc.sourceRenderTexture.height, 0.0f, 0.0f));
-            cs.SetVector("AspectValues", new Vector4(Mathf.Cos(rotRad), Mathf.Sin(rotRad), m_Epsilon, 0.0f));
-
-            cs.Dispatch(kidx, fc.sourceRenderTexture.width / numWorkGroups[0], fc.sourceRenderTexture.height / numWorkGroups[1], numWorkGroups[2]);
+                cs.SetTexture(kidx, "In_BaseMaskTex", sourceHandle);
+                cs.SetTexture(kidx, "In_HeightTex", fc.rtHandleCollection[FilterContext.Keywords.Heightmap]);
+                cs.SetTexture(kidx, "OutputTex", destHandle);
+                cs.SetTexture(kidx, "RemapTex", remapTex);
+                cs.SetInt("RemapTexRes", remapTex.width);
+                cs.SetFloat("EffectStrength", m_EffectStrength);
+                cs.SetVector("TextureResolution", new Vector4(source.width, source.height, 0.0f, 0.0f));
+                cs.SetVector("AspectValues", new Vector4(Mathf.Cos(rotRad), Mathf.Sin(rotRad), m_Epsilon, 0.0f));
+                cs.Dispatch(kidx, source.width, source.height, 1);
+                
+                Graphics.Blit(destHandle, dest);
+            }
         }
 
-        public override void DoGUI(Rect rect) {
-
-            //Precaculate dimensions
+        protected override void OnDrawGUI(Rect rect, FilterContext filterContext)
+        {
+            // Calculate dimensions
             float epsilonLabelWidth = GUI.skin.label.CalcSize(epsilonLabel).x;
             float modeLabelWidth = GUI.skin.label.CalcSize(modeLabel).x;
             float strengthLabelWidth = GUI.skin.label.CalcSize(strengthLabel).x;
@@ -95,19 +124,20 @@ namespace UnityEditor.Experimental.TerrainAPI {
 
             EditorGUI.BeginChangeCheck();
             m_RemapCurve = EditorGUI.CurveField(curveRect, m_RemapCurve);
-            if(EditorGUI.EndChangeCheck()) {
-                Vector2 range = TerrainTools.Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref m_RemapTex);
+            if(EditorGUI.EndChangeCheck())
+            {
+                var tex = GetRemapTexture();
+                Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref tex);
             }
         }
 
-        public override void OnSceneGUI(Terrain terrain, IBrushUIGroup brushContext) {
-            Quaternion windRot = Quaternion.AngleAxis(brushContext.brushRotation, new Vector3(0.0f, 1.0f, 0.0f));
-            Handles.ArrowHandleCap(0, brushContext.raycastHitUnderCursor.point, windRot, 0.5f * brushContext.brushSize, EventType.Repaint);
+        protected override void OnSceneGUI(SceneView sceneView, FilterContext filterContext)
+        {
+            Quaternion windRot = Quaternion.AngleAxis(filterContext.brushRotation, new Vector3(0.0f, 1.0f, 0.0f));
+            Handles.ArrowHandleCap(0, filterContext.brushPos, windRot, 0.5f * filterContext.brushSize, EventType.Repaint);
         }
 
-        public override float GetElementHeight() {
-            return EditorGUIUtility.singleLineHeight * 5;
-        }
+        public override float GetElementHeight() => EditorGUIUtility.singleLineHeight * 4;
 
         private static GUIContent strengthLabel = EditorGUIUtility.TrTextContent("Strength", "Controls the strength of the masking effect.");
         private static GUIContent epsilonLabel = EditorGUIUtility.TrTextContent("Feature Size", "Specifies the scale of Terrain features that affect the mask.");

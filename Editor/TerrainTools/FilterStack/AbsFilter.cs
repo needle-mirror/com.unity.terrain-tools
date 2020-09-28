@@ -1,29 +1,15 @@
 using UnityEngine;
-using UnityEditor;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
     [System.Serializable]
     public class AbsFilter : Filter
     {
-        public override string GetDisplayName()
+        public override string GetDisplayName() => "Abs";
+        public override string GetToolTip() => "Sets all pixels of an existing Brush Mask to their absolute values";
+        protected override void OnEval(FilterContext filterContext, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
         {
-            return "Abs";
-        }
-
-        public override string GetToolTip()
-        {
-            return "Sets all pixels of an existing Brush Mask to their absolute values";
-        }
-
-        public override void Eval(FilterContext fc)
-        {
-            Graphics.Blit(fc.sourceRenderTexture, fc.destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Abs );
-        }
-
-        public override void DoGUI(Rect rect)
-        {
-
+            Graphics.Blit( sourceRenderTexture, destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Abs );
         }
     }
 }

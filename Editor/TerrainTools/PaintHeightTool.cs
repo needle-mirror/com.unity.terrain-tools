@@ -1,7 +1,6 @@
 #pragma warning disable 0436
 
 using UnityEngine;
-using UnityEditor;
 using UnityEngine.Experimental.TerrainAPI;
 using UnityEditor.ShortcutManagement;
 
@@ -14,6 +13,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;               // gets interface to modify state of TerrainTools
             context.SelectPaintTool<PaintHeightTool>();                                                  // set active tool
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Sculpt Tool");
         }
 #endif
 
@@ -71,21 +71,16 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         private void ApplyBrushInternal(Terrain terrain, IPaintContextRender renderer, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushTransform)
         {
-            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-
-            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-
             Material mat = GetPaintHeightMaterial();
-
+            var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+            Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
             Vector4 brushParams = new Vector4(0.05f * brushStrength, 0.0f, 0.0f, 0.0f);
             mat.SetTexture("_BrushTex", brushTexture);
-            mat.SetTexture("_FilterTex", filterMaskRT);
             mat.SetVector("_BrushParams", brushParams);
 
             renderer.SetupTerrainToolMaterialProperties(paintContext, brushTransform, mat);
             renderer.RenderBrush(paintContext, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.RaiseLowerHeight);
+            RTUtils.Release(brushMask);
         }
 
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)

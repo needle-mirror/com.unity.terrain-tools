@@ -125,7 +125,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             m_noiseSourceAsset = _sourceAsset_;
 
-            var stylesheet = Resources.Load< StyleSheet >( "Styles/Noise" );
+            var stylesheet = EditorGUIUtility.isProSkin ?
+                Resources.Load< StyleSheet >( "Styles/Noise_Dark" ) :
+                Resources.Load< StyleSheet >( "Styles/Noise_Light" );
             
             var settingsScrollView = new ScrollView()
             {
@@ -654,6 +656,11 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
 
             INTERNAL_OnSourceProfileChanged( settings );
+        }
+
+        public void OnClose()
+        {
+            m_noiseFieldView?.Close();
         }
 
         public event Action< NoiseSettings > onSettingsChanged;

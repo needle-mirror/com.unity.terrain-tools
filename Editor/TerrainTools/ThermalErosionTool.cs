@@ -11,6 +11,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;          // gets interface to modify state of TerrainTools
             context.SelectPaintTool<ThermalErosionTool>();                                                                        // set active tool
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Thermal Erosion Tool");
         }
 #endif
 
@@ -22,7 +23,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "ThermalErosion" );
+                    m_commonUI = new DefaultBrushUIGroup( "ThermalErosion", UpdateAnalyticParameters );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -111,20 +112,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         bool m_ShowControls = true;
         bool m_ShowAdvancedUI = false;
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            EditorGUI.BeginChangeCheck();
-
-            commonUI.OnInspectorGUI(terrain, editContext);
-            commonUI.validationMessage = ValidateAndGenerateUserMessage(terrain);
-
-            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForErosion(Erosion.Styles.m_ThermalErosionControls, m_ShowControls, m_Eroder.ResetTool);
-
-            if (m_ShowControls) {
-
-                EditorGUILayout.BeginVertical("GroupBox");
-
-                string[] matNames = {
+        string[] m_MatNames = {
                     "Custom",
                     "Dry Ash",    // 40
                     "Chalk",      // 45
@@ -139,7 +127,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                     "Snow"
                 };
 
-                float[,] tauValues = new float[,] {
+        float[,] m_TauValues = new float[,] {
                     { -1.0f, -1.0f },  //custom
                     { 38.0f, 42.0f },  //dry ash
                     { 45.0f, 45.0f },  //chalk
@@ -153,12 +141,26 @@ namespace UnityEditor.Experimental.TerrainAPI
                     { 15.0f, 30.0f },  //quicksand (15-30)
                     { 38.0f, 38.0f }   //snow
                 };
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            EditorGUI.BeginChangeCheck();
+
+            commonUI.OnInspectorGUI(terrain, editContext);
+            commonUI.validationMessage = ValidateAndGenerateUserMessage(terrain);
+
+            m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForErosion(Erosion.Styles.m_ThermalErosionControls, m_ShowControls, m_Eroder.ResetTool);
+
+            if (m_ShowControls) {
+
+                EditorGUILayout.BeginVertical("GroupBox");
+
+               
 
                 EditorGUI.BeginChangeCheck();
-                m_Eroder.m_MatPreset = EditorGUILayout.Popup(Erosion.Styles.m_MatPreset, m_Eroder.m_MatPreset, matNames);
+                m_Eroder.m_MatPreset = EditorGUILayout.Popup(Erosion.Styles.m_MatPreset, m_Eroder.m_MatPreset, m_MatNames);
                 if (EditorGUI.EndChangeCheck() && m_Eroder.m_MatPreset != 0) {
-                    m_Eroder.m_AngleOfRepose.x = tauValues[m_Eroder.m_MatPreset, 0];
-                    m_Eroder.m_AngleOfRepose.y = tauValues[m_Eroder.m_MatPreset, 1];
+                    m_Eroder.m_AngleOfRepose.x = m_TauValues[m_Eroder.m_MatPreset, 0];
+                    m_Eroder.m_AngleOfRepose.y = m_TauValues[m_Eroder.m_MatPreset, 1];
                 }
 
                 EditorGUI.indentLevel++;
@@ -181,6 +183,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             if (EditorGUI.EndChangeCheck()) {
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
         }
         #endregion
@@ -235,20 +238,17 @@ namespace UnityEditor.Experimental.TerrainAPI
                                                     terrain.terrainData.size.z / terrain.terrainData.heightmapResolution);
                     m_Eroder.ErodeHeightmap(terrain.terrainData.size, brushRect, texelSize);
 
-                    Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-                    FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-                    fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-                    RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-
                     Material mat = GetPaintMaterial();
+                    var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                    Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                     Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, 0.0f, 0.0f);
                     mat.SetTexture("_BrushTex", editContext.brushTexture);
                     mat.SetTexture("_NewHeightTex", m_Eroder.outputTextures["Height"]);
-                    mat.SetTexture("_FilterTex", filterMaskRT);
                     mat.SetVector("_BrushParams", brushParams);
 
                     brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                     brushRender.RenderBrush(paintContext, mat, 0);
+                    RTUtils.Release(brushMask);
                 }
             }
 
@@ -268,5 +268,14 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         #endregion
 
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
+            new TerrainToolsAnalytics.BrushParameter<string>{Name = Erosion.Styles.m_MatPreset.text, Value = m_MatNames[m_Eroder.m_MatPreset]},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_NumIterations.text, Value = m_Eroder.m_ThermalIterations},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_TimeDelta.text, Value = m_Eroder.m_dt},
+            new TerrainToolsAnalytics.BrushParameter<Vector2>{Name = Erosion.Styles.m_AngleOfRepose.text, Value = m_Eroder.m_AngleOfRepose},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_AngleOfReposeJitter.text, Value = m_Eroder.m_ReposeJitter},
+        };
+        #endregion
     }
 }

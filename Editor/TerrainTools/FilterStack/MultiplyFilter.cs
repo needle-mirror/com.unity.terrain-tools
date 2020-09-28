@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEditor;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -8,27 +7,13 @@ namespace UnityEditor.Experimental.TerrainAPI
     {
         [SerializeField]
         public float value = 1;
-
-        public override string GetDisplayName()
-        {
-            return "Multiply";
-        }
-
-        public override string GetToolTip()
-        {
-            return "Multiply the Brush Mask filter stack by a constant";
-        }
-
-        public override void Eval(FilterContext fc)
+        public override string GetDisplayName() => "Multiply";
+        public override string GetToolTip() => "Multiply the Brush Mask filter stack by a constant";
+        protected override void OnEval(FilterContext filterContext, RenderTexture source, RenderTexture dest)
         {
             FilterUtility.builtinMaterial.SetFloat("_Multiply", value);
-
-            Graphics.Blit( fc.sourceRenderTexture, fc.destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Multiply );
+            Graphics.Blit(source, dest, FilterUtility.builtinMaterial, (int)FilterUtility.BuiltinPasses.Multiply);
         }
-
-        public override void DoGUI(Rect rect)
-        {
-            value = EditorGUI.FloatField(rect, value);
-        }
+        protected override void OnDrawGUI(Rect rect, FilterContext filterContext) => value = EditorGUI.FloatField(rect, value);
     }
 }

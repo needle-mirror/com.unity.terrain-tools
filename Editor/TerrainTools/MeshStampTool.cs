@@ -13,6 +13,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;              // gets interface to modify state of TerrainTools
             context.SelectPaintTool<MeshStampTool>();                                                   // set active tool
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Mesh Stamp Tool");
         }
 
         [ClutchShortcut("Terrain/Adjust Mesh Stamp Transform", typeof(TerrainToolShortcutContext), KeyCode.C)]
@@ -25,6 +26,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             else if(args.stage == ShortcutStage.End)
             {
                 m_editTransform = false;
+                TerrainToolsAnalytics.OnShortcutKeyRelease("Adjust Mesh Stamp Transform");
             }
         }
 #endif
@@ -47,7 +49,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_brushUI == null )
                 {
-                    m_brushUI = new MeshBrushUIGroup( "MeshStampTool" );
+                    LoadSettings();
+                    m_brushUI = new MeshBrushUIGroup( "MeshStampTool", UpdateAnalyticParameters );
                     m_brushUI.OnEnterToolMode();
                 }
 
@@ -106,7 +109,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         ToolSettings toolSettings = new ToolSettings();
-        RenderTextureCollection m_rtCollection;
+        RTHandleCollection m_rtCollection;
 
         private Vector3 m_SceneRaycastHitPoint;
         private BrushTransform brushXformIdentity = new BrushTransform(Vector2.zero, Vector2.right, Vector2.up);
@@ -157,17 +160,13 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             if( !m_initialized )
             {
-                LoadSettings();
-
-                m_rtCollection = new RenderTextureCollection();
-                m_rtCollection.AddRenderTexture( RenderTextureIDs.cameraView, "cameraView", GraphicsFormat.R8G8B8A8_SRGB );
-                m_rtCollection.AddRenderTexture( RenderTextureIDs.meshStamp, "meshStamp", GraphicsFormat.R16_SFloat );
-                m_rtCollection.AddRenderTexture( RenderTextureIDs.meshStampPreview, "meshStampPreview", GraphicsFormat.R16_SFloat );
-                m_rtCollection.AddRenderTexture( RenderTextureIDs.meshStampMask, "meshStampMask", GraphicsFormat.R16_UNorm );
-                m_rtCollection.AddRenderTexture( RenderTextureIDs.sourceHeight, "sourceHeight", GraphicsFormat.R16_UNorm );
-                m_rtCollection.AddRenderTexture( RenderTextureIDs.combinedHeight, "combinedHeight", GraphicsFormat.R16_UNorm );
-
-                m_rtCollection.debugSize = EditorWindow.GetWindow<SceneView>().position.height / 4;
+                m_rtCollection = new RTHandleCollection();
+                m_rtCollection.AddRTHandle( RenderTextureIDs.cameraView, "cameraView", GraphicsFormat.R8G8B8A8_SRGB );
+                m_rtCollection.AddRTHandle( RenderTextureIDs.meshStamp, "meshStamp", GraphicsFormat.R16_SFloat );
+                m_rtCollection.AddRTHandle( RenderTextureIDs.meshStampPreview, "meshStampPreview", GraphicsFormat.R16_SFloat );
+                m_rtCollection.AddRTHandle( RenderTextureIDs.meshStampMask, "meshStampMask", GraphicsFormat.R16_UNorm );
+                m_rtCollection.AddRTHandle( RenderTextureIDs.sourceHeight, "sourceHeight", GraphicsFormat.R16_UNorm );
+                m_rtCollection.AddRTHandle( RenderTextureIDs.combinedHeight, "combinedHeight", GraphicsFormat.R16_UNorm );
 
                 m_initialized = true;
             }
@@ -223,52 +222,11 @@ namespace UnityEditor.Experimental.TerrainAPI
                 }
             }
 
-            // EditorGUILayout.BeginVertical("GroupBox");
-            // {
-            //     GUILayout.Label( "World Bounds:" );
-            //     GUILayout.Label( "Center: " + m_worldBounds.center );
-            //     GUILayout.Label( "Size: " + m_worldBounds.size );
-            //     GUILayout.Label( "Max: " + m_worldBounds.max );
-            //     GUILayout.Label( "Min: " + m_worldBounds.min );
-            // }
-            // EditorGUILayout.EndVertical();
-
-            // EditorGUILayout.BeginVertical("GroupBox");
-            // {
-            //     GUILayout.Label( "Ortho Camera:" );
-            //     GUILayout.Label( "LookAt: " + lookAtZ );
-            //     GUILayout.Label( "Near: " + nearPlane );
-            //     GUILayout.Label( "Far: " + farPlane );
-            //     GUILayout.Label( "Right: " + orthoRight );
-            //     GUILayout.Label( "Left: " + orthoLeft );
-            // }
-            // EditorGUILayout.EndVertical();
-
-            // EditorGUILayout.BeginVertical("GroupBox");
-            // {
-            //     GUILayout.Label( "Handle Info:" );
-            //     GUILayout.Label( "Handle Pos: " + m_baseHandlePos );
-            //     GUILayout.Label( "Delta height: " + m_handleHeightOffsetWS );
-            //     GUILayout.Label( "Stamp height: " + toolSettings.stampHeight );
-            // }
-            // EditorGUILayout.EndVertical();
-
-            // debugOrtho = TerrainToolGUIHelper.DrawHeaderFoldout( new GUIContent("Debug"), debugOrtho );
-            // if( debugOrtho )
-            // {
-            //     orthoLeft = EditorGUILayout.FloatField( "Left", orthoLeft );
-            //     orthoRight = EditorGUILayout.FloatField( "Right", orthoRight );
-            //     orthoTop = EditorGUILayout.FloatField( "Top", orthoTop );
-            //     orthoBottom = EditorGUILayout.FloatField( "Bottom", orthoBottom );
-            //     nearPlane = EditorGUILayout.FloatField( "Near", nearPlane );
-            //     farPlane = EditorGUILayout.FloatField( "Far", farPlane );
-            //     lookAtZ = EditorGUILayout.FloatField( "LookAtZ", lookAtZ );
-            // }
-
             if (EditorGUI.EndChangeCheck())
             {
                 SaveSettings();
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
         }
 
@@ -276,7 +234,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             Init();
 
-            // m_rtCollection.DebugGUI( editContext.sceneView );
+            // m_rtCollection.OnSceneGUI( EditorWindow.GetWindow<SceneView>().position.height / 4 );
 
             commonUI.OnSceneGUI2D( terrain, editContext );
 
@@ -347,6 +305,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                                                                     m_rtCollection[ RenderTextureIDs.meshStamp ], brushTransform, material, 1 );
 
                         TerrainPaintUtility.ReleaseContextResources( ctx );
+                        m_rtCollection.ReleaseRTHandles();
                     }
                 }
             }
@@ -362,9 +321,9 @@ namespace UnityEditor.Experimental.TerrainAPI
                     Quaternion brushRotation = Quaternion.AngleAxis( commonUI.brushRotation, Vector3.up );
                     Matrix4x4 brushRotMat = Matrix4x4.Rotate( brushRotation );
                     Matrix4x4 toolRotMat = Matrix4x4.Rotate( toolSettings.rotation );
-                    Quaternion handleRot = TerrainTools.MeshUtility.QuaternionFromMatrix( brushRotMat * toolRotMat );
+                    Quaternion handleRot = MeshUtils.QuaternionFromMatrix( brushRotMat * toolRotMat );
                     Quaternion newRot = Handles.RotationHandle( handleRot, prevHandlePosWS );
-                    toolSettings.rotation = TerrainTools.MeshUtility.QuaternionFromMatrix( brushRotMat.inverse * Matrix4x4.Rotate( newRot ) );
+                    toolSettings.rotation = MeshUtils.QuaternionFromMatrix( brushRotMat.inverse * Matrix4x4.Rotate( newRot ) );
                     
                     toolSettings.scale = Handles.ScaleHandle( toolSettings.scale, prevHandlePosWS, handleRot, handleSize * 1.5f );
 
@@ -382,26 +341,18 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
 
-        private Vector3 MulVector( Vector3 a, Vector3 b )
-        {
-            return new Vector3( a.x * b.x, a.y * b.y, a.z * b.z );
-        }
-
         private void ApplyBrushInternal(Terrain terrain, PaintContext ctx, BrushTransform brushTransform)
         {
             Init();
-
-            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-            fc.renderTextureCollection.GatherRenderTextures( ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height );
-            RenderTexture filterMaskRT = commonUI.GetBrushMask( fc, ctx.sourceRenderTexture );
             
-            m_rtCollection.ReleaseRenderTextures();
-            m_rtCollection.GatherRenderTextures( ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 16 );
+            m_rtCollection.ReleaseRTHandles();
+            m_rtCollection.GatherRTHandles( ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 16 );
 
             Graphics.Blit( ctx.sourceRenderTexture, m_rtCollection[ RenderTextureIDs.sourceHeight ] );
 
             Material mat = GetMaterial();
+            var brushMask = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+            Utility.SetFilterRT(commonUI, ctx.sourceRenderTexture, brushMask, mat);
 
             Matrix4x4 toolMatrix = Matrix4x4.TRS( Vector3.zero, toolSettings.rotation, toolSettings.scale );
 
@@ -431,24 +382,24 @@ namespace UnityEditor.Experimental.TerrainAPI
             model = Matrix4x4.Translate( translate ) * model;
 
             // actually render the mesh to texture to be used with the tool shader
-            TerrainTools.MeshUtility.RenderTopdownProjection( activeMesh, model,
-                                                              m_rtCollection[ RenderTextureIDs.meshStamp ],
-                                                              TerrainTools.MeshUtility.defaultProjectionMaterial,
-                                                              TerrainTools.MeshUtility.ShaderPass.Height );
+            MeshUtils.RenderTopdownProjection( activeMesh, model,
+                                               m_rtCollection[ RenderTextureIDs.meshStamp ],
+                                               MeshUtils.defaultProjectionMaterial,
+                                               MeshUtils.ShaderPass.Height );
+            // this doesn't actually apply any noise to the destination RT but will color the destination RT based on whether the fragment values are (+) or (-)
             NoiseUtils.BlitPreview2D( m_rtCollection[ RenderTextureIDs.meshStamp ], m_rtCollection[ RenderTextureIDs.meshStampPreview ] );
 
             // generate a mask for the mesh to be used in the compositing shader
-            TerrainTools.MeshUtility.RenderTopdownProjection( activeMesh, model,
-                                                              m_rtCollection[ RenderTextureIDs.meshStampMask ],
-                                                              TerrainTools.MeshUtility.defaultProjectionMaterial,
-                                                              TerrainTools.MeshUtility.ShaderPass.Mask );
+            MeshUtils.RenderTopdownProjection( activeMesh, model,
+                                               m_rtCollection[ RenderTextureIDs.meshStampMask ],
+                                               MeshUtils.defaultProjectionMaterial,
+                                               MeshUtils.ShaderPass.Mask );
 
             // perform actual composite of mesh stamp and terrain source heightmap
             float brushStrength = Event.current.control ? -commonUI.brushStrength : commonUI.brushStrength;
             Vector4 brushParams = new Vector4( brushStrength, toolSettings.blendAmount, ( commonUI.raycastHitUnderCursor.point.y - commonUI.terrainUnderCursor.GetPosition().y ) / commonUI.terrainUnderCursor.terrainData.size.y * .5f, toolSettings.stampHeight / commonUI.terrainUnderCursor.terrainData.size.y * .5f );
             mat.SetVector( "_BrushParams", brushParams );
             mat.SetTexture( "_MeshStampTex", m_rtCollection[ RenderTextureIDs.meshStamp ] );
-            mat.SetTexture( "_FilterTex", filterMaskRT );
             mat.SetTexture( "_MeshMaskTex", m_rtCollection[ RenderTextureIDs.meshStampMask ] );
             mat.SetFloat( "_TerrainHeight", commonUI.terrainUnderCursor.terrainData.size.y );
             TerrainPaintUtility.SetupTerrainToolMaterialProperties( ctx, brushTransform, mat );
@@ -457,6 +408,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             // restore old render target
             RenderTexture.active = ctx.oldRenderTexture;
+            RTUtils.Release(brushMask);
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
@@ -480,6 +432,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                 ApplyBrushInternal( terrain, ctx, brushTransform );
 
                 TerrainPaintUtility.EndPaintHeightmap( ctx, "Mesh Stamp - Stamp Mesh" );
+                
+                m_rtCollection.ReleaseRTHandles();
             }
 
             return true;
@@ -519,5 +473,14 @@ namespace UnityEditor.Experimental.TerrainAPI
                                     "Resets the mesh's rotation, scale, and height to their default state.");
             public static readonly string nullMeshString = "Must assign a mesh to use with the Mesh Stamp Tool.";
         }
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.blendAmount.text, Value = toolSettings.blendAmount},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.stampHeightContent.text, Value = toolSettings.stampHeight},
+            new TerrainToolsAnalytics.BrushParameter<Vector3>{Name = Styles.stampScaleContent.text, Value = toolSettings.scale},
+            new TerrainToolsAnalytics.BrushParameter<Vector3>{Name = Styles.stampRotationContent.text, Value = toolSettings.rotation.eulerAngles},
+        };
+        #endregion
     }
 }

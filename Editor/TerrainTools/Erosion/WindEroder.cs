@@ -72,7 +72,27 @@ namespace Erosion {
         private int m_ThermalIterations = 3;
         [SerializeField]
         private float m_AngleOfRepose = 45.0f;
-        
+
+        #region Analytics Property Access
+        public int ProjectionSteps => m_ProjectionSteps;
+        public int DiffuseSteps => m_DiffuseSteps;
+        public int ThermalIterations => m_ThermalIterations;
+        public float AngleOfRepose => m_AngleOfRepose;
+        public TerrainFloatMinMaxValue TimeInterval => m_dt;
+        public TerrainIntMinMaxValue Iterations => m_Iterations; 
+        public TerrainFloatMinMaxValue SimulationScale => m_SimulationScale; 
+        public TerrainFloatMinMaxValue DiffusionRate => m_DiffusionRate;
+        public TerrainFloatMinMaxValue Viscosity => m_Viscosity;
+        public TerrainFloatMinMaxValue AdvectionVelScale => m_AdvectionVelScale;
+        public TerrainFloatMinMaxValue SuspensionRate => m_SuspensionRate;
+        public TerrainFloatMinMaxValue DepositionRate => m_DepositionRate;
+        public TerrainFloatMinMaxValue SlopeFactor => m_SlopeFactor;
+        public TerrainFloatMinMaxValue DragCoefficient => m_DragCoefficient;
+        public TerrainFloatMinMaxValue ReflectionCoefficient => m_ReflectionCoefficient;
+        public TerrainFloatMinMaxValue AbrasivenessCoefficient => m_AbrasivenessCoefficient;
+        public TerrainFloatMinMaxValue ThermalTimeDelta => m_ThermalTimeDelta;
+        #endregion
+
         public WindEroder() { ResetSettings(); }
 
         //[SerializeField]

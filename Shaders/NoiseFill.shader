@@ -14,7 +14,7 @@
             HLSLINCLUDE
 
             #include "UnityCG.cginc"
-            #include "TerrainTool.cginc"
+            #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
 
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
@@ -57,7 +57,7 @@
                 #pragma vertex vert
                 #pragma fragment frag
 
-                #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/FBM/Perlin.hlsl"
+                #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/Fbm/Perlin.hlsl"
 
                 float4 _TerrainXform;
                 float4 _TerrainScale;

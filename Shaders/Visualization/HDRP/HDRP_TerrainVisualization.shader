@@ -178,4 +178,5 @@ Shader "Hidden/HDRP_TerrainVisualization"
         UsePass "Hidden/Nature/Terrain/Utilities/SELECTION"
     }
     CustomEditor "UnityEditor.Experimental.Rendering.HDPipeline.TerrainLitGUI"
+    Fallback "Hidden/InternalErrorShader"
 }

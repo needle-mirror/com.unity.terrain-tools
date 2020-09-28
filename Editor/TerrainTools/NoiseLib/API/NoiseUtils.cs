@@ -30,6 +30,23 @@ namespace UnityEditor.Experimental.TerrainAPI
             get { return (SystemInfo.copyTextureSupport & CopyTextureSupport.RTToTexture) != 0; }
         }
 
+        /// <summary>
+        /// Format to use when rendering a Noise field into a single channel RenderTexture
+        /// </summary>
+        public static GraphicsFormat singleChannelFormat =>
+            SystemInfo.IsFormatSupported(GraphicsFormat.R16_SFloat, FormatUsage.Render) &&
+            SystemInfo.graphicsDeviceType != GraphicsDeviceType.Vulkan &&
+            SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES3 &&
+            SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2
+            // return Terrain height format because values will be packed and unpacked on GPU using Terrain height functions    
+            ? GraphicsFormat.R16_SFloat : Terrain.heightmapFormat;
+
+
+        /// <summary>
+        /// Format to use when rendering a preview of a Noise field into a RenderTexture with NoiseUtils.BlitPreview functions
+        /// </summary>
+        public static GraphicsFormat previewFormat => GraphicsFormat.R8G8B8A8_UNorm;
+
         static NoiseUtils()
         {
             
@@ -167,25 +184,14 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             noise.SetupMaterial( mat );
 
-            RenderTexture tempRT = RenderTexture.GetTemporary(dest.descriptor);
-            RenderTexture prev = RenderTexture.active;
-            RenderTexture.active = tempRT;
-            
+            var tempRT = RenderTexture.GetTemporary(dest.descriptor);
+            var prev = RenderTexture.active;
+
+            RenderTexture.active = tempRT; // keep this
             Graphics.Blit(tempRT, mat, pass);
-
-            RenderTexture.active = dest;
-
-            // if(noise.filterSettings.filterStack != null)
-            // {
-            //     noise.filterSettings.filterStack.Eval(tempRT, dest);
-            // }
-            // else
-            {
-                Graphics.Blit( tempRT, dest );
-            }
+            Graphics.Blit(tempRT, dest);
 
             RenderTexture.active = prev;
-
             RenderTexture.ReleaseTemporary(tempRT);
         }
 

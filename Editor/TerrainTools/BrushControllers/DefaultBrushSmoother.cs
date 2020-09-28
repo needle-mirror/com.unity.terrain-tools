@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.Experimental.TerrainAPI;
 
@@ -6,7 +5,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 {
     public class DefaultBrushSmoother : IBrushSmoothController {
 
-        public float kernelSize { get; set; }
+        public int kernelSize { get; set; }
 
         Material m_Material = null;
         Material GetMaterial() {
@@ -47,18 +46,27 @@ namespace UnityEditor.Experimental.TerrainAPI
                     Mathf.Clamp01(1.0f - Mathf.Abs(m_direction)),   // centered
                     Mathf.Clamp01(-m_direction),                    // min
                     Mathf.Clamp01(m_direction),                     // max
-                    kernelSize);                                          // blur kernel size
+                    0);                                          
+                mat.SetInt("_KernelSize", (int)Mathf.Max(1, kernelSize)); // kernel size
                 mat.SetVector("_SmoothWeights", smoothWeights);
-                TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
+                
+                var texelCtx = Utility.CollectTexelValidity(paintContext.originTerrain, brushXform.GetBrushXYBounds(), 1);
+                Utility.SetupMaterialForPaintingWithTexelValidityContext(paintContext, texelCtx, brushXform, mat);
+                
+                paintContext.sourceRenderTexture.wrapMode = TextureWrapMode.Clamp;
 
-                RenderTexture temp = RenderTexture.GetTemporary( paintContext.destinationRenderTexture.descriptor );
-
-                Graphics.Blit(paintContext.sourceRenderTexture, temp, mat, 0);
-                Graphics.Blit(temp, paintContext.destinationRenderTexture, mat, 1);
-
-                RenderTexture.ReleaseTemporary( temp );
+                var temp = RTUtils.GetTempHandle( paintContext.destinationRenderTexture.descriptor );
+                temp.RT.wrapMode = TextureWrapMode.Clamp;
+                mat.SetVector("_BlurDirection", Vector2.right);
+                Graphics.Blit(paintContext.sourceRenderTexture, temp, mat);
+                mat.SetVector("_BlurDirection", Vector2.up);
+                Graphics.Blit(temp, paintContext.destinationRenderTexture, mat);
 
                 TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Smooth Height");
+                
+                texelCtx.Cleanup();
+                RTUtils.Release(temp);
+
                 return true;
             }
             return false;

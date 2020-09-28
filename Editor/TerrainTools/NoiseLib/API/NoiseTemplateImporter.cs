@@ -1,5 +1,10 @@
 using UnityEngine;
-using UnityEditor.Experimental.AssetImporters;
+#if UNITY_2020_OR_NEWER || UNITY_2020_2_OR_NEWER
+    using UnityEditor.AssetImporters;
+#else
+    using UnityEditor.Experimental.AssetImporters;
+#endif
+
 
 namespace UnityEditor.Experimental.TerrainAPI
 {

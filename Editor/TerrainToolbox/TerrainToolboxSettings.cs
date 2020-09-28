@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor.AnimatedValues;
 using UnityEngine;
@@ -12,25 +12,14 @@ namespace UnityEditor.Experimental.TerrainAPI
 		Terrain m_SelectedTerrain = null;
 		TerrainSettings m_Settings = ScriptableObject.CreateInstance<TerrainSettings>();
 		TerrainSettings m_SelectedPreset = null;
+		readonly TerrainSettings m_DefaultSettings = ScriptableObject.CreateInstance<TerrainSettings>();
 
 		string m_MaterialPath = string.Empty;
 		Vector2 m_ScrollPosition = Vector2.zero;
 		AnimBool m_ShowCustomMaterial = new AnimBool();
 		AnimBool m_ShowBuiltinSpecular = new AnimBool();
 		AnimBool m_ShowReflectionProbes = new AnimBool();
-
-		SettingsMode m_SettingsMode = SettingsMode.Default;
-		enum SettingsMode
-		{
-			Default = 0,
-			SelectedTerrain = 1,
-			Preset = 2
-		};
-
-        int[] m_GeneralTextureResolutions = new int[] { 32, 64, 128, 256, 512, 1024, 2048, 4096 };
-        string[] m_GeneralTextureResolutionNames = new string[] { "32", "64", "128", "256", "512", "1024", "2048", "4096" };
-        int[] m_HeightTextureResolutions = new int[] { 33, 65, 129, 257, 513, 1025, 2049, 4097 };
-        string[] m_HeightTextureResolutionNames = new string[] { "33", "65", "129", "257", "513", "1025", "2049", "4097" };
+		const int kBaseMapDistMax = 20000;
 
 		static class Styles
 		{
@@ -43,12 +32,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 			public static readonly GUIStyle LableStyle = EditorStyles.wordWrappedMiniLabel;
 			public static readonly GUIStyle ToggleButtonStyle = "LargeButton";
 
-			public static readonly GUIContent[] SettingsModeToggles =
-			{
-				EditorGUIUtility.TrTextContent("Default", "Load settings from default values."),
-				EditorGUIUtility.TrTextContent("Selected Terrain", "Load settings from a selected terrain."),
-				EditorGUIUtility.TrTextContent("Preset", "Load settings from a preset asset.")
-			};
+			public static readonly GUIContent LoadDefaultBtn = EditorGUIUtility.TrTextContent("Default", "Load settings from default values.");
+			public static readonly GUIContent LoadSelectedBtn = EditorGUIUtility.TrTextContent("Selected", "Load settings from selected terrain.");
+			public static readonly GUIContent LoadPresetBtn = EditorGUIUtility.TrTextContent("Preset", "Load settings from selected preset.");
 
 			// Settings
 			public static readonly GUIContent GroupingID = EditorGUIUtility.TrTextContent("Grouping ID", "Grouping ID for auto connection");
@@ -129,25 +115,18 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_ScrollPosition = EditorGUILayout.BeginScrollView(m_ScrollPosition);
 
 			EditorGUILayout.BeginHorizontal();
-			EditorGUILayout.LabelField("Load Settings From: ");
-			m_SettingsMode = (SettingsMode)GUILayout.Toolbar((int)m_SettingsMode, Styles.SettingsModeToggles, Styles.ToggleButtonStyle, GUI.ToolbarButtonSize.Fixed);
-
-			if (GUILayout.Button("Load"))
+			EditorGUILayout.LabelField("Load Settings", EditorStyles.boldLabel);
+			if (GUILayout.Button(Styles.LoadDefaultBtn))
 			{
-				if (m_SettingsMode == SettingsMode.Default)
-				{
-                    ResetToDefaultSettings();
-				}
-
-				if (m_SettingsMode == SettingsMode.SelectedTerrain)
-				{
-					LoadSettingsFromSelectedTerrain();
-				}
-
-				if (m_SettingsMode == SettingsMode.Preset)
-				{
-					LoadPresetToSettings();
-				}
+				ResetToDefaultSettings();
+			}
+			if (GUILayout.Button(Styles.LoadSelectedBtn))
+			{
+				LoadSettingsFromSelectedTerrain();
+			}
+			if (GUILayout.Button(Styles.LoadPresetBtn))
+			{
+				LoadPresetToSettings();
 			}
 			EditorGUILayout.EndHorizontal();
 
@@ -161,7 +140,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			{
 				if (EditorUtility.DisplayDialog("Confirm", "Load terrain settings from selected preset?", "OK", "Cancel"))
 				{
-					m_Settings = m_SelectedPreset;
+					LoadPresetToSettings();
 				}
 			}
 			if (GUILayout.Button(Styles.SavePreset))
@@ -272,10 +251,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			}
 			if (GUILayout.Button(Styles.ApplySettingsToAllBtn, GUILayout.Height(40)))
 			{
-				if (EditorUtility.DisplayDialog("Confirm", "This operation will apply settings to all terrains in scene. Are you sure you want to continue?", "Continue", "Cancel"))
-				{
-					ApplySettingsToAllTerrains();
-				}				
+				ApplySettingsToAllTerrains("This operation will apply settings to all terrains in scene.");
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.Space();
@@ -288,7 +264,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_Settings.DrawHeightmap = EditorGUILayout.Toggle(Styles.DrawTerrain, m_Settings.DrawHeightmap);
 			m_Settings.DrawInstanced = EditorGUILayout.Toggle(Styles.DrawInstancedTerrain, m_Settings.DrawInstanced);
 			m_Settings.PixelError = EditorGUILayout.Slider(Styles.PixelError, m_Settings.PixelError, 1, 200);
-			m_Settings.BaseMapDistance = EditorGUILayout.Slider(Styles.BaseMapDist, m_Settings.BaseMapDistance, 0, 2000);
+			m_Settings.BaseMapDistance = EditorGUILayout.Slider(Styles.BaseMapDist, m_Settings.BaseMapDistance, 0, kBaseMapDistMax);
 			m_Settings.ShadowCastingMode = (ShadowCastingMode)EditorGUILayout.EnumPopup(Styles.CastShadows, m_Settings.ShadowCastingMode);
 #if UNITY_2019_2_OR_NEWER
 			m_Settings.MaterialTemplate = EditorGUILayout.ObjectField("Material", m_Settings.MaterialTemplate, typeof(Material), false) as Material;
@@ -315,34 +291,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 			// max size defined in TerrainInspector.cs
 			const int maxTerrainSize = 100000;
 			const int maxTerrainHeight = 10000;
-			m_Settings.TerrainWidth = EditorGUILayout.FloatField("Terrain Width", m_Settings.TerrainWidth);
-			if (m_Settings.TerrainWidth <= 0)
-			{
-				m_Settings.TerrainWidth = 1;
-			}
-			if (m_Settings.TerrainWidth > maxTerrainSize)
-			{
-				m_Settings.TerrainWidth = maxTerrainSize;
-			}
-			m_Settings.TerrainLength = EditorGUILayout.FloatField("Terrain Length", m_Settings.TerrainLength);
-			if (m_Settings.TerrainLength <= 0)
-			{
-				m_Settings.TerrainLength = 1;
-			}
-			if (m_Settings.TerrainLength > maxTerrainSize)
-			{
-				m_Settings.TerrainLength = maxTerrainSize;
-			}
-			m_Settings.TerrainHeight = EditorGUILayout.FloatField("Terrain Height", m_Settings.TerrainHeight);
-			if (m_Settings.TerrainHeight <= 0)
-			{
-				m_Settings.TerrainHeight = 1;
-			}
-			if (m_Settings.TerrainHeight > maxTerrainHeight)
-			{
-				m_Settings.TerrainHeight = maxTerrainHeight;
-			}
-
+			m_Settings.TerrainWidth = Mathf.Clamp(EditorGUILayout.FloatField("Terrain Width", m_Settings.TerrainWidth), 1.0f, maxTerrainSize);
+			m_Settings.TerrainLength = Mathf.Clamp(EditorGUILayout.FloatField("Terrain Length", m_Settings.TerrainLength), 1.0f, maxTerrainSize);
+			m_Settings.TerrainHeight = Mathf.Clamp(EditorGUILayout.FloatField("Terrain Height", m_Settings.TerrainHeight), 1.0f, maxTerrainHeight);
 			m_Settings.DetailResolutionPerPatch = EditorGUILayout.IntField("Detail Resolution Per Patch", m_Settings.DetailResolutionPerPatch);
 			m_Settings.DetailResolutionPerPatch = Mathf.Clamp(m_Settings.DetailResolutionPerPatch, 8, 128);
 			m_Settings.DetailResolutaion = EditorGUILayout.IntField("Detail Resolution", m_Settings.DetailResolutaion);
@@ -351,9 +302,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 		void ShowTextureResolutionSettings()
 		{
-			m_Settings.BaseTextureResolution = EditorGUILayout.IntPopup(Styles.BaseTextureRes.text, m_Settings.BaseTextureResolution, m_GeneralTextureResolutionNames, m_GeneralTextureResolutions);
-            m_Settings.AlphaMapResolution = EditorGUILayout.IntPopup(Styles.ControlTextureRes.text, m_Settings.AlphaMapResolution, m_GeneralTextureResolutionNames, m_GeneralTextureResolutions);
-            m_Settings.HeightMapResolution = EditorGUILayout.IntPopup(Styles.HeightTextureRes.text, m_Settings.HeightMapResolution, m_HeightTextureResolutionNames, m_HeightTextureResolutions);
+			m_Settings.BaseTextureResolution = EditorGUILayout.IntPopup(Styles.BaseTextureRes.text, m_Settings.BaseTextureResolution, ToolboxHelper.GUITextureResolutionNames, ToolboxHelper.GUITextureResolutions);
+            m_Settings.AlphaMapResolution = EditorGUILayout.IntPopup(Styles.ControlTextureRes.text, m_Settings.AlphaMapResolution, ToolboxHelper.GUITextureResolutionNames, ToolboxHelper.GUITextureResolutions);
+            m_Settings.HeightMapResolution = EditorGUILayout.IntPopup(Styles.HeightTextureRes.text, m_Settings.HeightMapResolution, ToolboxHelper.GUIHeightmapResolutionNames, ToolboxHelper.GUIHeightmapResolutions);
 		}
 
 		void ShowTreeAndDetailSettings()
@@ -378,82 +329,19 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_Settings.WavingGrassTint = EditorGUILayout.ColorField("Grass Tint", m_Settings.WavingGrassTint);
 		}
 
-
-		void GetTerrainSettingsFromTerrain(Terrain terrain)
-		{
-			if (terrain == null) return;
-
-			// base settings
-			m_Settings.GroupingID = terrain.groupingID;
-			m_Settings.AutoConnect = terrain.allowAutoConnect;
-			m_Settings.DrawHeightmap = terrain.drawHeightmap;
-			m_Settings.DrawInstanced = terrain.drawInstanced;
-			m_Settings.PixelError = terrain.heightmapPixelError;
-			m_Settings.BaseMapDistance = terrain.basemapDistance;
-			m_Settings.ShadowCastingMode = terrain.shadowCastingMode;
-			m_Settings.MaterialTemplate = terrain.materialTemplate;
-			m_Settings.ReflectionProbeUsage = terrain.reflectionProbeUsage;
-#if UNITY_2019_2_OR_NEWER
-#else
-			m_Settings.MaterialType = terrain.materialType;
-			m_Settings.LegacySpecular = terrain.legacySpecular;
-			m_Settings.LegacyShininess = terrain.legacyShininess;
-#endif
-
-			// mesh resolution
-			m_Settings.TerrainWidth = terrain.terrainData.size.x;
-			m_Settings.TerrainHeight = terrain.terrainData.size.y;
-			m_Settings.TerrainLength = terrain.terrainData.size.z;
-			m_Settings.DetailResolutaion = terrain.terrainData.detailResolution;
-			m_Settings.DetailResolutionPerPatch = terrain.terrainData.detailResolutionPerPatch;
-
-			// texture resolution
-			m_Settings.BaseTextureResolution = terrain.terrainData.baseMapResolution;
-			m_Settings.AlphaMapResolution = terrain.terrainData.alphamapResolution;
-			m_Settings.HeightMapResolution = terrain.terrainData.heightmapResolution;
-
-			// tree and details
-			m_Settings.DrawTreesAndFoliage = terrain.drawTreesAndFoliage;
-			m_Settings.BakeLightProbesForTrees = terrain.bakeLightProbesForTrees;
-			m_Settings.DeringLightProbesForTrees = terrain.deringLightProbesForTrees;
-			m_Settings.PreserveTreePrototypeLayers = terrain.preserveTreePrototypeLayers;
-			m_Settings.DetailObjectDistance = terrain.detailObjectDistance;
-			m_Settings.CollectDetailPatches = terrain.collectDetailPatches;
-			m_Settings.DetailObjectDensity = terrain.detailObjectDensity;
-			m_Settings.TreeDistance = terrain.treeDistance;
-			m_Settings.TreeBillboardDistance = terrain.treeBillboardDistance;
-			m_Settings.TreeCrossFadeLength = terrain.treeCrossFadeLength;
-			m_Settings.TreeMaximumFullLODCount = terrain.treeMaximumFullLODCount;
-
-			// grass wind
-			m_Settings.WavingGrassStrength = terrain.terrainData.wavingGrassStrength;
-			m_Settings.WavingGrassSpeed = terrain.terrainData.wavingGrassSpeed;
-			m_Settings.WavingGrassAmount = terrain.terrainData.wavingGrassAmount;
-			m_Settings.WavingGrassTint = terrain.terrainData.wavingGrassTint;
-		}
-
         void ResetToDefaultSettings()
         {
-            TerrainSettings defaultSettings = ScriptableObject.CreateInstance<TerrainSettings>();
-            defaultSettings.ShowBasicTerrainSettings = m_Settings.ShowBasicTerrainSettings;
-            defaultSettings.ShowMeshResolutionSettings = m_Settings.ShowMeshResolutionSettings;
-            defaultSettings.ShowTextureResolutionSettings = m_Settings.ShowTextureResolutionSettings;
-            defaultSettings.ShowTreeAndDetailSettings = m_Settings.ShowTreeAndDetailSettings;
-            defaultSettings.ShowGrassWindSettings = m_Settings.ShowGrassWindSettings;
-            defaultSettings.EnableBasicSettings = m_Settings.EnableBasicSettings;
-            defaultSettings.EnableMeshResSettings = m_Settings.EnableMeshResSettings;
-            defaultSettings.EnableTextureResSettings = m_Settings.EnableTextureResSettings;
-            defaultSettings.EnableTreeSettings = m_Settings.EnableTreeSettings;
-            defaultSettings.EnableWindSettings = m_Settings.EnableWindSettings;
-            m_Settings = defaultSettings;
+            // Copy everything to our current settings.
+            // Since UI settings are not copied, they remain unchanged.
+            m_Settings.CopySettingsFrom(m_DefaultSettings);
         }
 
-		void ApplySettingsToAllTerrains()
+		void ApplySettingsToAllTerrains(string errorContext)
 		{
 			var terrains = Object.FindObjectsOfType<Terrain>();
 			if (terrains != null && terrains.Length > 0)
 			{
-				ApplySettingsToTerrains(terrains);
+				ApplySettingsToTerrains(terrains, errorContext);
 			}
 		}
 
@@ -472,28 +360,64 @@ namespace UnityEditor.Experimental.TerrainAPI
 			}
 		}
 
-		void ApplySettingsToTerrains(Terrain[] terrains)
+		void ApplySettingsToTerrains(Terrain[] terrains, string errorContext="")
 		{			
 			int index = 0;
 			try
 			{
-				foreach (var terrain in terrains)
+				bool continueEdit = true;
+				
+				// Only show this warning if the user has Mesh Settings enabled.
+				if (m_Settings.EnableMeshResSettings)
 				{
-					EditorUtility.DisplayProgressBar("Applying settings changes on terrains", string.Format("Updating terrain tile {0}", terrain.name), ((float)index / terrains.Length));
-
-					if (m_Settings.EnableBasicSettings)
+					var newSize = new Vector3(m_Settings.TerrainWidth, m_Settings.TerrainHeight,
+						m_Settings.TerrainLength);
+					foreach (var terrain in terrains)
 					{
-						Undo.RecordObject(terrain, "Terrain property change");
+						// If any terrain has a size that's different from the specified settings, let's confirm 
+						// the action.
+						if (terrain.terrainData.size != newSize)
+						{
+							var message =
+								"Some terrains have different sizes than the settings specified. This operation will resize the terrains potentially resulting in gaps and/or overlaps.";
+							if (string.IsNullOrEmpty(errorContext))
+							{
+								continueEdit = EditorUtility.DisplayDialog("Confirm",
+									$"{message}\nAre you sure you want to continue?",
+									"Continue", "Cancel");
+							}
+							else
+							{
+								continueEdit = EditorUtility.DisplayDialog("Confirm",
+									$"1. {errorContext}\n2. {message}\n\nAre you sure you want to continue?",
+									"Continue", "Cancel");
+							}
+							break;
+						}
+					}
+				}
 
-						terrain.groupingID = m_Settings.GroupingID;
-						terrain.allowAutoConnect = m_Settings.AutoConnect;
-						terrain.drawHeightmap = m_Settings.DrawHeightmap;
-						terrain.drawInstanced = m_Settings.DrawInstanced;
-						terrain.heightmapPixelError = m_Settings.PixelError;
-						terrain.basemapDistance = m_Settings.BaseMapDistance;
-						terrain.shadowCastingMode = m_Settings.ShadowCastingMode;
-						terrain.materialTemplate = m_Settings.MaterialTemplate;
-						terrain.reflectionProbeUsage = m_Settings.ReflectionProbeUsage;
+				if (continueEdit)
+				{
+					foreach (var terrain in terrains)
+					{
+						EditorUtility.DisplayProgressBar("Applying settings changes on terrains",
+							string.Format("Updating terrain tile {0}", terrain.name),
+							((float) index / terrains.Length));
+
+						if (m_Settings.EnableBasicSettings)
+						{
+							Undo.RecordObject(terrain, "Terrain property change");
+
+							terrain.groupingID = m_Settings.GroupingID;
+							terrain.allowAutoConnect = m_Settings.AutoConnect;
+							terrain.drawHeightmap = m_Settings.DrawHeightmap;
+							terrain.drawInstanced = m_Settings.DrawInstanced;
+							terrain.heightmapPixelError = m_Settings.PixelError;
+							terrain.basemapDistance = m_Settings.BaseMapDistance;
+							terrain.shadowCastingMode = m_Settings.ShadowCastingMode;
+							terrain.materialTemplate = m_Settings.MaterialTemplate;
+							terrain.reflectionProbeUsage = m_Settings.ReflectionProbeUsage;
 #if UNITY_2019_2_OR_NEWER
 #else
 						terrain.materialType = m_Settings.MaterialType;
@@ -503,56 +427,60 @@ namespace UnityEditor.Experimental.TerrainAPI
 							terrain.legacyShininess = m_Settings.LegacyShininess;
 						}
 #endif
-					}
-
-					if (m_Settings.EnableMeshResSettings)
-					{
-						Undo.RecordObject(terrain.terrainData, "TerrainData property change");
-						Vector3 size = new Vector3(m_Settings.TerrainWidth, m_Settings.TerrainHeight, m_Settings.TerrainLength);
-						terrain.terrainData.size = size;
-						terrain.terrainData.SetDetailResolution(m_Settings.DetailResolutaion, m_Settings.DetailResolutionPerPatch);
-					}
-
-					if (m_Settings.EnableTextureResSettings)
-					{
-						terrain.terrainData.baseMapResolution = m_Settings.BaseTextureResolution;
-						if (m_Settings.AlphaMapResolution != terrain.terrainData.alphamapResolution)
-						{
-							ToolboxHelper.ResizeControlTexture(terrain.terrainData, m_Settings.AlphaMapResolution);
 						}
-						if (m_Settings.HeightMapResolution != terrain.terrainData.heightmapResolution)
+
+						if (m_Settings.EnableMeshResSettings)
 						{
-							ToolboxHelper.ResizeHeightmap(terrain.terrainData, m_Settings.HeightMapResolution);
+							Undo.RecordObject(terrain.terrainData, "TerrainData property change");
+							Vector3 size = new Vector3(m_Settings.TerrainWidth, m_Settings.TerrainHeight,
+								m_Settings.TerrainLength);
+							terrain.terrainData.size = size;
+							terrain.terrainData.SetDetailResolution(m_Settings.DetailResolutaion,
+								m_Settings.DetailResolutionPerPatch);
 						}
+
+						if (m_Settings.EnableTextureResSettings)
+						{
+							terrain.terrainData.baseMapResolution = m_Settings.BaseTextureResolution;
+							if (m_Settings.AlphaMapResolution != terrain.terrainData.alphamapResolution)
+							{
+								ToolboxHelper.ResizeControlTexture(terrain.terrainData, m_Settings.AlphaMapResolution);
+							}
+
+							if (m_Settings.HeightMapResolution != terrain.terrainData.heightmapResolution)
+							{
+								ToolboxHelper.ResizeHeightmap(terrain.terrainData, m_Settings.HeightMapResolution);
+							}
+						}
+
+						if (m_Settings.EnableTreeSettings)
+						{
+							Undo.RecordObject(terrain, "Terrain property change");
+
+							terrain.drawTreesAndFoliage = m_Settings.DrawTreesAndFoliage;
+							terrain.bakeLightProbesForTrees = m_Settings.BakeLightProbesForTrees;
+							terrain.deringLightProbesForTrees = m_Settings.DeringLightProbesForTrees;
+							terrain.preserveTreePrototypeLayers = m_Settings.PreserveTreePrototypeLayers;
+							terrain.detailObjectDistance = m_Settings.DetailObjectDistance;
+							terrain.collectDetailPatches = m_Settings.CollectDetailPatches;
+							terrain.detailObjectDensity = m_Settings.DetailObjectDensity;
+							terrain.treeDistance = m_Settings.TreeDistance;
+							terrain.treeBillboardDistance = m_Settings.TreeBillboardDistance;
+							terrain.treeCrossFadeLength = m_Settings.TreeCrossFadeLength;
+							terrain.treeMaximumFullLODCount = m_Settings.TreeMaximumFullLODCount;
+						}
+
+						if (m_Settings.EnableWindSettings)
+						{
+							Undo.RecordObject(terrain.terrainData, "TerrainData property change");
+							terrain.terrainData.wavingGrassStrength = m_Settings.WavingGrassStrength;
+							terrain.terrainData.wavingGrassSpeed = m_Settings.WavingGrassSpeed;
+							terrain.terrainData.wavingGrassAmount = m_Settings.WavingGrassAmount;
+							terrain.terrainData.wavingGrassTint = m_Settings.WavingGrassTint;
+						}
+
+						index++;
 					}
-
-					if (m_Settings.EnableTreeSettings)
-					{
-						Undo.RecordObject(terrain, "Terrain property change");
-
-						terrain.drawTreesAndFoliage = m_Settings.DrawTreesAndFoliage;
-						terrain.bakeLightProbesForTrees = m_Settings.BakeLightProbesForTrees;
-						terrain.deringLightProbesForTrees = m_Settings.DeringLightProbesForTrees;
-						terrain.preserveTreePrototypeLayers = m_Settings.PreserveTreePrototypeLayers;
-						terrain.detailObjectDistance = m_Settings.DetailObjectDistance;
-						terrain.collectDetailPatches = m_Settings.CollectDetailPatches;
-						terrain.detailObjectDensity = m_Settings.DetailObjectDensity;
-						terrain.treeDistance = m_Settings.TreeDistance;
-						terrain.treeBillboardDistance = m_Settings.TreeBillboardDistance;
-						terrain.treeCrossFadeLength = m_Settings.TreeCrossFadeLength;
-						terrain.treeMaximumFullLODCount = m_Settings.TreeMaximumFullLODCount;
-					}
-
-					if (m_Settings.EnableWindSettings)
-					{
-						Undo.RecordObject(terrain.terrainData, "TerrainData property change");
-						terrain.terrainData.wavingGrassStrength = m_Settings.WavingGrassStrength;
-						terrain.terrainData.wavingGrassSpeed = m_Settings.WavingGrassSpeed;
-						terrain.terrainData.wavingGrassAmount = m_Settings.WavingGrassAmount;
-						terrain.terrainData.wavingGrassTint = m_Settings.WavingGrassTint;
-					}
-
-					index++;
 				}
 			}
 			finally
@@ -564,6 +492,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 		void SavePresetSettings()
 		{
+			m_SelectedPreset.CopySettingsFrom(m_Settings);
+			m_SelectedPreset.CopyUISettingsFrom(m_Settings);
 			AssetDatabase.SaveAssets();
 			AssetDatabase.Refresh();
 		}
@@ -580,7 +510,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 			{
 				m_SelectedPreset = null;
 				var newPreset = ScriptableObject.CreateInstance<TerrainSettings>();
-				newPreset = m_Settings;
+				newPreset.CopySettingsFrom(m_Settings);
+				newPreset.CopyUISettingsFrom(m_Settings);
 				AssetDatabase.CreateAsset(newPreset, filePath);
 			}
 			
@@ -597,10 +528,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 					CreateNewPreset();
 					return true;
 				}
-				else
-				{
-					return false;
-				}
+				return false;
 			}
 
 			return true;
@@ -613,22 +541,23 @@ namespace UnityEditor.Experimental.TerrainAPI
 				EditorUtility.DisplayDialog("Error", "No selected preset found. Select one to continue.", "OK");
 				return;
 			}
-			else
-			{
-				m_Settings = m_SelectedPreset;
-			}			
+
+			m_Settings.CopySettingsFrom(m_SelectedPreset);
+			m_Settings.CopyUISettingsFrom(m_SelectedPreset);
 		}
 
 		void LoadSettingsFromSelectedTerrain()
 		{
-			if (!GetSelectedTerrain()) return;
-
-			GetTerrainSettingsFromTerrain(m_SelectedTerrain);
+			if (!GetSelectedTerrain())
+			{
+				return;
+			}
+			
+			m_Settings.CopySettingsFrom(m_SelectedTerrain);
 		}
 
 		public void SaveSettings()
 		{
-			m_Settings.PresetMode = (int)m_SettingsMode;
 			if (m_SelectedPreset != null)
 			{
 				m_Settings.PresetPath = AssetDatabase.GetAssetPath(m_SelectedPreset);
@@ -660,8 +589,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 			{
 				m_SelectedPreset = AssetDatabase.LoadAssetAtPath(m_Settings.PresetPath, typeof(TerrainSettings)) as TerrainSettings;
 			}
-
-			m_SettingsMode = (SettingsMode)m_Settings.PresetMode;
 		}
 	}
 }

@@ -21,7 +21,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             NoSpacing = All & ~Spacing,
         }
 
-        public WindBrushUIGroup(string name, Feature feature = Feature.All) : base(name) {
+        public WindBrushUIGroup(string name, Func<TerrainToolsAnalytics.IBrushParameter[]> analyticsCall = null, Feature feature = Feature.All) : base(name, analyticsCall) {
             //Scatter must be first.
             if ((feature & Feature.Scatter) != 0) {
                 AddScatterController(new BrushScatterVariator(name, this, this));
@@ -56,6 +56,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;              // gets interface to modify state of TerrainTools
             context.SelectPaintTool<WindErosionTool>();                                                  // set active tool
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Wind Erosion Tool");
         }
 #endif
 
@@ -67,7 +68,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new WindBrushUIGroup( "WindErosion" );
+                    m_commonUI = new WindBrushUIGroup( "WindErosion", UpdateAnalyticParameters );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -175,6 +176,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             if (EditorGUI.EndChangeCheck()) {
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
 
         }
@@ -215,6 +217,8 @@ namespace UnityEditor.Experimental.TerrainAPI
     
                         //Blit the result onto the new height map
                         Material mat = GetPaintMaterial();
+                        var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                        Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                         Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, 0.0f, 0.0f);
                         mat.SetTexture("_BrushTex", editContext.brushTexture);
                         mat.SetTexture("_NewHeightTex", m_Eroder.outputTextures["Height"]);
@@ -222,6 +226,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                 
                         brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                         brushRender.RenderBrush(paintContext, mat, 0);
+                        brushRender.Release(paintContext);
+                        RTUtils.Release(brushMask);
                     }
                 }
             }
@@ -239,6 +245,28 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         }
 
+        #endregion
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[] {
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_SimulationScale.text, Value = m_Eroder.SimulationScale.value},
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_WindSpeed.text, Value = m_Eroder.m_WindSpeed.value },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_TimeDelta.text, Value = m_Eroder.TimeInterval.value },
+            new TerrainToolsAnalytics.BrushParameter<int> { Name = Erosion.Styles.m_NumIterations.text, Value = m_Eroder.Iterations.value },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_SuspensionRate.text, Value = m_Eroder.SuspensionRate.value },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_DepositionRate.text, Value = m_Eroder.DepositionRate.value },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_SlopeFactor.text, Value = m_Eroder.SlopeFactor.value },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_FlowRate.text, Value = m_Eroder.AdvectionVelScale.value },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_DragCoefficient.text, Value = m_Eroder.DragCoefficient.value },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_ReflectionCoefficient.text, Value = m_Eroder.ReflectionCoefficient.value },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_DiffusionRate.text, Value = m_Eroder.DiffusionRate.value },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_AbrasivenessCoefficient.text, Value = m_Eroder.AbrasivenessCoefficient.value },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_Viscosity.text, Value = m_Eroder.Viscosity.value },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = "# Iterations", Value = m_Eroder.ThermalIterations },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_ThermalDTScalar.text, Value = m_Eroder.ThermalTimeDelta.value },
+            new TerrainToolsAnalytics.BrushParameter<float> { Name = Erosion.Styles.m_AngleOfRepose.text, Value = m_Eroder.AngleOfRepose },
+
+        };
         #endregion
     }
 }

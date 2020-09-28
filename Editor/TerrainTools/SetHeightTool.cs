@@ -1,6 +1,4 @@
 using UnityEngine;
-using UnityEditor;
-using System;
 using UnityEngine.Experimental.TerrainAPI;
 using UnityEditor.ShortcutManagement;
 
@@ -16,6 +14,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             context.SelectPaintTool<SetHeightTool>();
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Set Height Tool");
         }
 #endif
 
@@ -27,7 +26,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "SetHeightTool" );
+                    LoadSettings();
+                    m_commonUI = new DefaultBrushUIGroup("SetHeightTool", UpdateAnalyticParameters);
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -46,26 +46,26 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 
         const string toolName = "Set Height";
-		[SerializeField]
-		float m_TargetHeight;
+        [SerializeField]
+        float m_TargetHeight;
 
 #if UNITY_2019_3_OR_NEWER
-		private enum HeightSpace
-		{
-			World,
-			Local
-		}
-		
-		[SerializeField]
-		HeightSpace m_HeightSpace;
+        private enum HeightSpace
+        {
+            World,
+            Local
+        }
+        
+        [SerializeField]
+        HeightSpace m_HeightSpace;
 #endif
 
-		private static class Styles
+        private static class Styles
         {
             public static readonly GUIContent controlHeader = EditorGUIUtility.TrTextContent("Set Height Controls");
             public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to set the height.\n\nHold Ctrl and left click to sample the target height.");
-			public static readonly GUIContent space = EditorGUIUtility.TrTextContent("Space", "The heightmap space in which the painting operates.");
-			public static readonly GUIContent flattenAll = EditorGUIUtility.TrTextContent("Flatten all", "If selected, it will traverse all neighbors and flatten them too");
+            public static readonly GUIContent space = EditorGUIUtility.TrTextContent("Space", "The heightmap space in which the painting operates.");
+            public static readonly GUIContent flattenAll = EditorGUIUtility.TrTextContent("Flatten all", "If selected, it will traverse all neighbors and flatten them too");
             public static readonly GUIContent height = EditorGUIUtility.TrTextContent("Height", "You can set the Height property manually or you can Ctrl-click on the terrain to sample the height at the mouse position (rather like the 'eyedropper' tool in an image editor).");
             public static readonly GUIContent flatten = EditorGUIUtility.TrTextContent("Flatten Tile", "The Flatten button levels the whole terrain to the chosen height.");
         }
@@ -141,17 +141,14 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
 #if UNITY_2019_3_OR_NEWER
-			float brushTargetHeight = Mathf.Clamp01((m_TargetHeight - paintContext.heightWorldSpaceMin) / paintContext.heightWorldSpaceSize);
+            float brushTargetHeight = Mathf.Clamp01((m_TargetHeight - paintContext.heightWorldSpaceMin) / paintContext.heightWorldSpaceSize);
             Vector4 brushParams = new Vector4(brushStrength * 0.01f, PaintContext.kNormalizedHeightScale * brushTargetHeight, 0.0f, 0.0f);
 #else
-			float terrainHeight = Mathf.Clamp01((m_TargetHeight - terrain.transform.position.y) / terrain.terrainData.size.y);
+            float terrainHeight = Mathf.Clamp01((m_TargetHeight - terrain.transform.position.y) / terrain.terrainData.size.y);
             Vector4 brushParams = new Vector4(brushStrength * 0.01f, 0.5f * terrainHeight, 0.0f, 0.0f);
 #endif
-			Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-            mat.SetTexture("_FilterTex", filterMaskRT);
+            var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+            Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
 
 
             mat.SetTexture("_BrushTex", brushTexture);
@@ -159,6 +156,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             brushRender.SetupTerrainToolMaterialProperties(paintContext, brushTransform, mat);
             brushRender.RenderBrush(paintContext, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.SetHeights);
+            RTUtils.Release(brushMask);
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
@@ -209,20 +207,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             mat.SetVector("_BrushParams", brushParams);
 
             Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-            fc.renderTextureCollection.GatherRenderTextures(heightmap.width, heightmap.height);
-            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, heightmap);
-            mat.SetTexture("_FilterTex", filterMaskRT);
+            var brushMask = RTUtils.GetTempHandle(heightmap.width, heightmap.height, 0, FilterUtility.defaultFormat);
+            Utility.SetFilterRT(commonUI, heightmap, brushMask, mat);
             mat.SetTexture("_MainTex", heightmap);
-            RenderTexture temp = RenderTexture.GetTemporary(heightmap.descriptor);
+            var temp = RTUtils.GetTempHandle(heightmap.descriptor);
             Graphics.Blit(heightmap, temp); // copy heightmap into temp
-            
             Graphics.Blit(temp, heightmap, mat, 1);
-
-            RenderTexture.ReleaseTemporary(temp);
-
             terrain.terrainData.DirtyHeightmapRegion(new RectInt(0, 0, heightmap.width, heightmap.height), TerrainHeightmapSyncControl.HeightAndLod);
             terrain.terrainData.SyncHeightmap();
+            RTUtils.Release(brushMask);
+            RTUtils.Release(temp);
         }
 
         void FlattenAll(Terrain terrain)
@@ -234,15 +228,9 @@ namespace UnityEditor.Experimental.TerrainAPI
                 Flatten(terrains[i]);
             }
         }
-        bool m_initialized = false;
+
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            if (!m_initialized)
-            {
-                LoadSettings();
-                m_initialized = true;
-            }
-
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
@@ -254,42 +242,43 @@ namespace UnityEditor.Experimental.TerrainAPI
                 EditorGUILayout.BeginVertical("GroupBox");
                 {
 #if UNITY_2019_3_OR_NEWER
-					EditorGUI.BeginChangeCheck();
-					m_HeightSpace = (HeightSpace)EditorGUILayout.EnumPopup(Styles.space, m_HeightSpace);
-					if (EditorGUI.EndChangeCheck())
-					{
-						if (m_HeightSpace == HeightSpace.Local)
-							m_TargetHeight = Mathf.Clamp(m_TargetHeight, terrain.GetPosition().y, terrain.terrainData.size.y + terrain.GetPosition().y);
-					}
+                    EditorGUI.BeginChangeCheck();
+                    m_HeightSpace = (HeightSpace)EditorGUILayout.EnumPopup(Styles.space, m_HeightSpace);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (m_HeightSpace == HeightSpace.Local)
+                            m_TargetHeight = Mathf.Clamp(m_TargetHeight, terrain.GetPosition().y, terrain.terrainData.size.y + terrain.GetPosition().y);
+                    }
 
-					if (m_HeightSpace == HeightSpace.Local)
-					{
-						m_TargetHeight = EditorGUILayout.Slider(Styles.height, m_TargetHeight - terrain.GetPosition().y, 0, terrain.terrainData.size.y) + terrain.GetPosition().y;
-					}
-					else
-					{
-						m_TargetHeight = EditorGUILayout.FloatField(Styles.height, m_TargetHeight);
-					}
+                    if (m_HeightSpace == HeightSpace.Local)
+                    {
+                        m_TargetHeight = EditorGUILayout.Slider(Styles.height, m_TargetHeight - terrain.GetPosition().y, 0, terrain.terrainData.size.y) + terrain.GetPosition().y;
+                    }
+                    else
+                    {
+                        m_TargetHeight = EditorGUILayout.FloatField(Styles.height, m_TargetHeight);
+                    }
 #else
-					 m_TargetHeight = EditorGUILayout.Slider(Styles.height, m_TargetHeight, 0, terrain.terrainData.size.y);
+                    m_TargetHeight = EditorGUILayout.Slider(Styles.height, m_TargetHeight, 0, terrain.terrainData.size.y);
 #endif
-					GUILayout.BeginHorizontal();
-					GUILayout.FlexibleSpace();
-					if (GUILayout.Button(Styles.flatten, GUILayout.ExpandWidth(false)))
-					{
-						Flatten(terrain);
-					}
-					if (GUILayout.Button(Styles.flattenAll, GUILayout.ExpandWidth(false)))
-					{
-						FlattenAll(terrain);
-					}
-					GUILayout.EndHorizontal();
+                    GUILayout.BeginHorizontal();
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button(Styles.flatten, GUILayout.ExpandWidth(false)))
+                    {
+                        Flatten(terrain);
+                    }
+                    if (GUILayout.Button(Styles.flattenAll, GUILayout.ExpandWidth(false)))
+                    {
+                        FlattenAll(terrain);
+                    }
+                    GUILayout.EndHorizontal();
 
-					if (EditorGUI.EndChangeCheck())
-					{
-						Save(true);
-						SaveSetting();
-					}					
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Save(true);
+                        SaveSetting();
+                        TerrainToolsAnalytics.OnParameterChange();
+                    }					
                 }
                 EditorGUILayout.EndVertical();
             }
@@ -298,13 +287,20 @@ namespace UnityEditor.Experimental.TerrainAPI
         private void SaveSetting()
         {
             EditorPrefs.SetFloat("Unity.TerrainTools.SetHeight.Height", m_TargetHeight);
-
         }
 
         private void LoadSettings()
         {
             m_TargetHeight = EditorPrefs.GetFloat("Unity.TerrainTools.SetHeight.Height", 0.0f);
-
         }
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.height.text, Value = m_TargetHeight},
+#if UNITY_2019_3_OR_NEWER
+            new TerrainToolsAnalytics.BrushParameter<string>{Name = Styles.space.text, Value = m_HeightSpace.ToString()},
+#endif
+        };
+        #endregion
     }
 }

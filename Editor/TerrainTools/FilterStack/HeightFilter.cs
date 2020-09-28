@@ -1,10 +1,11 @@
 ﻿using UnityEngine;
-using UnityEditor;
 using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.Experimental.TerrainAPI {
+namespace UnityEditor.Experimental.TerrainAPI
+{
     [System.Serializable]
-    public class HeightFilter : Filter {
+    public class HeightFilter : Filter
+    {
         static readonly int RemapTexWidth = 1024;
 
         [SerializeField]
@@ -18,58 +19,86 @@ namespace UnityEditor.Experimental.TerrainAPI {
         //We bake an AnimationCurve to a texture to control value remapping
         [SerializeField]
         private AnimationCurve m_RemapCurve = new AnimationCurve(new Keyframe(0.0f, 0.0f), new Keyframe(0.25f, 1.0f), new Keyframe(0.75f, 1.0f), new Keyframe(1.0f, 0.0f));
-        Texture2D m_RemapTex = null;
+        Texture2D m_RemapTex;
 
-        Texture2D GetRemapTexture() {
-            if (m_RemapTex == null) {
+        Texture2D GetRemapTexture()
+        {
+            if (m_RemapTex == null)
+            {
                 m_RemapTex = new Texture2D(RemapTexWidth, 1, TextureFormat.RFloat, false, true);
                 m_RemapTex.wrapMode = TextureWrapMode.Clamp;
 
-                TerrainTools.Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref m_RemapTex);
+                Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref m_RemapTex);
             }
 
             return m_RemapTex;
         }
 
         //Compute Shader resource helper
-        ComputeShader m_HeightCS = null;
-        ComputeShader GetComputeShader() {
-            if (m_HeightCS == null) {
+        ComputeShader m_HeightCS;
+        ComputeShader GetComputeShader()
+        {
+            if (m_HeightCS == null)
+            {
                 m_HeightCS = (ComputeShader)Resources.Load("Height");
             }
             return m_HeightCS;
         }
 
-        public override string GetDisplayName() {
-            return "Height";
-        }
-
-        public override string GetToolTip()
+        public override string GetDisplayName() => "Height";
+        public override string GetToolTip() => "Uses the height of the heightmap to mask the effect of the chosen Brush.";
+        public override bool ValidateFilter(FilterContext filterContext, out string message)
         {
-            return "Uses the height of the heightmap to mask the effect of the chosen Brush.";
+            message = string.Empty;
+
+            if (!SystemInfo.supportsComputeShaders)
+            {
+                message = "The current Graphics API does not support compute shaders.";
+                return false;
+            }
+
+            if (!SystemInfo.IsFormatSupported(filterContext.targetFormat, FormatUsage.LoadStore))
+            {
+                message = $"The current Graphics API does not support UAV resource access for GraphicsFormat.{filterContext.targetFormat}.";
+                return false;
+            }
+            
+            return true;
         }
 
-        public override void Eval(FilterContext fc) {
-            ComputeShader cs = GetComputeShader();
-            int kidx = cs.FindKernel("HeightRemap");
+        protected override void OnEval(FilterContext fc, RenderTexture source, RenderTexture dest)
+        {
+            var desc = dest.descriptor;
+            desc.enableRandomWrite = true;
+            var sourceHandle = RTUtils.GetTempHandle(desc);
+            var destHandle = RTUtils.GetTempHandle(desc);
+            using (sourceHandle.Scoped())
+            using (destHandle.Scoped())
+            {
+                Graphics.Blit(source, sourceHandle);
+                Graphics.Blit(dest, destHandle);
 
-            Texture2D remapTex = GetRemapTexture();
+                ComputeShader cs = GetComputeShader();
+                int kidx = cs.FindKernel("HeightRemap");
 
-            cs.SetTexture(kidx, "In_BaseMaskTex", fc.sourceRenderTexture);
-            cs.SetTexture(kidx, "In_HeightTex", fc.renderTextureCollection["heightMap"]);
-            cs.SetTexture(kidx, "OutputTex", fc.destinationRenderTexture);
-            cs.SetTexture(kidx, "RemapTex", remapTex);
-            cs.SetInt("RemapTexRes", remapTex.width);
-            cs.SetFloat("EffectStrength", m_ConcavityStrength);
-            cs.SetVector("HeightRange", new Vector4(m_Height.x, m_Height.y, m_HeightFeather, 0.0f));
+                Texture2D remapTex = GetRemapTexture();
 
-            //using workgroup size of 1 here to avoid needing to resize render textures
-            cs.Dispatch(kidx, fc.sourceRenderTexture.width, fc.sourceRenderTexture.height, 1);
+                cs.SetTexture(kidx, "In_BaseMaskTex", sourceHandle);
+                cs.SetTexture(kidx, "In_HeightTex", fc.rtHandleCollection[FilterContext.Keywords.Heightmap]);
+                cs.SetTexture(kidx, "OutputTex", destHandle);
+                cs.SetTexture(kidx, "RemapTex", remapTex);
+                cs.SetInt("RemapTexRes", remapTex.width);
+                cs.SetFloat("EffectStrength", m_ConcavityStrength);
+                cs.SetVector("HeightRange", new Vector4(m_Height.x, m_Height.y, m_HeightFeather, 0.0f));
+                cs.Dispatch(kidx, source.width, source.height, 1);
+                
+                Graphics.Blit(destHandle, dest);
+            }
         }
 
-        public override void DoGUI(Rect rect) {
-
-            //Precaculate dimensions
+        protected override void OnDrawGUI(Rect rect, FilterContext filterContext)
+        {
+            // Calculate dimensions
             float strengthLabelWidth = GUI.skin.label.CalcSize(strengthLabel).x;
             float rangeLabelWidth = GUI.skin.label.CalcSize(rangeLabel).x;
             float featherLabelWidth = GUI.skin.label.CalcSize(featherLabel).x;
@@ -85,12 +114,10 @@ namespace UnityEditor.Experimental.TerrainAPI {
             // Height Range Slider
             Rect rangeLabelRect = new Rect(rect.x, strengthSliderRect.yMax, labelWidth, EditorGUIUtility.singleLineHeight);
             EditorGUI.LabelField(rangeLabelRect, rangeLabel);
-            //Rect rangeSliderRect = new Rect(rangeLabelRect.xMax, rangeLabelRect.y, rect.width - labelWidth, rangeLabelRect.height);
             Rect rangeLeftRect = new Rect(rangeLabelRect.xMax, rangeLabelRect.y, (rect.width - labelWidth) / 2, rangeLabelRect.height);
             Rect rangeRightRect = new Rect(rangeLeftRect.xMax, rangeLabelRect.y, (rect.width - labelWidth) / 2, rangeLabelRect.height);
             m_Height.x = EditorGUI.FloatField(rangeLeftRect, m_Height.x);
             m_Height.y = EditorGUI.FloatField(rangeRightRect, m_Height.y);
-            //EditorGUI.MinMaxSlider(rangeSliderRect, GUIContent.none, ref m_Height.x, ref m_Height.y, 0.0f, 1.0f);
 
             //Value Remap Curve
             Rect curveLabelRect = new Rect(rect.x, rangeLeftRect.yMax, labelWidth, EditorGUIUtility.singleLineHeight);
@@ -99,14 +126,14 @@ namespace UnityEditor.Experimental.TerrainAPI {
 
             EditorGUI.BeginChangeCheck();
             m_RemapCurve = EditorGUI.CurveField(curveRect, m_RemapCurve);
-            if (EditorGUI.EndChangeCheck()) {
-                Vector2 range = TerrainTools.Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref m_RemapTex);
+            if (EditorGUI.EndChangeCheck())
+            {
+                var tex = GetRemapTexture();
+                Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref tex);
             }
         }
 
-        public override float GetElementHeight() {
-            return EditorGUIUtility.singleLineHeight * 4;
-        }
+        public override float GetElementHeight() => EditorGUIUtility.singleLineHeight * 4;
 
         private static GUIContent strengthLabel = EditorGUIUtility.TrTextContent("Strength", "Controls the strength of the masking effect.");
         private static GUIContent rangeLabel = EditorGUIUtility.TrTextContent("Height Range", "Specifics the height range to which to apply the effect.");

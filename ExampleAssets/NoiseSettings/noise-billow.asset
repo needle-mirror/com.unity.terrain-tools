@@ -9,7 +9,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_GeneratorAsset: {fileID: 0}
   m_Script: {fileID: 11500000, guid: 1b3bd3e5b3a04174d8df40dd407cf948, type: 3}
   m_Name: noise-billow
   m_EditorClassIdentifier: 
@@ -20,11 +19,10 @@ MonoBehaviour:
     flipScaleX: 0
     flipScaleY: 0
     flipScaleZ: 0
-    maintainScaleRatio: 0
   domainSettings:
-    noiseTypeName: Perlin
+    noiseTypeName: Billow
     fractalTypeName: Fbm
     noiseTypeParams: 
     fractalTypeParams: '{"warpOffsets":{"x":2.5,"y":1.399999976158142,"z":3.200000047683716,"w":2.700000047683716},"octavesMinMax":{"x":0.0,"y":16.0},"amplitudeMinMax":{"x":0.0,"y":1.0},"frequencyMinMax":{"x":0.0,"y":2.0},"lacunarityMinMax":{"x":0.0,"y":4.0},"persistenceMinMax":{"x":0.0,"y":1.0},"warpIterationsMinMax":{"x":0.0,"y":8.0},"warpStrengthMinMax":{"x":-2.0,"y":2.0},"octaves":8.0,"amplitude":0.5,"frequency":1.0,"persistence":0.5,"lacunarity":2.0,"warpIterations":1.0,"warpStrength":0.5,"warpEnabled":false,"warpExpanded":true}'
-  filterSettings:
-    filterStack: {fileID: 0}
+  useTextureForPositions: 0
+  positionTexture: {fileID: 0}

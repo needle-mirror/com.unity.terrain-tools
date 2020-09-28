@@ -24,6 +24,15 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
     [SerializeField]
     private float m_MaxValue = 1.0f;
     [SerializeField]
+    private bool m_shouldClampMin = false;
+    [SerializeField]
+    private bool m_shouldClampMax = false;
+    [SerializeField]
+    private float m_MinClampValue = 0.0f;
+    [SerializeField]
+    private float m_MaxClampValue = 1.0f;
+    
+    [SerializeField]
     private float m_MouseSensitivity = 1.0f;
     [SerializeField]
     private bool m_WrapValue = false;
@@ -61,14 +70,113 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
         }
     }
 
-    public float minValue {
+    public float minValue
+    {
         get => m_MinValue;
-        set => m_MinValue = value;
+        set
+        {
+            if (shouldClampMin && value < m_MinClampValue)
+            {
+                m_MinValue = m_MinClampValue;
+            }
+            else
+            {
+                m_MinValue = value;
+            }
+            if (m_Value < m_MinValue)
+            {
+                m_Value = m_MinValue;
+            }
+            if (m_MinValue > m_MaxValue)
+            {
+                m_MaxValue = m_MinValue;
+            }
+        }
     }
-    public float maxValue {
+
+    public float maxValue
+    {
         get => m_MaxValue;
-        set => m_MaxValue = value;
+        set
+        {
+            if (shouldClampMax && value > m_MaxClampValue)
+            {
+                m_MaxValue = m_MaxClampValue;
+            }
+            else
+            {
+                m_MaxValue = value;
+            }
+            if (m_Value > m_MaxValue)
+            {
+                m_Value = m_MaxValue;
+            }
+            if (m_MinValue > m_MaxValue)
+            {
+                m_MinValue = m_MaxValue;
+            }
+        }
     }
+    public bool shouldClampMin
+    {
+        get => m_shouldClampMin;
+        set
+        {
+            m_shouldClampMin = value;
+            if (m_shouldClampMin)
+            {
+                minClamp = m_MinClampValue;
+            }
+        }
+    }
+    public float minClamp
+    {
+        get => m_MinClampValue;
+        set
+        {
+            // validate that clamp value is possible
+            if (shouldClampMin && shouldClampMax && value > maxClamp)
+            {
+                throw new ArgumentOutOfRangeException("minClamp", "minimum clamp value must be less than maximum clamp");
+            }
+            m_MinClampValue = value;
+            if (shouldClampMin && m_MinClampValue > minValue)
+            {
+                minValue = m_MinClampValue;
+            }
+        }
+    }
+
+    public bool shouldClampMax
+    {
+        get => m_shouldClampMax;
+        set
+        {
+            m_shouldClampMax = value;
+            if (m_shouldClampMax)
+            {
+                maxClamp = m_MaxClampValue;
+            }
+        }
+    }
+    public float maxClamp
+    {
+        get => m_MaxClampValue;
+        set
+        {
+            // validate that clamp value is possible
+            if (shouldClampMax && shouldClampMin && value < minClamp)
+            {
+                throw new ArgumentOutOfRangeException("maxClamp", "maximum clamp value must be greater than minimum clamp");
+            }
+            m_MaxClampValue = value;
+            if (shouldClampMax && m_MaxClampValue < maxValue)
+            {
+                maxValue = m_MaxClampValue;
+            }
+        }
+    }
+    
     public float mouseSensitivity {
         get => m_MouseSensitivity;
         set => m_MouseSensitivity = value;
@@ -120,8 +228,8 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
                     Rect maxRect = new Rect(totalRect.xMax - fieldWidth, totalRect.y, fieldWidth, totalRect.height);
 
                     EditorGUI.PrefixLabel(rangeLabelRect, new GUIContent("Range:"));
-                    m_MinValue = EditorGUI.FloatField(minRect, m_MinValue);
-                    m_MaxValue = EditorGUI.FloatField(maxRect, m_MaxValue);
+                    minValue = EditorGUI.FloatField(minRect, minValue);
+                    maxValue = EditorGUI.FloatField(maxRect, maxValue);
                 }
 
                 if (m_EditSensitivity)
@@ -216,8 +324,6 @@ public static class TerrainToolGUIHelper
 {
     public static GUILayoutOption dontExpandWidth = GUILayout.ExpandWidth(false);
 
-    public static GUIStyle buttonActiveStyle = null;
-    public static GUIStyle buttonNormalStyle = null;
     public static GUIStyle toolbarNormalStyle = null;
     public static GUIStyle toolbarActiveStyle = null;
     public static GUIStyle leftToolbarStyle = null;
@@ -226,10 +332,6 @@ public static class TerrainToolGUIHelper
     public static GUIStyle rightToolbarStyle = null;
 
     static TerrainToolGUIHelper() {
-        buttonNormalStyle = new GUIStyle("Button");
-        buttonActiveStyle = new GUIStyle("Button");
-        buttonActiveStyle.normal.background = buttonNormalStyle.active.background;
-
         toolbarNormalStyle = new GUIStyle("ToolbarButton");
         toolbarActiveStyle = new GUIStyle("ToolbarButton");
         toolbarActiveStyle.normal.background = toolbarNormalStyle.hover.background;
@@ -238,11 +340,6 @@ public static class TerrainToolGUIHelper
         midToolbarActiveStyle = new GUIStyle("CommandMid");
         midToolbarActiveStyle.normal.background = midToolbarStyle.active.background;
         rightToolbarStyle = new GUIStyle("CommandRight");
-    }
-
-    public static GUIStyle GetButtonToggleStyle(bool isToggled)
-    {
-        return isToggled ? buttonActiveStyle : buttonNormalStyle;
     }
 
     public static GUIStyle GetToolbarToggleStyle(bool isToggled)
@@ -579,26 +676,6 @@ public static class TerrainToolGUIHelper
     public static void DrawFoldout(SerializedProperty prop, GUIContent title, Action func)
     {
         prop.isExpanded = DrawFoldout(prop.isExpanded, title, func);
-    }
-
-    public static bool ToggleButton(GUIContent content, bool value, params GUILayoutOption[] options)
-    {
-        if (GUILayout.Button(content, GetButtonToggleStyle(value), options))
-        {
-            value = !value;
-        }
-
-        return value;
-    }
-
-    public static bool ToggleButton(Rect rect, GUIContent content, bool value)
-    {
-        if ( GUI.Button( rect, content, GetButtonToggleStyle( value ) ) )
-        {
-            value = !value;
-        }
-
-        return value;
     }
 
     private static Rect GetToolbarRect(GUIContent[] toolbarContent, params GUILayoutOption[] options)

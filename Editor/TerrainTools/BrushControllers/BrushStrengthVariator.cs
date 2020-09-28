@@ -59,14 +59,17 @@ namespace UnityEditor.Experimental.TerrainAPI
             
             m_BrushStrength.value = GetEditorPrefs("TerrainBrushStrength", defaultBrushStrength);
             m_JitterHandler.jitter = GetEditorPrefs("TerrainBrushRandomStrength", 0.0f);
-            
+            m_BrushStrength.minValue = GetEditorPrefs("TerrainBrushStrengthMin", 0.0f);
+            m_BrushStrength.maxValue = GetEditorPrefs("TerrainBrushStrengthMax", 1.0f);
         }
         
         public override void OnExitToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler) {            
             SetEditorPrefs("TerrainBrushStrength", m_BrushStrength.value);
             SetEditorPrefs("TerrainBrushStrengthMouseSensitivity", m_BrushStrength.mouseSensitivity);
             SetEditorPrefs("TerrainBrushRandomStrength", m_JitterHandler.jitter);
-            
+            SetEditorPrefs("TerrainBrushStrengthMin", m_BrushStrength.minValue);
+            SetEditorPrefs("TerrainBrushStrengthMax", m_BrushStrength.maxValue);
+
             shortcutHandler.RemoveActions(BrushShortcutType.Strength);
             
             base.OnExitToolMode(shortcutHandler);

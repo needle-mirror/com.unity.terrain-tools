@@ -17,7 +17,7 @@ Shader "Hidden/TerrainTools/MeshStamp"
             #pragma fragment frag
 
             #include "UnityCG.cginc"
-            #include "TerrainTool.cginc"
+            #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
 
             sampler2D _MainTex;
 

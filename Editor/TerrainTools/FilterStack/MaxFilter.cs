@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEditor;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -19,14 +18,14 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Sets all pixels of the current mask to whichever is greater, the current pixel value or the input value.";
         }
 
-        public override void Eval(FilterContext fc)
+        protected override void OnEval(FilterContext fc, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
         {
             FilterUtility.builtinMaterial.SetFloat("_Max", value);
 
-            Graphics.Blit( fc.sourceRenderTexture, fc.destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Max );
+            Graphics.Blit( sourceRenderTexture, destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Max );
         }
 
-        public override void DoGUI(Rect rect)
+        protected override void OnDrawGUI(Rect rect, FilterContext filterContext)
         {
             value = EditorGUI.FloatField(rect, value);
         }

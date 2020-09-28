@@ -105,19 +105,21 @@ float noise_${VariantName}_Raw( float4 pos, ${FunctionParams} )
 
 float noise_${VariantName}( float pos, ${FunctionParams} )
 {
-    float prev = 0;
-
-    float warpIterations = ceil( fractalInput.warpIterations ) + ( 1 - sign( frac( fractalInput.warpIterations ) ) );
-
-    // do warping
-    for ( float i = 0; i < warpIterations; ++i )
+    if(fractalInput.warpIterations > 0)
     {
-        float q = noise_${VariantName}_Raw( pos + fractalInput.warpOffsets.x, ${FunctionInputs} );
-        prev = pos;
-        pos = pos + fractalInput.warpStrength * q;
-    }
+        float prev = 0;
+        float warpIterations = ceil( fractalInput.warpIterations ) + ( 1 - sign( frac( fractalInput.warpIterations ) ) );
 
-    pos = lerp( prev, pos, frac( fractalInput.warpIterations ) );
+        // do warping
+        for ( float i = 0; i < warpIterations; ++i )
+        {
+            float q = noise_${VariantName}_Raw( pos + fractalInput.warpOffsets.x, ${FunctionInputs} );
+            prev = pos;
+            pos = pos + fractalInput.warpStrength * q;
+        }
+
+        pos = lerp( prev, pos, frac( fractalInput.warpIterations ) );
+    }
 
     float h = noise_${VariantName}_Raw( pos, ${FunctionInputs} );
 
@@ -128,21 +130,23 @@ float noise_${VariantName}( float pos, ${FunctionParams} )
 
 float noise_${VariantName}( float2 pos, ${FunctionParams} )
 {
-    float2 prev = 0;
-
-    float warpIterations = ceil( fractalInput.warpIterations ) + ( 1 - sign( frac( fractalInput.warpIterations ) ) );
-
-    // do warping
-    for ( float i = 0; i < warpIterations; ++i )
+    if(fractalInput.warpIterations > 0)
     {
-        float2 q = float2( noise_${VariantName}_Raw( pos, ${FunctionInputs} ),
-                           noise_${VariantName}_Raw( pos + fractalInput.warpOffsets.xy, ${FunctionInputs} ) );
-        prev = pos;
+        float2 prev = 0;
+        float warpIterations = ceil( fractalInput.warpIterations ) + ( 1 - sign( frac( fractalInput.warpIterations ) ) );
 
-        pos = pos + fractalInput.warpStrength * q;
+        // do warping
+        for ( float i = 0; i < warpIterations; ++i )
+        {
+            float2 q = float2( noise_${VariantName}_Raw( pos, ${FunctionInputs} ),
+                            noise_${VariantName}_Raw( pos + fractalInput.warpOffsets.xy, ${FunctionInputs} ) );
+            prev = pos;
+
+            pos = pos + fractalInput.warpStrength * q;
+        }
+        
+        pos = lerp( prev, pos, frac( fractalInput.warpIterations ) );
     }
-    
-    pos = lerp( prev, pos, frac( fractalInput.warpIterations ) );
 
     float h = noise_${VariantName}_Raw( pos, ${FunctionInputs} );
 
@@ -153,21 +157,23 @@ float noise_${VariantName}( float2 pos, ${FunctionParams} )
 
 float noise_${VariantName}( float3 pos, ${FunctionParams} )
 {
-    float3 prev = 0;
-
-    float warpIterations = ceil( fractalInput.warpIterations ) + ( 1 - sign( frac( fractalInput.warpIterations ) ) );
-
-    // do warping
-    for ( float i = 0; i < warpIterations; ++i )
+    if(fractalInput.warpIterations > 0)
     {
-        float3 q = float3( noise_${VariantName}_Raw( pos.xyz, ${FunctionInputs} ),
-                    noise_${VariantName}_Raw( pos.xyz + fractalInput.warpOffsets.xyz, ${FunctionInputs} ),
-                    noise_${VariantName}_Raw( pos.xyz + float3( fractalInput.warpOffsets.x, fractalInput.warpOffsets.y, 0 ), ${FunctionInputs} ) );
-        prev = pos;
-        pos = pos + fractalInput.warpStrength * q;
+        float3 prev = 0;
+        float warpIterations = ceil( fractalInput.warpIterations ) + ( 1 - sign( frac( fractalInput.warpIterations ) ) );
+
+        // do warping
+        for ( float i = 0; i < warpIterations; ++i )
+        {
+            float3 q = float3( noise_${VariantName}_Raw( pos.xyz, ${FunctionInputs} ),
+                        noise_${VariantName}_Raw( pos.xyz + fractalInput.warpOffsets.xyz, ${FunctionInputs} ),
+                        noise_${VariantName}_Raw( pos.xyz + float3( fractalInput.warpOffsets.x, fractalInput.warpOffsets.y, 0 ), ${FunctionInputs} ) );
+            prev = pos;
+            pos = pos + fractalInput.warpStrength * q;
+        }
+        
+        pos = lerp(prev, pos, frac( fractalInput.warpIterations ) );
     }
-    
-    pos = lerp(prev, pos, frac( fractalInput.warpIterations ) );
     
     float h = noise_${VariantName}_Raw( pos, ${FunctionInputs} );
 

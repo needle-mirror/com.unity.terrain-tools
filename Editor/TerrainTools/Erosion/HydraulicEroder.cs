@@ -3,11 +3,13 @@ using UnityEditor;
 using UnityEditor.Experimental.TerrainAPI;
 using System;
 using System.Collections.Generic;
+using UObject = UnityEngine.Object;
 
-namespace Erosion {
-
+namespace Erosion
+{
     [Serializable]
-    public class HydraulicEroder : ITerrainEroder {
+    public class HydraulicEroder : ITerrainEroder
+    {
 
         [SerializeField]
         public HydraulicErosionSettings m_ErosionSettings = new HydraulicErosionSettings();
@@ -55,10 +57,12 @@ namespace Erosion {
             return m_ThermalCS;
         }
 
-        private void CreateRenderTextures(Vector2Int dim) {
+        private void CreateRenderTextures(Vector2Int dim)
+        {
             m_RTSize = dim;
 
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < 2; i++)
+            {
                 m_HeightmapRT[i] = new RenderTexture(dim.x, dim.y, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
                 m_WaterRT[i] = new RenderTexture(dim.x, dim.y, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
                 m_WaterVelRT[i] = new RenderTexture(dim.x, dim.y, 0, RenderTextureFormat.RGFloat, RenderTextureReadWrite.Linear);
@@ -70,37 +74,84 @@ namespace Erosion {
                 m_WaterVelRT[i].enableRandomWrite = true;
                 m_FluxRT[i].enableRandomWrite = true;
                 m_SedimentRT[i].enableRandomWrite = true;
+
+                m_HeightmapRT[i].Create();
+                m_WaterRT[i].Create();
+                m_WaterVelRT[i].Create();
+                m_FluxRT[i].Create();
+                m_SedimentRT[i].Create();
             }
 
             m_ErodedRT = new RenderTexture(dim.x, dim.y, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
             m_ErodedRT.enableRandomWrite = true;
+            m_ErodedRT.Create();
 
             m_HardnessRT = new RenderTexture(dim.x, dim.y, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
             m_HardnessRT.enableRandomWrite = true;
-
+            m_HardnessRT.Create();
         }
 
         private void ReleaseRenderTextures() {
-            for (int i = 0; i < 2; i++) {
-                if (m_HeightmapRT[i] != null) m_HeightmapRT[i].Release();
-                if (m_WaterRT[i] != null) m_WaterRT[i].Release();
-                if (m_WaterVelRT[i] != null) m_WaterVelRT[i].Release();
-                if (m_FluxRT[i] != null) m_FluxRT[i].Release();
-                if (m_SedimentRT[i] != null) m_SedimentRT[i].Release();
+            for (int i = 0; i < 2; i++)
+            {
+                if (m_HeightmapRT[i] != null)
+                {
+                    m_HeightmapRT[i].Release();
+                    UObject.DestroyImmediate(m_HeightmapRT[i]);
+                    m_HeightmapRT[i] = null;
+                }
+                if (m_WaterRT[i] != null)
+                {
+                    m_WaterRT[i].Release();
+                    UObject.DestroyImmediate(m_WaterRT[i]);
+                    m_WaterRT[i] = null;
+                }
+                if (m_WaterVelRT[i] != null)
+                {
+                    m_WaterVelRT[i].Release();
+                    UObject.DestroyImmediate(m_WaterVelRT[i]);
+                    m_WaterVelRT[i] = null;
+                }
+                if (m_FluxRT[i] != null)
+                {
+                    m_FluxRT[i].Release();
+                    UObject.DestroyImmediate(m_FluxRT[i]);
+                    m_FluxRT[i] = null;
+                }
+                if (m_SedimentRT[i] != null)
+                {
+                    m_SedimentRT[i].Release();
+                    UObject.DestroyImmediate(m_SedimentRT[i]);
+                    m_SedimentRT[i] = null;
+                }
             }
-            if (m_ErodedRT) m_ErodedRT.Release();
-            if (m_HardnessRT) m_HardnessRT.Release();
+            if (m_ErodedRT)
+            {
+                 m_ErodedRT.Release();
+                 UObject.DestroyImmediate(m_ErodedRT);
+                 m_ErodedRT = null;
+            }
+            if (m_HardnessRT)
+            {
+                m_HardnessRT.Release();
+                UObject.DestroyImmediate(m_HardnessRT);
+                m_HardnessRT = null;
+            }
         }
 
-        private void ClearRenderTextures() {
+        private void ClearRenderTextures()
+        {
             RenderTexture tmp = RenderTexture.active;
-            for (int i = 0; i < 2; i++) {
+
+            for (int i = 0; i < 2; i++)
+            {
                 Graphics.Blit(Texture2D.blackTexture, m_WaterRT[i]);
                 Graphics.Blit(Texture2D.blackTexture, m_WaterVelRT[i]);
                 Graphics.Blit(Texture2D.blackTexture, m_FluxRT[i]);
                 Graphics.Blit(Texture2D.blackTexture, m_SedimentRT[i]);
 
             }
+
             Graphics.Blit(Texture2D.blackTexture, m_ErodedRT);
             Graphics.Blit(Texture2D.blackTexture, m_HardnessRT);
 

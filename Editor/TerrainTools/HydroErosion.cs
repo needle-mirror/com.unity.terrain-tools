@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Experimental.TerrainAPI;
 using UnityEditor.ShortcutManagement;
+using Erosion;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -11,6 +12,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;          // gets interface to modify state of TerrainTools
             context.SelectPaintTool<HydroErosionTool>();                                                                        // set active tool
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Hydraulic Erosion Brush");
         }
 #endif
 
@@ -22,7 +24,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "HydroErosion" );
+                    m_commonUI = new DefaultBrushUIGroup("HydroErosion", UpdateAnalyticParameters);
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -116,6 +118,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             if (EditorGUI.EndChangeCheck()) {  
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
         }
         #endregion
@@ -151,20 +154,17 @@ namespace UnityEditor.Experimental.TerrainAPI
                     m_Eroder.ErodeHeightmap(terrain.terrainData.size, brushXform.GetBrushXYBounds(), texelSize, commonUI.ModifierActive(BrushModifierKey.BRUSH_MOD_INVERT));
                     m_Eroder.ErodeHeightmap(terrain.terrainData.size, brushXform.GetBrushXYBounds(), texelSize, Event.current.control);
 
-                    Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-                    FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-                    fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-                    RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-
                     Material mat = GetPaintMaterial();
+                    var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                    Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                     Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, 0.0f, 0.0f);
                     mat.SetTexture("_BrushTex", editContext.brushTexture);
-                    mat.SetTexture("_FilterTex", filterMaskRT);
                     mat.SetTexture("_NewHeightTex", m_Eroder.outputTextures["Height"]);
                     mat.SetVector("_BrushParams", brushParams);
                     
                     brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                     brushRender.RenderBrush(paintContext, mat, 0);
+                    RTUtils.Release(brushMask);
                 }
             }
 
@@ -183,6 +183,41 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         }
 
+        #endregion
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters()
+        {
+            HydraulicErosionSettings settings = m_Eroder.m_ErosionSettings;
+            return new TerrainToolsAnalytics.IBrushParameter[]{
+            //Advanced Section
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_SimulationScale.text, Value = settings.m_SimScale.value},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_TimeDelta.text, Value = settings.m_HydroTimeDelta.value},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_NumIterations.text, Value = settings.m_HydroIterations.value},
+            
+            //Thermal Smoothing
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_ThermalDTScalar.text, Value = settings.m_ThermalTimeDelta},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_NumIterations.text, Value = settings.m_ThermalIterations},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_AngleOfRepose.text, Value = settings.m_ThermalReposeAngle},
+
+            //Water Transport
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_PrecipitationRate.text, Value = settings.m_PrecipRate.value},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_EvaporationRate.text, Value = settings.m_EvaporationRate.value},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_FlowRate.text, Value = settings.m_FlowRate.value},
+
+            //Sediment Transport
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_SedimentCap.text, Value = settings.m_SedimentCapacity.value},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_SedimentDeposit.text, Value = settings.m_SedimentDepositRate.value},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_SedimentDissolve.text, Value = settings.m_SedimentDissolveRate.value},
+
+            //Riverbank
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_RiverbankDeposit.text, Value = settings.m_RiverBankDepositRate.value},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_RiverbankDissolve.text, Value = settings.m_RiverBankDissolveRate.value},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_RiverbedDeposit.text, Value = settings.m_RiverBedDepositRate.value},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_RiverbedDissolve.text, Value = settings.m_RiverBedDissolveRate.value},
+
+            };
+        }
         #endregion
     }
 }

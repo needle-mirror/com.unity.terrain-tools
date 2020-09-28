@@ -25,10 +25,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 			Visualization = 3
 		}
 
-		TerrainToolboxCreateTerrain m_CreateTerrainMode;
-		TerrainToolboxSettings m_TerrainSettingsMode;
-		TerrainToolboxUtilities m_TerrainUtilitiesMode;
-		TerrainToolboxVisualization m_TerrainVisualizationMode;
+		internal TerrainToolboxCreateTerrain m_CreateTerrainMode;
+		internal TerrainToolboxSettings m_TerrainSettingsMode;
+		internal TerrainToolboxUtilities m_TerrainUtilitiesMode;
+		internal TerrainToolboxVisualization m_TerrainVisualizationMode;
+
 
 		const string PrefName = "TerrainToolbox.Window.Mode";
 
@@ -120,6 +121,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 		void OnLostFocus()
 		{
 			m_TerrainUtilitiesMode.OnLostFocus();
+		}
+
+		void OnDestroy()
+		{
+			m_TerrainVisualizationMode.RevertMaterial();
 		}
 
 		void SaveSettings()

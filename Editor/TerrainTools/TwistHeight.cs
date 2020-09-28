@@ -11,6 +11,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             context.SelectPaintTool<TwistHeightTool>();
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Twist Tool");
         }
 #endif
 
@@ -24,7 +25,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "TwistTool" );
+                    LoadSettings();
+                    m_commonUI = new DefaultBrushUIGroup("TwistTool", UpdateAnalyticParameters);
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -122,14 +124,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                 }
             }
         }
-        bool m_initialized = false;
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            if (!m_initialized)
-            {
-                LoadSettings();
-                m_initialized = true;
-            }
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
@@ -143,8 +139,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                     EditorGUILayout.BeginHorizontal();
                     {
                         EditorGUILayout.PrefixLabel(Styles.targets);
-                        m_AffectMaterials = TerrainToolGUIHelper.ToggleButton(Styles.materials, m_AffectMaterials);
-                        m_AffectHeight = TerrainToolGUIHelper.ToggleButton(Styles.heightmap, m_AffectHeight);
+                        m_AffectMaterials = GUILayout.Toggle(m_AffectMaterials, Styles.materials, GUI.skin.button);
+                        m_AffectHeight = GUILayout.Toggle(m_AffectHeight, Styles.heightmap, GUI.skin.button);
                     }
                     EditorGUILayout.EndHorizontal();
 
@@ -158,6 +154,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 SaveSetting();
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
         }
 
@@ -172,7 +169,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, float finalTwistAmount, Texture brushTexture, BrushTransform brushXform) {
             Material mat = GetPaintMaterial();
             if(Event.current.control) { finalTwistAmount *= -1.0f; }
-            Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, finalTwistAmount, 0.0f);
+            Vector4 brushParams = new Vector4(brushStrength, 0.0f, finalTwistAmount, 0.0f);
             
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
@@ -211,18 +208,13 @@ namespace UnityEditor.Experimental.TerrainAPI
                             {
                                 TerrainLayer layer = terrain.terrainData.terrainLayers[i];
                                 PaintContext paintContext = brushRender.AcquireTexture(true, brushXform.GetBrushXYBounds(), layer);
-
-                                Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-                                FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-                                fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-                                RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-                                mat.SetTexture("_FilterTex", filterMaskRT);
-
+                                var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                                Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                                 paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
-
                                 brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                                 brushRender.RenderBrush(paintContext, mat, 0);
                                 brushRender.Release(paintContext);
+                                RTUtils.Release(brushMask);
                             }
                         }
     
@@ -230,17 +222,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                         if(m_AffectHeight)
                         {
                             PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
-
-                            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-                            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-                            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-                            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-                            mat.SetTexture("_FilterTex", filterMaskRT);
-
+                            var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                            Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                             paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
- 
                             ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, finalTwistAmount, brushTexture, brushXform);
                             brushRender.Release(paintContext);
+                            RTUtils.Release(brushMask);
                         }
                     }    
                 }
@@ -263,7 +250,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             EditorPrefs.SetFloat("Unity.TerrainTools.Twist.TwistAmount", m_TwistAmount);
             EditorPrefs.SetBool("Unity.TerrainTools.Twist.Heightmap", m_AffectHeight);
             EditorPrefs.SetBool("Unity.TerrainTools.Twist.Materials", m_AffectMaterials);
-
         }
 
         private void LoadSettings()
@@ -271,7 +257,14 @@ namespace UnityEditor.Experimental.TerrainAPI
             m_TwistAmount = EditorPrefs.GetFloat("Unity.TerrainTools.Twist.TwistAmount", 100.0f);
             m_AffectHeight = EditorPrefs.GetBool("Unity.TerrainTools.Twist.Heightmap", true);
             m_AffectMaterials = EditorPrefs.GetBool("Unity.TerrainTools.Twist.Materials", true);
-
         }
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.twistAmount.text, Value = m_TwistAmount},
+            new TerrainToolsAnalytics.BrushParameter<bool>{Name = "Affect Height", Value = m_AffectHeight},
+            new TerrainToolsAnalytics.BrushParameter<bool>{Name = "Affect Material", Value = m_AffectMaterials},
+        };
+        #endregion
     }
 }

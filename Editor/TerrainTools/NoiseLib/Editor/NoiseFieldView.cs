@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -153,8 +154,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             NoiseSettings noiseSettings = m_serializedNoise.targetObject as NoiseSettings;
 
-            m_previewRT = RenderTexture.GetTemporary(512, 512, 0, RenderTextureFormat.ARGB32);
-            RenderTexture tempRT = RenderTexture.GetTemporary(512, 512, 0, RenderTextureFormat.RFloat);
+            m_previewRT = RenderTexture.GetTemporary(512, 512, 0, NoiseUtils.previewFormat);
+            RenderTexture tempRT = RenderTexture.GetTemporary(512, 512, 0, NoiseUtils.singleChannelFormat);
 
             RenderTexture prevActive = RenderTexture.active;
             
@@ -186,6 +187,19 @@ namespace UnityEditor.Experimental.TerrainAPI
             m_image.style.height = newRect.height;
 
             m_image.transform.position = new Vector3( localBound.width / 2 - newRect.width / 2, localBound.height / 2 - newRect.height / 2, 0 );
+
+            if(m_previewRT != null)
+            {
+                RenderTexture.ReleaseTemporary(m_previewRT);
+            }
+        }
+
+        public void Close()
+        {
+            if(m_previewRT != null)
+            {
+                RenderTexture.ReleaseTemporary(m_previewRT);
+            }
         }
     }
 }

@@ -1,8 +1,11 @@
 ﻿using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.Experimental.TerrainAPI {
+namespace UnityEditor.Experimental.TerrainAPI
+{
     [System.Serializable]
-    public class SlopeFilter : Filter {
+    public class SlopeFilter : Filter
+    {
         static readonly int RemapTexWidth = 1024;
 
         [SerializeField]
@@ -13,59 +16,87 @@ namespace UnityEditor.Experimental.TerrainAPI {
         //We bake an AnimationCurve to a texture to control value remapping
         [SerializeField]
         private AnimationCurve m_RemapCurve = new AnimationCurve(new Keyframe(0.0f, 1.0f), new Keyframe(0.25f, 0.0f), new Keyframe(1.0f, 0.0f));
-        Texture2D m_RemapTex = null;
+        Texture2D m_RemapTex;
 
-        Texture2D GetRemapTexture() {
-            if (m_RemapTex == null) {
+        Texture2D GetRemapTexture()
+        {
+            if (m_RemapTex == null)
+            {
                 m_RemapTex = new Texture2D(RemapTexWidth, 1, TextureFormat.RFloat, false, true);
                 m_RemapTex.wrapMode = TextureWrapMode.Clamp;
 
-                TerrainTools.Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref m_RemapTex);
+                Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref m_RemapTex);
             }
             
             return m_RemapTex;
         }
 
-        //Compute Shader resource helper
-        ComputeShader m_ConcavityCS = null;
-        ComputeShader GetComputeShader() {
-            if (m_ConcavityCS == null) {
+        ComputeShader m_ConcavityCS;
+        ComputeShader GetComputeShader()
+        {
+            if (m_ConcavityCS == null)
+            {
                 m_ConcavityCS = (ComputeShader)Resources.Load("Slope");
             }
             return m_ConcavityCS;
         }
 
-        public override string GetDisplayName() {
-            return "Slope";
-        }
-
-        public override string GetToolTip()
+        public override string GetDisplayName() => "Slope";
+        public override string GetToolTip() => "Uses the slope angle of the heightmap to mask the effect of the chosen Brush.";
+        public override bool ValidateFilter(FilterContext filterContext, out string message)
         {
-            return "Uses the slope angle of the heightmap to mask the effect of the chosen Brush.";
+            message = string.Empty;
+
+            if (!SystemInfo.supportsComputeShaders)
+            {
+                message = "The current Graphics API does not support compute shaders.";
+                return false;
+            }
+
+            if (!SystemInfo.IsFormatSupported(filterContext.targetFormat, FormatUsage.LoadStore))
+            {
+                message = $"The current Graphics API does not support UAV resource access for GraphicsFormat.{filterContext.targetFormat}.";
+                return false;
+            }
+            
+            return true;
+        }
+            
+
+        protected override void OnEval(FilterContext fc, RenderTexture source, RenderTexture dest)
+        {
+            var desc = dest.descriptor;
+            desc.enableRandomWrite = true;
+            var sourceHandle = RTUtils.GetTempHandle(desc);
+            var destHandle = RTUtils.GetTempHandle(desc);
+            using (sourceHandle.Scoped())
+            using (destHandle.Scoped())
+            {
+                Graphics.Blit(source, sourceHandle);
+                Graphics.Blit(dest, destHandle);
+                
+                ComputeShader cs = GetComputeShader();
+                int kidx = cs.FindKernel("GradientMultiply");
+
+                Texture2D remapTex = GetRemapTexture();
+
+                cs.SetTexture(kidx, "In_BaseMaskTex", sourceHandle);
+                cs.SetTexture(kidx, "In_HeightTex", fc.rtHandleCollection[FilterContext.Keywords.Heightmap]);
+                cs.SetTexture(kidx, "OutputTex", destHandle);
+                cs.SetTexture(kidx, "RemapTex", remapTex);
+                cs.SetInt("RemapTexRes", remapTex.width);
+                cs.SetFloat("EffectStrength", m_FilterStrength);
+                cs.SetVector("TerrainDimensions", fc.vectorProperties.ContainsKey("_TerrainSize") ? fc.vectorProperties["_TerrainSize"] : Vector4.one);
+                cs.SetVector("TextureResolution", new Vector4(sourceHandle.RT.width, sourceHandle.RT.height, m_Epsilon, fc.floatProperties[FilterContext.Keywords.TerrainScale]));
+                cs.Dispatch(kidx, sourceHandle.RT.width, sourceHandle.RT.height, 1);
+                
+                Graphics.Blit(destHandle, dest);
+            }
         }
 
-        public override void Eval(FilterContext fc) {
-            ComputeShader cs = GetComputeShader();
-            int kidx = cs.FindKernel("GradientMultiply");
-
-            Texture2D remapTex = GetRemapTexture();
-
-            cs.SetTexture(kidx, "In_BaseMaskTex", fc.sourceRenderTexture);
-            cs.SetTexture(kidx, "In_HeightTex", fc.renderTextureCollection["heightMap"]);
-            cs.SetTexture(kidx, "OutputTex", fc.destinationRenderTexture);
-            cs.SetTexture(kidx, "RemapTex", remapTex);
-            cs.SetInt("RemapTexRes", remapTex.width);
-            cs.SetFloat("EffectStrength", m_FilterStrength);
-            cs.SetVector("TerrainDimensions", new Vector4(fc.terrain.terrainData.size.x, fc.terrain.terrainData.size.y, fc.terrain.terrainData.size.z, 0.0f));
-            cs.SetVector("TextureResolution", new Vector4(fc.sourceRenderTexture.width, fc.sourceRenderTexture.height, m_Epsilon, fc.properties["terrainScale"]));
-
-            //using 1s here so we don't need a multiple-of-8 texture in the compute shader (probably not optimal?)
-            cs.Dispatch(kidx, fc.sourceRenderTexture.width, fc.sourceRenderTexture.height, 1);
-        }
-
-        public override void DoGUI(Rect rect) {
-
-            //Precaculate dimensions
+        protected override void OnDrawGUI(Rect rect, FilterContext filterContext)
+        {
+            //Calculate dimensions
             float epsilonLabelWidth = GUI.skin.label.CalcSize(epsilonLabel).x;
             float modeLabelWidth = GUI.skin.label.CalcSize(modeLabel).x;
             float strengthLabelWidth = GUI.skin.label.CalcSize(strengthLabel).x;
@@ -91,14 +122,14 @@ namespace UnityEditor.Experimental.TerrainAPI {
 
             EditorGUI.BeginChangeCheck();
             m_RemapCurve = EditorGUI.CurveField(curveRect, m_RemapCurve);
-            if(EditorGUI.EndChangeCheck()) {
-                Vector2 range = TerrainTools.Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref m_RemapTex);
+            if(EditorGUI.EndChangeCheck())
+            {
+                var tex = GetRemapTexture();
+                Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref tex);
             }
         }
 
-        public override float GetElementHeight() {
-            return EditorGUIUtility.singleLineHeight * 5;
-        }
+        public override float GetElementHeight() => EditorGUIUtility.singleLineHeight * 5;
 
         private static GUIContent strengthLabel = EditorGUIUtility.TrTextContent("Strength", "Controls the strength of the masking effect.");
         private static GUIContent epsilonLabel = EditorGUIUtility.TrTextContent("Feature Size", "Specifies the scale of Terrain features that affect the mask.");

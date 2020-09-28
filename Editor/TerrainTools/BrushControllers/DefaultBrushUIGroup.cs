@@ -20,7 +20,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             NoSpacing = All & ~Spacing,
         }
         
-        public DefaultBrushUIGroup(string name, Feature feature = Feature.All) : base(name) {
+        public DefaultBrushUIGroup(string name, Func<TerrainToolsAnalytics.IBrushParameter[]> analyticsCall = null, Feature feature = Feature.All) : base(name, analyticsCall) {
             //Scatter must be first.
             if ((feature & Feature.Scatter) != 0) {
                 AddScatterController(new BrushScatterVariator(name, this, this));

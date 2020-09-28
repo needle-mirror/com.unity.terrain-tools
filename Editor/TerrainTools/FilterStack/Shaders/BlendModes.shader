@@ -12,7 +12,7 @@ Shader "Hidden/TerrainTools/BlendModes"
         HLSLINCLUDE
 
         #include "UnityCG.cginc"
-		#include "TerrainTool.cginc"
+        #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
 
         sampler2D _MainTex;
 		sampler2D _BlendTex;

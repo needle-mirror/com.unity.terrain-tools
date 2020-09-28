@@ -11,6 +11,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;              // gets interface to modify state of TerrainTools
             context.SelectPaintTool<SharpenPeaksTool>();                                                  // set active tool
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Sharpen Peaks Tool");
         }
 #endif
 
@@ -22,7 +23,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "SharpenPeaksTool" );
+                    LoadSettings();
+                    m_commonUI = new DefaultBrushUIGroup( "SharpenPeaksTool", UpdateAnalyticParameters );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -96,15 +98,9 @@ namespace UnityEditor.Experimental.TerrainAPI
                 }
             }
         }
-        bool m_initialized = false;
+
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-
-            if (!m_initialized)
-            {
-                LoadSettings();
-                m_initialized = true;
-            }
             EditorGUI.BeginChangeCheck();
             
             commonUI.OnInspectorGUI(terrain, editContext);
@@ -120,6 +116,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 SaveSetting();
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
 		}
 		
@@ -134,12 +131,9 @@ namespace UnityEditor.Experimental.TerrainAPI
                 {
                     PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
 
-                    Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-                    FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-                    fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-                    RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-
                     Material mat = GetPaintMaterial();
+                    var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                    Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
 
                     // apply brush
                     Vector4 brushParams = new Vector4(
@@ -149,11 +143,11 @@ namespace UnityEditor.Experimental.TerrainAPI
                         0.0f);
 
                     mat.SetTexture("_BrushTex", editContext.brushTexture);
-                    mat.SetTexture("_FilterTex", filterMaskRT);
                     mat.SetVector("_BrushParams", brushParams);
                 
                     brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                     brushRender.RenderBrush(paintContext, mat, 0);
+                    RTUtils.Release(brushMask);
                 }
             }
 
@@ -169,13 +163,17 @@ namespace UnityEditor.Experimental.TerrainAPI
         private void SaveSetting()
         {
             EditorPrefs.SetFloat("Unity.TerrainTools.SharpenPeaks.FeatureSharpness", m_MixStrength);
-
         }
 
         private void LoadSettings()
         {
             m_MixStrength = EditorPrefs.GetFloat("Unity.TerrainTools.SharpenPeaks.FeatureSharpness", 0.7f);
-
         }
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.featureSharpness.text, Value = m_MixStrength},
+        };
+        #endregion
     }
 }

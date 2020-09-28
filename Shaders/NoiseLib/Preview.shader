@@ -54,7 +54,7 @@ Shader "Hidden/TerrainTools/Noise/Preview"
 
             float4 frag( v2f i ) : SV_Target
             {
-                float r = tex2D(_MainTex, i.uv).r;
+                float r = UnpackHeightmap(tex2D(_MainTex, i.uv));
 
                 // r = remap( r.xxxx, 0, 1, -4, 5 );
 
@@ -80,7 +80,7 @@ Shader "Hidden/TerrainTools/Noise/Preview"
 
             float4 frag( v2f i ) : SV_Target
             {
-                float r = tex2D(_MainTex, i.uv).r;
+                float r = UnpackHeightmap(tex2D(_MainTex, i.uv));
 
                 return lerp( float4( 0, abs( r ), abs( r ), 1 ), float4( r.xxx, 1 ), max( sign( r ), 0 ) );
             }

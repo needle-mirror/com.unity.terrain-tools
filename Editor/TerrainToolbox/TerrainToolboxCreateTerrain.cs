@@ -18,14 +18,13 @@ namespace UnityEditor.Experimental.TerrainAPI
 		TerrainGroup[] m_TerrainGroups;
 		GameObject m_CurrentGroup = null;
         const int kPixelErrorMax = 200;
-        const int kBaseMapDistMax = 2000;
+        const int kBaseMapDistMax = 20000;
 
         // Preset
         TerrainCreationSettings m_SelectedPreset;
 
-		public enum Platform { PC, Console, Mobile, LowMobile }
-		int[] HeightmapSize = new int[] { 33, 65, 129, 257, 513, 1025, 2049, 4097 };
-		string[] HeightmapSizeNames = new string[] { "33", "65", "129", "257", "513", "1025", "2049", "4097" };		
+		// Heightmap
+		Texture2D m_HeightmapGlobal = null;		
 
 		static class Styles
 		{
@@ -50,7 +49,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 			public static readonly GUIContent EnableHeightmapImport = EditorGUIUtility.TrTextContent("", "Enable/disable importing heightmap(s) for creating new terrain(s). If disabled, will generate terrain tiles with empty height values.");
 			public static readonly GUIContent HeightmapMode = EditorGUIUtility.TrTextContent("Heightmap Mode", "Select a heightmap import mode.");
-			public static readonly GUIContent SelectGlobalHeightmap = EditorGUIUtility.TrTextContent("Select Heightmap File", "Select a heightmap to import as global heightmap for the terrain(s).");
+			public static readonly GUIContent HeightmapFormatUseRaw = EditorGUIUtility.TrTextContent("Use Raw File", "Enable to use raw file(s).");
+			public static readonly GUIContent SelectRawHeightmap = EditorGUIUtility.TrTextContent("Select Raw File", "Select a raw file to import as global heightmap for the terrain(s).");
+			public static readonly GUIContent SelectTextureHeightmap = EditorGUIUtility.TrTextContent("Select Texture", "Select a heightmap texture to import as global heightmap for the terrain(s).");
 			public static readonly GUIContent SelectBatchHeightmapFolder = EditorGUIUtility.TrTextContent("Select Heightmap Folder", "Select the folder where heightmaps are. Heightmap files need to be named as NAME_INDEX-X-AXIS_INDEX-Z-AXIS. For example, heightmap_00_01");
 			public static readonly GUIContent HeightmapWidth = EditorGUIUtility.TrTextContent("Heightmap Width", "Width of the selected heightmap(s).");
 			public static readonly GUIContent HeightmapHeight = EditorGUIUtility.TrTextContent("Heightmap Height", "Width of the selected heightmap(s).");
@@ -165,6 +166,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 						m_Settings.UseGlobalHeightmap = false;
 					}
 
+					if (m_Settings.HeightmapMode == Heightmap.Mode.Global && m_HeightmapGlobal != null && m_Settings.FlipMode != Heightmap.Flip.None)
+					{
+						bool horizontal = m_Settings.FlipMode == Heightmap.Flip.Horizontal ? true : false;
+						ToolboxHelper.FlipTexture(m_HeightmapGlobal, horizontal);
+					}
+
 					Create();
 				}				
 			}
@@ -204,7 +211,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			if (m_Settings.TilesX != 0 && m_Settings.TilesZ != 0)
 			{
 				float tileHeightX = (float)m_Settings.HeightmapWidth / (float)m_Settings.TilesX;
-				float tileHeightZ = (float)m_Settings.HeightmapWidth / (float)m_Settings.TilesZ;
+				float tileHeightZ = (float)m_Settings.HeightmapHeight / (float)m_Settings.TilesZ;
 				if (tileHeightX != tileHeightZ)
 				{
 					// heights per tile is non-square
@@ -239,7 +246,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 			return true;
 		}
 
-
 		void ShowGeneralGUI()
 		{
 			EditorGUILayout.LabelField("General", EditorStyles.boldLabel);
@@ -272,7 +278,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 m_Settings.PixelError = EditorGUILayout.IntSlider(Styles.PixelError, m_Settings.PixelError, 0, kPixelErrorMax);
                 m_Settings.BaseMapDistance = EditorGUILayout.IntSlider(Styles.BaseMapDistance, m_Settings.BaseMapDistance, 0, kBaseMapDistMax);
 				m_Settings.MaterialOverride = EditorGUILayout.ObjectField(Styles.ShareMaterial, m_Settings.MaterialOverride, typeof(Material), false) as Material;
-				m_Settings.HeightmapResolution = EditorGUILayout.IntPopup("Tile Height Resolution", m_Settings.HeightmapResolution, HeightmapSizeNames, HeightmapSize);
+				m_Settings.HeightmapResolution = EditorGUILayout.IntPopup("Tile Height Resolution", m_Settings.HeightmapResolution, ToolboxHelper.GUIHeightmapResolutionNames, ToolboxHelper.GUIHeightmapResolutions);
 			}
 			--EditorGUI.indentLevel;
 		}
@@ -288,21 +294,37 @@ namespace UnityEditor.Experimental.TerrainAPI
 			// Heightmap selector			
 			if (m_Settings.HeightmapMode == Heightmap.Mode.Global)
 			{
-				EditorGUILayout.BeginHorizontal();
-				EditorGUILayout.LabelField(Styles.SelectGlobalHeightmap);
-				EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
-				EditorGUILayout.LabelField(m_Settings.GlobalHeightmapPath);
-				EditorGUI.BeginChangeCheck();
-				if (GUILayout.Button("...", GUILayout.Width(25.0f)))
+				m_Settings.UseRawFile = EditorGUILayout.Toggle(Styles.HeightmapFormatUseRaw, m_Settings.UseRawFile);
+				if (m_Settings.UseRawFile)
 				{
-					m_Settings.GlobalHeightmapPath = EditorUtility.OpenFilePanelWithFilters("Select raw image file...", "Assets", new string[] { "Raw Image File", "raw" });
+					EditorGUILayout.BeginHorizontal();
+					EditorGUILayout.LabelField(Styles.SelectRawHeightmap);
+					EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+					EditorGUILayout.LabelField(m_Settings.GlobalHeightmapPath);
+					EditorGUI.BeginChangeCheck();
+					if (GUILayout.Button("...", GUILayout.Width(25.0f)))
+					{
+						m_Settings.GlobalHeightmapPath = EditorUtility.OpenFilePanelWithFilters("Select raw image file...", "Assets", new string[] { "Raw Image File", "raw" });
+					}
+					if (EditorGUI.EndChangeCheck())
+					{
+						UpdateHeightmapInformation(m_Settings.GlobalHeightmapPath);
+					}
+					EditorGUILayout.EndHorizontal();
+					EditorGUILayout.EndHorizontal();
 				}
-				if (EditorGUI.EndChangeCheck())
+				else
 				{
-					UpdateHeightmapInformation(m_Settings.GlobalHeightmapPath);				
+					// use heightmap texture2D
+					EditorGUI.BeginChangeCheck();
+					EditorGUILayout.BeginHorizontal();
+					m_HeightmapGlobal = EditorGUILayout.ObjectField(Styles.SelectTextureHeightmap, m_HeightmapGlobal, typeof(Texture2D), false) as Texture2D;
+					EditorGUILayout.EndHorizontal();
+					if (EditorGUI.EndChangeCheck())
+					{
+						UpdateHeightmapInformation(string.Empty);
+					}
 				}				
-				EditorGUILayout.EndHorizontal();
-				EditorGUILayout.EndHorizontal();
 			}
 			else if (m_Settings.HeightmapMode == Heightmap.Mode.Tiles)
 			{
@@ -360,13 +382,24 @@ namespace UnityEditor.Experimental.TerrainAPI
 				EditorGUILayout.EndHorizontal();
 			}
 			// Heightmap settings
-			string infoMsg = "Heightmap(s) must use a single channel and be either 8 or 16 bit in RAW format. Resolution must be a power of two. \n";
+			string infoMsg = string.Empty;
+			string depthMsg = string.Empty;
 			string sizeMsg = string.Format("Resolution: {0} x {1} \n", m_Settings.HeightmapWidth, m_Settings.HeightmapHeight);
 			string tileMsg = string.Format("Number of Tiles: {0} x {1} \n", m_Settings.TilesX, m_Settings.TilesZ);
-			string depthMsg = string.Format("Bit depth: {0}", ToolboxHelper.GetBitDepth(m_Settings.HeightmapDepth));
-			string msg = infoMsg + sizeMsg + tileMsg + depthMsg;
+			string msg = string.Empty;
+			if (m_Settings.UseRawFile)
+			{
+				infoMsg = "Heightmap(s) must use a single channel and be either 8 or 16 bit in RAW format. Resolution must be a power of two. \n";
+				depthMsg = string.Format("Bit depth: {0}", ToolboxHelper.GetBitDepth(m_Settings.HeightmapDepth));
+				msg = infoMsg + sizeMsg + tileMsg + depthMsg;
+			}
+			else
+			{
+				msg = sizeMsg + tileMsg;
+			}			
+			
 			EditorGUILayout.HelpBox(msg, MessageType.Info);
-			m_Settings.HeightmapResolution = EditorGUILayout.IntPopup("Tile Height Resolution", m_Settings.HeightmapResolution, HeightmapSizeNames, HeightmapSize);
+			m_Settings.HeightmapResolution = EditorGUILayout.IntPopup("Tile Height Resolution", m_Settings.HeightmapResolution, ToolboxHelper.GUIHeightmapResolutionNames, ToolboxHelper.GUIHeightmapResolutions);
 			EditorGUILayout.BeginHorizontal();			
 			EditorGUILayout.MinMaxSlider(Styles.HeightmapRemap, ref m_Settings.HeightmapRemapMin, ref m_Settings.HeightmapRemapMax, 0f, (float)m_Settings.TerrainHeight);
 			EditorGUILayout.LabelField(Styles.HeightmapRemapMin, GUILayout.Width(40.0f));			
@@ -499,10 +532,18 @@ namespace UnityEditor.Experimental.TerrainAPI
 		{
 			if (path == string.Empty)
 			{
-				m_Settings.HeightmapWidth = 0;
-				m_Settings.HeightmapHeight = 0;
-				m_Settings.HeightmapDepth = Heightmap.Depth.Bit8;
-				return;
+				if (m_HeightmapGlobal != null)
+				{
+					m_Settings.HeightmapWidth = m_HeightmapGlobal.width;
+					m_Settings.HeightmapHeight = m_HeightmapGlobal.height;
+				}
+				else
+				{
+					m_Settings.HeightmapWidth = 0;
+					m_Settings.HeightmapHeight = 0;
+					m_Settings.HeightmapDepth = Heightmap.Depth.Bit8;
+					return;
+				}				
 			}
 
 			if (!File.Exists(path)) return;			
@@ -537,9 +578,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 				{
 					m_Settings.HeightmapDepth = Heightmap.Depth.Bit16;
 				}
-			}
-
-			//ValidateHeightmapPerTile();			
+			}		
 		}
 
 		void ToggleHightmapMode()
@@ -628,9 +667,16 @@ namespace UnityEditor.Experimental.TerrainAPI
 				// heightmap offset
 				if (m_Settings.UseGlobalHeightmap)
 				{
-					byte[] rawData = File.ReadAllBytes(m_Settings.GlobalHeightmapPath);
-					globalHeightmap = new Heightmap(rawData, m_Settings.FlipMode);
-					tileOffsetSource = new Vector2Int(globalHeightmap.Width / m_Settings.TilesX, globalHeightmap.Height / m_Settings.TilesZ);
+					if (m_HeightmapGlobal != null && !m_Settings.UseRawFile)
+					{
+						tileOffsetSource = new Vector2Int(m_HeightmapGlobal.width / m_Settings.TilesX, m_HeightmapGlobal.height / m_Settings.TilesZ);
+					}
+					else
+					{
+						byte[] rawData = File.ReadAllBytes(m_Settings.GlobalHeightmapPath);
+						globalHeightmap = new Heightmap(rawData, m_Settings.FlipMode);
+						tileOffsetSource = new Vector2Int(globalHeightmap.Width / m_Settings.TilesX, globalHeightmap.Height / m_Settings.TilesZ);
+					}					
 				}
 				else
 				{
@@ -676,20 +722,28 @@ namespace UnityEditor.Experimental.TerrainAPI
 						newGO.name = terrainName;
 						newTerrain.transform.position = tilePosition;
 						newTerrain.transform.SetParent(terrainGroup.transform);
-						
+
+						// heightmap remap
+						var remap = (m_Settings.HeightmapRemapMax - m_Settings.HeightmapRemapMin) / m_Settings.TerrainHeight;
+						var baseLevel = m_Settings.HeightmapRemapMin / m_Settings.TerrainHeight;
+
 						// import height
-						if (m_Settings.HeightmapMode == Heightmap.Mode.Global && globalHeightmap != null)
+						if (m_Settings.HeightmapMode == Heightmap.Mode.Global && m_Settings.UseRawFile && globalHeightmap != null)
 						{
 							Heightmap tileHeightmap = GetTileHeightmapFromGlobalHeightmap(globalHeightmap, tileOffset);
 							tileHeightmap.ApplyTo(newTerrain);
 						}
 
+						// global texture2d
+						if (m_Settings.HeightmapMode == Heightmap.Mode.Global && !m_Settings.UseRawFile && m_HeightmapGlobal != null)
+						{							
+							ToolboxHelper.CopyTextureToTerrainHeight(terrainData, m_HeightmapGlobal, new Vector2Int(x, y), (m_HeightmapGlobal.width / m_Settings.TilesX), m_Settings.TilesX, baseLevel, remap);
+						}
+
 						if (m_Settings.HeightmapMode == Heightmap.Mode.Tiles || m_Settings.HeightmapMode == Heightmap.Mode.Batch)
 						{
 							if (File.Exists(m_Settings.TileHeightmapPaths[tileIndex]))
-							{
-								var remap = (m_Settings.HeightmapRemapMax - m_Settings.HeightmapRemapMin) / m_Settings.TerrainHeight;
-								var baseLevel = m_Settings.HeightmapRemapMin / m_Settings.TerrainHeight;
+							{								
 								byte[] rawTileData = File.ReadAllBytes(m_Settings.TileHeightmapPaths[tileIndex]);
 								Heightmap tileHeight = new Heightmap(rawTileData, m_Settings.FlipMode);
 								Heightmap tileMap = new Heightmap(tileHeight, Vector2Int.zero, new Vector2Int(tileHeight.Width, tileHeight.Height), remap, baseLevel);

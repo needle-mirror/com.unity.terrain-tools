@@ -81,28 +81,4 @@ namespace Erosion {
         public static GUIContent m_RiverbedDeposit = EditorGUIUtility.TrTextContent("Riverbed Deposit Rate", "A multiplier which controls the sediment deposit rate where the slope of the height-field is near horizontal.");
     }
     #endregion
-
-    public static class Utility {
-        public static void writeRTToPNG(RenderTexture rt) {
-            RenderTexture tmpRT = RenderTexture.GetTemporary(rt.width, rt.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
-            Graphics.Blit(rt, tmpRT);
-
-            var oldRT = RenderTexture.active;
-
-            var tex = new Texture2D(rt.width, rt.height);
-            RenderTexture.active = tmpRT;
-            tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-            tex.Apply();
-
-            File.WriteAllBytes("Assets/debug.png", tex.EncodeToPNG());
-            RenderTexture.active = oldRT;
-            AssetDatabase.Refresh();
-            RenderTexture.ReleaseTemporary(tmpRT);
-        }
-
-        public static void writeTex2DToPNG(Texture2D tex) {
-            File.WriteAllBytes("Assets/debug.png", tex.EncodeToPNG());
-            AssetDatabase.Refresh();
-        }
-    }
 }

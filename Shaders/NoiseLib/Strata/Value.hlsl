@@ -192,19 +192,21 @@ float noise_StrataValue_Raw( float4 pos, StrataFractalInput fractalInput )
 
 float noise_StrataValue( float pos, StrataFractalInput fractalInput )
 {
-    float prev = 0;
-
-    float warpIterations = ceil( fractalInput.warpIterations ) + ( 1 - sign( frac( fractalInput.warpIterations ) ) );
-
-    // do warping
-    for ( float i = 0; i < warpIterations; ++i )
+    if(fractalInput.warpIterations > 0)
     {
-        float q = noise_StrataValue_Raw( pos + fractalInput.warpOffsets.x, fractalInput );
-        prev = pos;
-        pos = pos + fractalInput.warpStrength * q;
-    }
+        float prev = 0;
+        float warpIterations = ceil( fractalInput.warpIterations ) + ( 1 - sign( frac( fractalInput.warpIterations ) ) );
 
-    pos = lerp( prev, pos, frac( fractalInput.warpIterations ) );
+        // do warping
+        for ( float i = 0; i < warpIterations; ++i )
+        {
+            float q = noise_StrataValue_Raw( pos + fractalInput.warpOffsets.x, fractalInput );
+            prev = pos;
+            pos = pos + fractalInput.warpStrength * q;
+        }
+
+        pos = lerp( prev, pos, frac( fractalInput.warpIterations ) );
+    }
 
     float h = noise_StrataValue_Raw( pos, fractalInput );
 
@@ -215,21 +217,23 @@ float noise_StrataValue( float pos, StrataFractalInput fractalInput )
 
 float noise_StrataValue( float2 pos, StrataFractalInput fractalInput )
 {
-    float2 prev = 0;
-
-    float warpIterations = ceil( fractalInput.warpIterations ) + ( 1 - sign( frac( fractalInput.warpIterations ) ) );
-
-    // do warping
-    for ( float i = 0; i < warpIterations; ++i )
+    if(fractalInput.warpIterations > 0)
     {
-        float2 q = float2( noise_StrataValue_Raw( pos, fractalInput ),
-                           noise_StrataValue_Raw( pos + fractalInput.warpOffsets.xy, fractalInput ) );
-        prev = pos;
+        float2 prev = 0;
+        float warpIterations = ceil( fractalInput.warpIterations ) + ( 1 - sign( frac( fractalInput.warpIterations ) ) );
 
-        pos = pos + fractalInput.warpStrength * q;
+        // do warping
+        for ( float i = 0; i < warpIterations; ++i )
+        {
+            float2 q = float2( noise_StrataValue_Raw( pos, fractalInput ),
+                            noise_StrataValue_Raw( pos + fractalInput.warpOffsets.xy, fractalInput ) );
+            prev = pos;
+
+            pos = pos + fractalInput.warpStrength * q;
+        }
+        
+        pos = lerp( prev, pos, frac( fractalInput.warpIterations ) );
     }
-    
-    pos = lerp( prev, pos, frac( fractalInput.warpIterations ) );
 
     float h = noise_StrataValue_Raw( pos, fractalInput );
 
@@ -240,21 +244,23 @@ float noise_StrataValue( float2 pos, StrataFractalInput fractalInput )
 
 float noise_StrataValue( float3 pos, StrataFractalInput fractalInput )
 {
-    float3 prev = 0;
-
-    float warpIterations = ceil( fractalInput.warpIterations ) + ( 1 - sign( frac( fractalInput.warpIterations ) ) );
-
-    // do warping
-    for ( float i = 0; i < warpIterations; ++i )
+    if(fractalInput.warpIterations > 0)
     {
-        float3 q = float3( noise_StrataValue_Raw( pos.xyz, fractalInput ),
-                    noise_StrataValue_Raw( pos.xyz + fractalInput.warpOffsets.xyz, fractalInput ),
-                    noise_StrataValue_Raw( pos.xyz + float3( fractalInput.warpOffsets.x, fractalInput.warpOffsets.y, 0 ), fractalInput ) );
-        prev = pos;
-        pos = pos + fractalInput.warpStrength * q;
+        float3 prev = 0;
+        float warpIterations = ceil( fractalInput.warpIterations ) + ( 1 - sign( frac( fractalInput.warpIterations ) ) );
+
+        // do warping
+        for ( float i = 0; i < warpIterations; ++i )
+        {
+            float3 q = float3( noise_StrataValue_Raw( pos.xyz, fractalInput ),
+                        noise_StrataValue_Raw( pos.xyz + fractalInput.warpOffsets.xyz, fractalInput ),
+                        noise_StrataValue_Raw( pos.xyz + float3( fractalInput.warpOffsets.x, fractalInput.warpOffsets.y, 0 ), fractalInput ) );
+            prev = pos;
+            pos = pos + fractalInput.warpStrength * q;
+        }
+        
+        pos = lerp(prev, pos, frac( fractalInput.warpIterations ) );
     }
-    
-    pos = lerp(prev, pos, frac( fractalInput.warpIterations ) );
     
     float h = noise_StrataValue_Raw( pos, fractalInput );
 

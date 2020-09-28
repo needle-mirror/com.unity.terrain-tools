@@ -1,8 +1,6 @@
 using UnityEngine;
-using UnityEditor;
 using UnityEngine.Experimental.TerrainAPI;
 using UnityEditor.ShortcutManagement;
-
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -14,6 +12,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             context.SelectPaintTool<StampTool>();
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Stamp Tool");
         }
 #endif
 
@@ -37,7 +36,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return m_styles;
         }
 
-
+        
         [System.Serializable]
         class StampToolSerializedProperties
         {
@@ -63,7 +62,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "StampTool" );
+                    LoadSettings();
+                    m_commonUI = new DefaultBrushUIGroup("StampTool", UpdateAnalyticParameters);
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -97,15 +97,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
-
-            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-            mat.SetTexture("_FilterTex", filterMaskRT);
-
+            var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+            Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
             renderer.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
             renderer.RenderBrush(paintContext, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.StampHeight);
+            RTUtils.Release(brushMask);
         }
 
         public override void OnEnterToolMode() {
@@ -199,17 +195,9 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
 
-        bool m_initialized = false;
         bool m_ShowControls = true;
-
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            if (!m_initialized)
-            {
-                LoadSettings();
-                m_initialized = true;
-            }
-
             EditorGUI.BeginChangeCheck();
             Styles styles = GetStyles();
             commonUI.OnInspectorGUI(terrain, editContext);
@@ -240,6 +228,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 SaveSetting();
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
 
             base.OnInspectorGUI(terrain, editContext);
@@ -249,15 +238,21 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             string stampToolData = JsonUtility.ToJson(stampToolProperties);
             EditorPrefs.SetString("Unity.TerrainTools.Stamp", stampToolData);
-
         }
 
         private void LoadSettings()
         {
-            
             string stampToolData = EditorPrefs.GetString("Unity.TerrainTools.Stamp");
             stampToolProperties.SetDefaults();
             JsonUtility.FromJsonOverwrite(stampToolData, stampToolProperties);
         }
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = GetStyles().height.text, Value = stampToolProperties.m_StampHeight},
+            new TerrainToolsAnalytics.BrushParameter<bool>{Name = GetStyles().down.text, Value = stampToolProperties.stampDown},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = GetStyles().maxadd.text, Value = stampToolProperties.m_MaxBlendAdd},
+            };
+        #endregion
     }
 }

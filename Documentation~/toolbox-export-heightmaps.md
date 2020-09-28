@@ -7,7 +7,7 @@ The **Export Heightmaps** tool lets you export height data from multiple Terrain
 | **Property**             | **Description**                                              |
 | ------------------------ | ------------------------------------------------------------ |
 | **Export Folder Path**   | The directory path to export heightmap textures to.          |
-| **Heightmap Format**     | Displays the texture format. Unity currently only supports the RAW file format for heightmaps. |
+| **Heightmap Format**     | Displays the texture format. Unity currently supports PNG, RAW, and TGA file format for heightmaps. |
 | **Heightmap Depth**      | Select 16 bit or 8 bit.                                      |
 | **Heightmap Byte Order** | Select Windows or Mac.                                       |
 | **Levels Correction**    | Remaps the height range prior to export. Similar to Input Levels in Photoshop, this makes bright areas brighter, and dark areas darker. |

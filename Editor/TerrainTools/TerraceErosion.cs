@@ -11,6 +11,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             context.SelectPaintTool<TerraceErosion>();
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Terrace Tool");
         }
 #endif
 
@@ -22,7 +23,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "TerraceTool" );
+                    LoadSettings();
+                    m_commonUI = new DefaultBrushUIGroup( "TerraceTool", UpdateAnalyticParameters );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -109,15 +111,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         bool m_ShowControls = true;
-        bool m_initialized = false;
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            if (!m_initialized)
-            {
-                LoadSettings();
-                m_initialized = true;
-            }
-
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
@@ -138,27 +133,25 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 SaveSetting();
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
         }
 
         private void ApplyBrushInternal(Terrain terrain, IPaintContextRender renderer, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
         {
-            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-
             Material mat = GetPaintMaterial();
+            var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+            Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
             float delta = terraceToolProperties.m_JitterTerraceCount * 50.0f;
             float jitteredFeatureSize = terraceToolProperties.m_FeatureSize + Random.Range(terraceToolProperties.m_FeatureSize - delta, terraceToolProperties.m_FeatureSize + delta);
             Vector4 brushParams = new Vector4(brushStrength, jitteredFeatureSize, terraceToolProperties.m_BevelAmountInterior, 0.0f);
             
             mat.SetTexture("_BrushTex", brushTexture);
-            mat.SetTexture("_FilterTex", filterMaskRT);
             mat.SetVector("_BrushParams", brushParams);
             
             renderer.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
             renderer.RenderBrush(paintContext, mat, 0);
+            RTUtils.Release(brushMask);
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
@@ -195,15 +188,21 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             string terraceToolData = JsonUtility.ToJson(terraceToolProperties);
             EditorPrefs.SetString("Unity.TerrainTools.Terrace", terraceToolData);
-
         }
 
         private void LoadSettings()
         {
-
             string terraceToolData = EditorPrefs.GetString("Unity.TerrainTools.Terrace");
             terraceToolProperties.SetDefaults();
             JsonUtility.FromJsonOverwrite(terraceToolData, terraceToolProperties);
         }
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.terraceCount.text, Value = terraceToolProperties.m_FeatureSize},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.jitter.text, Value = terraceToolProperties.m_JitterTerraceCount},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.cornerWeight.text, Value = terraceToolProperties.m_BevelAmountInterior},
+        };
+        #endregion
     }
 }

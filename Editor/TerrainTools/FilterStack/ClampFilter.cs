@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEditor;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -19,14 +18,14 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Clamps the pixels of a mask to the specified range. Change the X value to specify the low end of the range, and change the Y value to specify the high end of the range.";
         }
 
-        public override void Eval(FilterContext fc)
+        protected override void OnEval(FilterContext fc, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
         {
             FilterUtility.builtinMaterial.SetVector("_ClampRange", range);
 
-            Graphics.Blit( fc.sourceRenderTexture, fc.destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Clamp );
+            Graphics.Blit( sourceRenderTexture, destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Clamp );
         }
 
-        public override void DoGUI(Rect rect)
+        protected override void OnDrawGUI(Rect rect, FilterContext filterContext)
         {
             range = EditorGUI.Vector2Field(rect, "", range);
         }

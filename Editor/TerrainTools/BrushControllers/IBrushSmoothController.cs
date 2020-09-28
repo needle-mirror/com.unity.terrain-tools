@@ -6,7 +6,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 	public interface IBrushSmoothController
 	{
 		bool active { get; }
-        float kernelSize { get; set; }
+        int kernelSize { get; set; }
 
 		void OnEnterToolMode();
 		void OnExitToolMode();

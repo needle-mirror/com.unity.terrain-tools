@@ -12,6 +12,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;              // gets interface to modify state of TerrainTools
             context.SelectPaintTool<CloneBrushTool>();                                                  // set active tool
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Clone Tool");
         }
 #endif
 
@@ -72,7 +73,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "CloneBrushTool" );
+                    LoadSettings();
+                    m_commonUI = new DefaultBrushUIGroup("CloneBrushTool", UpdateAnalyticParameters);
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -129,15 +131,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             commonUI.OnExitToolMode();
         }
 
-        bool m_initialized = false;
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            if (!m_initialized)
-            {
-                LoadSettings();
-                m_initialized = true;
-            }
-
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
@@ -153,8 +148,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                     {
                         EditorGUILayout.PrefixLabel(Styles.cloneSourceContent);
 
-                        cloneToolProperties.m_PaintAlphamap = TerrainToolGUIHelper.ToggleButton(Styles.cloneTextureContent, cloneToolProperties.m_PaintAlphamap);
-                        cloneToolProperties.m_PaintHeightmap = TerrainToolGUIHelper.ToggleButton(Styles.cloneHeightmapContent, cloneToolProperties.m_PaintHeightmap);
+                        cloneToolProperties.m_PaintAlphamap = GUILayout.Toggle(cloneToolProperties.m_PaintAlphamap, Styles.cloneTextureContent, GUI.skin.button);
+                        cloneToolProperties.m_PaintHeightmap = GUILayout.Toggle(cloneToolProperties.m_PaintHeightmap, Styles.cloneHeightmapContent, GUI.skin.button);
                     }
                     EditorGUILayout.EndHorizontal();
 
@@ -167,10 +162,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             if (EditorGUI.EndChangeCheck())
             {
+                // intentionally do not reset HasDoneFirstPaint here because then changing the brush mask will corrupt the clone position
                 m_isPainting = false;
-                m_HasDoneFirstPaint = false;
                 Save(true);
                 SaveSetting();
+                TerrainToolsAnalytics.OnParameterChange();
             }
         }
 
@@ -250,7 +246,12 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
             
             m_wasPainting = m_isPainting;
-            m_isPainting = m_lmb && !m_ctrl;
+
+            // xxx(jcowles): this logic is no good becuse it makes assumptions about what modifier keys will enable/disable painting,
+            // however this cannot be known without querying other systems (e.g. orbiting the camera uses some combination of mouse
+            // buttons and modifier keys, but the exact configuration is a user setting). For now, assume when ALT is pressed, we are 
+            // not painting.
+            m_isPainting = m_lmb && !m_ctrl && !Event.current.alt;
         }
 
         private void UpdateBrushLocations(Terrain terrain, IOnSceneGUI editContext)
@@ -342,45 +343,22 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, commonUI.raycastHitUnderCursor.textureCoord, commonUI.brushSize, commonUI.brushRotation);
                 PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
+
                 TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
                 if (sampleContext != null && cloneToolProperties.m_PaintHeightmap) {
                     ApplyHeightmap(sampleContext, ctx, brushXform, terrain, editContext.brushTexture, commonUI.brushStrength);
-
                     RenderTexture.active = ctx.oldRenderTexture;
                     previewMat.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
                     TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture,
                                                                editContext.brushTexture, brushXform, previewMat, 1);
                 }
 
-                TerrainPaintUtility.ReleaseContextResources(ctx);
-
-                /*
-                BrushTransform targetXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.raycastHit.textureCoord, editContext.brushSize, 0f);
-                PaintContext targetContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, targetXform.GetBrushXYBounds(), 1);
-
-                // draw basic preview of brush
-                TerrainPaintUtilityEditor.DrawBrushPreview(targetContext, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture,
-                                                           editContext.brushTexture, targetXform, previewMat, 0);
-
-                if (sampleContext != null && m_PaintHeightmap)
-                {
-                    ApplyHeightmap(sampleContext, targetContext, targetXform, terrain, editContext.brushTexture, brushIntensity.brushStrength);
-
-                    // draw preview of brush mesh
-                    RenderTexture.active = targetContext.oldRenderTexture;
-                    previewMat.SetTexture("_HeightmapOrig", targetContext.sourceRenderTexture);
-                    TerrainPaintUtilityEditor.DrawBrushPreview(targetContext, TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture,
-                                                               editContext.brushTexture, targetXform, previewMat, 1);
-                }
-
-                TerrainPaintUtility.ReleaseContextResources(targetContext);
-                */
+                // Restores RenderTexture.active
+                ctx.Cleanup();
             }
 
-            if (sampleContext != null)
-            {
-                TerrainPaintUtility.ReleaseContextResources(sampleContext);
-            }
+            // Restores RenderTexture.active
+            sampleContext?.Cleanup();
         }
 
         private Vector2 TerrainUVFromBrushLocation(Terrain terrain, Vector3 posWS)
@@ -401,14 +379,28 @@ namespace UnityEditor.Experimental.TerrainAPI
             paintMat.SetTexture("_BrushTex", brushTexture);
             paintMat.SetVector("_BrushParams", brushParams);
             paintMat.SetTexture("_CloneTex", sampleContext.sourceRenderTexture);
+            paintMat.SetVector("_SampleUVScaleOffset", ComputeSampleUVScaleOffset(sampleContext, targetContext));
 
-            FilterContext fc = new FilterContext(targetTerrain, commonUI.raycastHitUnderCursor.point, commonUI.brushSize, commonUI.brushRotation);
-            fc.renderTextureCollection.GatherRenderTextures(targetContext.sourceRenderTexture.width, targetContext.sourceRenderTexture.height);
-            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, targetContext.sourceRenderTexture);
-            paintMat.SetTexture("_FilterTex", filterMaskRT);
-
+            var brushMask = RTUtils.GetTempHandle(sampleContext.sourceRenderTexture.width, sampleContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+            Utility.SetFilterRT(commonUI, sampleContext.sourceRenderTexture, brushMask, paintMat);
             TerrainPaintUtility.SetupTerrainToolMaterialProperties(targetContext, targetXform, paintMat);
             Graphics.Blit(targetContext.sourceRenderTexture, targetContext.destinationRenderTexture, paintMat, (int)ShaderPasses.CloneHeightmap);
+            RTUtils.Release(brushMask);
+        }
+
+        private Vector4 ComputeSampleUVScaleOffset(PaintContext sampleContext, PaintContext targetContext) {
+            Vector4 sampleUVScaleOffset;
+            TerrainPaintUtility.BuildTransformPaintContextUVToPaintContextUV(targetContext, sampleContext, out sampleUVScaleOffset);
+
+            var sampleUV = TerrainUVFromBrushLocation(m_SampleLocation.terrain, m_SampleLocation.pos);
+            var paintContextUVOffset = sampleUV * (sampleContext.targetTextureHeight / (float)m_SampleLocation.terrain.terrainData.heightmapResolution);
+            
+            float deltaUPixels = (sampleUV.x - commonUI.raycastHitUnderCursor.textureCoord.x) * targetContext.targetTextureWidth;
+            float deltaVPixels = (sampleUV.y - commonUI.raycastHitUnderCursor.textureCoord.y) * targetContext.targetTextureHeight;
+            sampleUVScaleOffset.z += ((int) deltaUPixels) / (float)sampleContext.pixelRect.width;
+            sampleUVScaleOffset.w += ((int) deltaVPixels) / (float)sampleContext.pixelRect.height;
+
+            return sampleUVScaleOffset;
         }
 
         private void PaintHeightmap(Terrain sampleTerrain, Terrain targetTerrain, BrushTransform sampleXform,
@@ -418,7 +410,10 @@ namespace UnityEditor.Experimental.TerrainAPI
             PaintContext targetContext = TerrainPaintUtility.BeginPaintHeightmap(targetTerrain, targetXform.GetBrushXYBounds());
             ApplyHeightmap(sampleContext, targetContext, targetXform, targetTerrain, editContext.brushTexture, commonUI.brushStrength);
             TerrainPaintUtility.EndPaintHeightmap(targetContext, "Terrain Paint - Clone Brush (Heightmap)");
-            TerrainPaintUtility.ReleaseContextResources(sampleContext);
+
+            // Restores RenderTexture.active
+            sampleContext.Cleanup();
+            targetContext.Cleanup();
         }
 
         private void PaintAlphamap(Terrain sampleTerrain, Terrain targetTerrain, BrushTransform sampleXform, BrushTransform targetXform, Material mat)
@@ -426,7 +421,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             Rect sampleRect = sampleXform.GetBrushXYBounds();
             Rect targetRect = targetXform.GetBrushXYBounds();
             int numSampleTerrainLayers = sampleTerrain.terrainData.terrainLayers.Length;
-
             for (int i = 0; i < numSampleTerrainLayers; ++i)
             {
                 TerrainLayer layer = sampleTerrain.terrainData.terrainLayers[i];
@@ -435,7 +429,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                 PaintContext sampleContext = TerrainPaintUtility.BeginPaintTexture(sampleTerrain, sampleRect, layer);
 
-                // manually create target context since we are possibly applying another terrain's layers and not its own
                 int layerIndex = TerrainPaintUtility.FindTerrainLayerIndex(sampleTerrain, layer);
                 Texture2D layerTexture = TerrainPaintUtility.GetTerrainAlphaMapChecked(sampleTerrain, layerIndex >> 2);
                 PaintContext targetContext = PaintContext.CreateFromBounds(targetTerrain, targetRect, layerTexture.width, layerTexture.height);
@@ -443,10 +436,18 @@ namespace UnityEditor.Experimental.TerrainAPI
                 targetContext.GatherAlphamap(layer, true);
                 sampleContext.sourceRenderTexture.filterMode = FilterMode.Point;
                 mat.SetTexture("_CloneTex", sampleContext.sourceRenderTexture);
+                mat.SetVector("_SampleUVScaleOffset", ComputeSampleUVScaleOffset(sampleContext, targetContext));
+
+                var brushMask = RTUtils.GetTempHandle(targetContext.sourceRenderTexture.width, targetContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                Utility.SetFilterRT(commonUI, targetContext.sourceRenderTexture, brushMask, mat);
+                TerrainPaintUtility.SetupTerrainToolMaterialProperties(targetContext, targetXform, mat);
                 Graphics.Blit(targetContext.sourceRenderTexture, targetContext.destinationRenderTexture, mat, (int)ShaderPasses.CloneAlphamap);
                 // apply texture modifications and perform cleanup. same thing as calling TerrainPaintUtility.EndPaintTexture
                 targetContext.ScatterAlphamap("Terrain Paint - Clone Brush (Texture)");
+
+                // Restores RenderTexture.active
                 targetContext.Cleanup();
+                RTUtils.Release(brushMask);
             }
         }
 
@@ -490,7 +491,6 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             string cloneToolData = JsonUtility.ToJson(cloneToolProperties);
             EditorPrefs.SetString("Unity.TerrainTools.Clone", cloneToolData);
-
         }
 
         private void LoadSettings()
@@ -498,7 +498,15 @@ namespace UnityEditor.Experimental.TerrainAPI
             string cloneToolData = EditorPrefs.GetString("Unity.TerrainTools.Clone");
             cloneToolProperties.SetDefaults();
             JsonUtility.FromJsonOverwrite(cloneToolData, cloneToolProperties);
-
         }
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
+            new TerrainToolsAnalytics.BrushParameter<bool>{Name = Styles.cloneTextureContent.text, Value = cloneToolProperties.m_PaintAlphamap},
+            new TerrainToolsAnalytics.BrushParameter<bool>{Name = Styles.cloneHeightmapContent.text, Value = cloneToolProperties.m_PaintHeightmap},
+            new TerrainToolsAnalytics.BrushParameter<string>{Name = Styles.cloneBehaviorContent.text, Value = cloneToolProperties.m_MovementBehavior.ToString()},
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.heightOffsetContent.text, Value = cloneToolProperties.m_StampingOffsetFromClone},
+        };
+        #endregion
     }
 }

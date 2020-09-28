@@ -12,6 +12,7 @@ Shader "Hidden/TerrainTools/Filters"
         HLSLINCLUDE
 
         #include "UnityCG.cginc"
+        #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
 
         sampler2D _MainTex;
         float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
@@ -28,22 +29,6 @@ Shader "Hidden/TerrainTools/Filters"
             float2 uv : TEXCOORD0;
         };
 
-        /**************************************************************************
-
-            Filter Functions
-
-        **************************************************************************/
-
-        inline float remap( float4 n, float o, float p, float a, float b )
-        {
-            return a.xxxx + (b.xxxx - a.xxxx) * (n - o.xxxx) / (p.xxxx - o.xxxx);
-        }
-
-        inline float pow_keep_sign( float4 f, float p )
-        {
-            return pow( abs( f ), p ) * sign( f );
-        }
-
         v2f_s vert( appdata_s v )
         {
             v2f_s o;
@@ -56,7 +41,7 @@ Shader "Hidden/TerrainTools/Filters"
 
         ENDHLSL
 
-        Pass // 0 - Abs
+        Pass // 1 - Abs
         {
             HLSLPROGRAM
 
@@ -65,17 +50,15 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float4 s = tex2D( _MainTex, i.uv );
-                
+                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
                 s = abs( s );
-
-                return float4( s.rgb, 1 );
+                return PackHeightmap(s);
             }
 
             ENDHLSL
         }
 
-        Pass // 1 - Add
+        Pass // 2 - Add
         {
             HLSLPROGRAM
 
@@ -86,17 +69,15 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float4 s = tex2D( _MainTex, i.uv );
-                
-                s = s + _Add.xxxx;
-
-                return float4( s.rgb, 1 );
+                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                s = s + _Add;
+                return PackHeightmap(s);
             }
 
             ENDHLSL
         }
 
-        Pass // 2 - Clamp
+        Pass // 3 - Clamp
         {
             HLSLPROGRAM
 
@@ -107,17 +88,15 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float4 s = tex2D( _MainTex, i.uv );
-                
+                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
                 s = clamp( s, _ClampRange.x, _ClampRange.y );
-
-                return float4( s.rgb, 1 );
+                return PackHeightmap(s);
             }
 
             ENDHLSL
         }
 
-        Pass // 3 - Complement
+        Pass // 4 - Complement
         {
             HLSLPROGRAM
 
@@ -128,17 +107,15 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float4 s = tex2D( _MainTex, i.uv );
-                
-                s = ( _Complement ).xxxx - s;
-
-                return float4( s.rgb, 1 );
+                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                s = _Complement - s;
+                return PackHeightmap(s);
             }
 
             ENDHLSL
         }
 
-        Pass // 4 - Max
+        Pass // 5 - Max
         {
             HLSLPROGRAM
 
@@ -149,17 +126,15 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float4 s = tex2D( _MainTex, i.uv );
-                
-                s = max( s, _Max.xxxx );
-
-                return float4( s.rgb, 1 );
+                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                s = max( s, _Max );
+                return PackHeightmap(s);
             }
 
             ENDHLSL
         }
 
-        Pass // 5 - Min
+        Pass // 6 - Min
         {
             HLSLPROGRAM
 
@@ -170,17 +145,15 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float4 s = tex2D( _MainTex, i.uv );
-                
-                s = min( s, _Min.xxxx );
-
-                return float4( s.rgb, 1 );
+                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                s = min( s, _Min );
+                return PackHeightmap(s);
             }
 
             ENDHLSL
         }
 
-        Pass // 6 - Negate
+        Pass // 7 - Negate
         {
             HLSLPROGRAM
 
@@ -189,17 +162,15 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float4 s = tex2D( _MainTex, i.uv );
-                
+                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
                 s = -s;
-
-                return float4( s.rgb, 1 );
+                return PackHeightmap(s);
             }
 
             ENDHLSL
         }
 
-        Pass // 7 - Power
+        Pass // 8 - Power
         {
             HLSLPROGRAM
 
@@ -210,41 +181,34 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float4 s = tex2D( _MainTex, i.uv );
-                
+                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
                 s = pow_keep_sign( s, _Pow );
-
-                return float4( s.rgb, 1 );
+                return PackHeightmap(s);
             }
 
             ENDHLSL
         }
 
-        Pass // 8 - Remap
+        Pass // 9 - Remap
         {
             HLSLPROGRAM
 
             #pragma vertex vert
             #pragma fragment frag
-
+            
             float4 _RemapRanges;
-
-            #define FROM_RANGE  ( _RemapRanges.xy )
-            #define TO_RANGE    ( _RemapRanges.zw )
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float4 s = tex2D( _MainTex, i.uv );
-                
-                s = remap( s, FROM_RANGE.x, FROM_RANGE.y, TO_RANGE.x, TO_RANGE.y );
-
-                return float4( s.rgb, 1 );
+                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                s = RemapFilterValue(s, _RemapRanges.x, _RemapRanges.y, _RemapRanges.z, _RemapRanges.w);
+                return PackHeightmap(s);
             }
 
             ENDHLSL
         }
 
-        Pass // 9 - Multiply
+        Pass // 10 - Multiply
         {
             HLSLPROGRAM
 
@@ -255,11 +219,9 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float4 s = tex2D( _MainTex, i.uv );
-                
+                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
                 s = s * _Multiply;
-
-                return float4( s.rgb, 1 );
+                return PackHeightmap(s);
             }
 
             ENDHLSL

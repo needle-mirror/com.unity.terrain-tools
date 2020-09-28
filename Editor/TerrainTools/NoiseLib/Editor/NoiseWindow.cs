@@ -95,6 +95,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             s_openNoiseWindows.Remove( this );
 
             onDisableCallback?.Invoke();
+
+            noiseEditorView?.OnClose();
         }
 
         public event Action onDisableCallback;

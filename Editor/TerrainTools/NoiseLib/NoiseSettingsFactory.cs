@@ -17,7 +17,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         [MenuItem("Assets/Create/Noise Settings")]
         public static NoiseSettings CreateAsset()
         {
-            return CreateAsset("Assets/New Noise Settings.asset");
+            return CreateAsset(AssetDatabase.GenerateUniqueAssetPath("Assets/New Noise Settings.asset"));
         }
 
         /// <summary>
@@ -29,15 +29,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             NoiseSettings noiseSettings = ScriptableObject.CreateInstance<NoiseSettings>();
 
-            // FilterStack filterStack = ScriptableObject.CreateInstance<FilterStack>();
-            // filterStack.hideFlags = HideFlags.HideInInspector | HideFlags.HideInHierarchy | HideFlags.NotEditable;
-            // noiseSettings.filterSettings.filterStack = filterStack;
-
+            assetPath = AssetDatabase.GenerateUniqueAssetPath(assetPath);
             AssetDatabase.CreateAsset(noiseSettings, assetPath);
-
-            // AssetDatabase.AddObjectToAsset(filterStack, noiseSettings);
-            // AssetDatabase.ImportAsset( AssetDatabase.GetAssetPath( filterStack ) );
-
             AssetDatabase.SaveAssets();
             
             EditorGUIUtility.PingObject(noiseSettings);

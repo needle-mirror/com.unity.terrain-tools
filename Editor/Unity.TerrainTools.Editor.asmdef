@@ -1,10 +1,8 @@
 {
     "name": "Unity.TerrainTools.Editor",
     "references": [
-        "GUID:870ce330d12521c41ba8a44d9ad3a5fc",
-        "GUID:15a615c733aa240909fe0b28b0d5143c"
+        "GUID:870ce330d12521c41ba8a44d9ad3a5fc"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor"
     ],
@@ -14,5 +12,6 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": []
+    "versionDefines": [],
+    "noEngineReferences": false
 }

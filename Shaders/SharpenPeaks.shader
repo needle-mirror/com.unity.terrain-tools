@@ -19,7 +19,7 @@ Shader "Hidden/TerrainTools/SharpenPeaks"
             #pragma fragment Erode
 
             #include "UnityCG.cginc"
-            #include "TerrainTool.cginc"
+            #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
 
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
@@ -53,7 +53,7 @@ Shader "Hidden/TerrainTools/SharpenPeaks"
 			float4 Erode(v2f i) : SV_Target
             {
 				float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
-				float2 heightmapUV = PaintContextUVToHeightmapUV(i.pcUV);
+				float2 heightmapUV = i.pcUV;
 
 				const float2 coords [4] = { {-1,0}, { 1,0}, {0, -1}, { 0, 1} };
 

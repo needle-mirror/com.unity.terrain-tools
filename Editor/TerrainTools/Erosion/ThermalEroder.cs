@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
+using UnityEditor.Experimental.TerrainAPI;
 
 namespace Erosion {
 
@@ -83,7 +84,7 @@ namespace Erosion {
 
         private void ErodeHelper(Vector3 terrainScale, Rect domainRect, Vector2 texelSize, bool invertEffect, bool lowRes) {
             ComputeShader cs = GetComputeShader();
-            RenderTexture tmpRT = UnityEngine.RenderTexture.active;
+            RenderTexture prevRT = RenderTexture.active;
 
             int[] numWorkGroups = { 1, 1, 1 };
 
@@ -104,29 +105,19 @@ namespace Erosion {
             yRes += numWorkGroups[1] - ry;
             */
 
-            RenderTexture[] heightmapRT = {
-                RenderTexture.GetTemporary(xRes, yRes, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear),
-                RenderTexture.GetTemporary(xRes, yRes, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear)
-            };
+            var heightmapRT0 = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW(xRes, yRes, 0, RenderTextureFormat.RFloat));
+            var heightmapRT1 = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW(xRes, yRes, 0, RenderTextureFormat.RFloat));
 
-            RenderTexture sedimentRT = RenderTexture.GetTemporary(xRes, yRes, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
-            RenderTexture hardnessRT = RenderTexture.GetTemporary(xRes, yRes, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
-            RenderTexture reposeAngleRT = RenderTexture.GetTemporary(xRes, yRes, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
-            RenderTexture collisionRT = RenderTexture.GetTemporary(xRes, yRes, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
-
-
-            heightmapRT[0].enableRandomWrite = true;
-            heightmapRT[1].enableRandomWrite = true;
-            sedimentRT.enableRandomWrite = true;
-            hardnessRT.enableRandomWrite = true;
-            reposeAngleRT.enableRandomWrite = true;
-            collisionRT.enableRandomWrite = true;
-
-            //clear the render textures
+            var sedimentRT = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW(xRes, yRes, 0, RenderTextureFormat.RFloat));
+            var hardnessRT = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW(xRes, yRes, 0, RenderTextureFormat.RFloat));
+            var reposeAngleRT = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW(xRes, yRes, 0, RenderTextureFormat.RFloat));
+            var collisionRT = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW(xRes, yRes, 0, RenderTextureFormat.RFloat));
+            
+            //clear the render textures (also calls rt.Create())
+            Graphics.Blit(inputTextures["Height"], heightmapRT0);
+            Graphics.Blit(inputTextures["Height"], heightmapRT1);
             Graphics.Blit(Texture2D.blackTexture, sedimentRT);
             Graphics.Blit(Texture2D.blackTexture, hardnessRT);
-            Graphics.Blit(inputTextures["Height"], heightmapRT[0]);
-            Graphics.Blit(inputTextures["Height"], heightmapRT[1]);
             Graphics.Blit(Texture2D.blackTexture, reposeAngleRT);
             Graphics.Blit(Texture2D.blackTexture, collisionRT);
 
@@ -148,13 +139,10 @@ namespace Erosion {
             cs.SetTexture(thermalKernelIdx, "Collision", collisionRT);
             cs.SetTexture(thermalKernelIdx, "Hardness", hardnessRT);
 
-            for (int i = 0; i < m_ThermalIterations; i++) {
-
-                int prevIdx = i % 2;
-                int currIdx = (i + 1) % 2;
-
-                cs.SetTexture(thermalKernelIdx, "TerrainHeightPrev", heightmapRT[prevIdx]);
-                cs.SetTexture(thermalKernelIdx, "TerrainHeight", heightmapRT[currIdx]);
+            for (int i = 0; i < m_ThermalIterations; i++)
+            {
+                cs.SetTexture(thermalKernelIdx, "TerrainHeightPrev", heightmapRT0);
+                cs.SetTexture(thermalKernelIdx, "TerrainHeight", heightmapRT1);
 
                 //jitter tau (want a new value each iteration)
                 Vector2 jitteredTau = m_AngleOfRepose + new Vector2(0.9f * (float)m_ReposeJitter * (UnityEngine.Random.value - 0.5f), 0.9f * (float)m_ReposeJitter * (UnityEngine.Random.value - 0.5f));
@@ -165,20 +153,24 @@ namespace Erosion {
                 cs.SetVector("angleOfRepose", new Vector4(m.x, m.y, 0.0f, 0.0f));
 
                 cs.Dispatch(thermalKernelIdx, xRes / numWorkGroups[0], yRes / numWorkGroups[1], numWorkGroups[2]);
-                //Graphics.Blit(heightmapRT, heightmapPrevRT);
+
+                // swap
+                var temp = heightmapRT0;
+                heightmapRT0 = heightmapRT1;
+                heightmapRT1 = temp;
             }
 
-            int lastIdx = (m_ThermalIterations - 1) % 2;
-            Graphics.Blit(heightmapRT[lastIdx], outputTextures["Height"]);
+            Graphics.Blit((m_ThermalIterations - 1) % 2 == 0 ? heightmapRT1 : heightmapRT0, outputTextures["Height"]);
 
             //reset the active render texture so weird stuff doesn't happen (Blit overwrites this)
-            UnityEngine.RenderTexture.active = tmpRT;
+            RenderTexture.active = prevRT;
 
-            RenderTexture.ReleaseTemporary(heightmapRT[0]);
-            RenderTexture.ReleaseTemporary(heightmapRT[1]);
-            RenderTexture.ReleaseTemporary(sedimentRT);
-            RenderTexture.ReleaseTemporary(hardnessRT);
-            RenderTexture.ReleaseTemporary(reposeAngleRT);
+            RTUtils.Release(heightmapRT0);
+            RTUtils.Release(heightmapRT1);
+            RTUtils.Release(sedimentRT);
+            RTUtils.Release(hardnessRT);
+            RTUtils.Release(reposeAngleRT);
+            RTUtils.Release(collisionRT);
         }
     }
 }

@@ -72,6 +72,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 					{
 						onReleased?.Invoke();
 						m_ActiveKeys.Remove(key);
+
+						TerrainToolsAnalytics.OnShortcutKeyRelease(key.ToString());
+						TerrainToolsAnalytics.OnParameterChange();
 					}
 					break;
 				}

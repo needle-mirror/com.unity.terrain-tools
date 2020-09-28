@@ -24,5 +24,5 @@ Use the **Import From Terrain** button to import splatmaps from a selected Terra
 | **Adjust All Splatmaps** | Enable this checkbox to adjust all splatmaps in the list.    |
 | **Rotate Adjustment**    | Select **Clockwise** or **CounterClockwise** to control the rotation direction. Click the **Rotate** button to rotate splatmaps in the preview. |
 | **Flip Adjustment**      | Select **Horizontal** or **Vertical** to control the flip direction. Click the **Flip** button to flip splatmaps in the preview. |
-| **Export to Terrain(s)** | Click this button to export splatmap data to the selected Terrain tiles. |
+| **Apply to Terrain**     | Click this button to apply splatmap data to the selected Terrain tiles. |
 | **Reset Splatmaps**      | Click this button to remove splatmap data from the selected Terrain tiles, and set all splatmaps to their default values. |

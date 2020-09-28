@@ -1,10 +1,8 @@
 using UnityEngine;
 using UnityEngine.Experimental.TerrainAPI;
-using UnityEditor.Experimental.TerrainAPI;
-using System.Linq;
 using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
-using System;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -16,6 +14,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;          // gets interface to modify state of TerrainTools
             context.SelectPaintTool<NoiseHeightTool>();                                                                        // set active tool
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Noise Height Brush");
         }
 #endif
 
@@ -47,7 +46,6 @@ namespace UnityEditor.Experimental.TerrainAPI
         
         private float m_simulationTime;
         private bool m_showToolGUI = true;
-        private bool m_initialized = false;
         private bool m_liveUpdate;
         private bool m_simulate;
 
@@ -59,7 +57,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "NoiseHeightTool" );
+                    LoadSettings();
+                    m_commonUI = new DefaultBrushUIGroup("NoiseHeightTool", UpdateAnalyticParameters);
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -222,16 +221,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Tool for painting height based on noise";
         }
 
-        private void Init()
-        {
-            if (!m_initialized)
-            {
-                LoadSettings();
-
-                m_initialized = true;
-            }
-        }
-
         //===================================================================================================
         //
         //      NOISE TOOL GUI
@@ -240,8 +229,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            Init();
-
             EditorGUI.BeginChangeCheck();
             {
                 GUILayout.Space(12);
@@ -284,12 +271,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                     {
                         EditorGUILayout.PrefixLabel(Styles.coordSpace);
 
-                        if(TerrainToolGUIHelper.ToggleButton(Styles.worldSpace, m_toolSettings.coordSpace == CoordinateSpace.World))
+                        if(GUILayout.Toggle(m_toolSettings.coordSpace == CoordinateSpace.World, Styles.worldSpace, GUI.skin.button))
                         {
                             m_toolSettings.coordSpace = CoordinateSpace.World;
                         }
 
-                        if(TerrainToolGUIHelper.ToggleButton(Styles.brushSpace, m_toolSettings.coordSpace == CoordinateSpace.Brush))
+                        if(GUILayout.Toggle(m_toolSettings.coordSpace == CoordinateSpace.Brush, Styles.brushSpace, GUI.skin.button))
                         {
                             m_toolSettings.coordSpace = CoordinateSpace.Brush;
                         }
@@ -312,6 +299,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 SaveSettings();
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
         }
 
@@ -320,7 +308,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             EditorGUILayout.BeginHorizontal();
             {
                 GUILayout.Label(Styles.simulationLabel, TerrainToolGUIHelper.dontExpandWidth);
-                if (GUILayout.Button(Styles.simulationButton, TerrainToolGUIHelper.GetButtonToggleStyle(m_simulate), TerrainToolGUIHelper.dontExpandWidth))
+                if (GUILayout.Toggle(m_simulate, Styles.simulationButton, GUI.skin.button, TerrainToolGUIHelper.dontExpandWidth))
                 {
                     m_simulate = !m_simulate;
 
@@ -518,12 +506,14 @@ namespace UnityEditor.Experimental.TerrainAPI
         private void ApplyBrushInternal(Terrain terrain, PaintContext ctx, BrushTransform brushXform, Vector3 brushPosWS,
                                         float brushRotation, float brushStrength, float brushSize, Texture brushTexture)
         {
+            var prevRT = RenderTexture.active;
+
             brushPosWS.y = 0;
 
             /*
                 blit steps
                 1. blit noise to intermediate RT, this includes all the noise transformations and filters,
-                   using the appropriate noise material. do this with NoiseUtils.Blit2D?
+                using the appropriate noise material. do this with NoiseUtils.Blit2D?
                 2. use that noise texture and mult it with brushmask to paint height on terrain
             */
 
@@ -546,64 +536,43 @@ namespace UnityEditor.Experimental.TerrainAPI
             brushPosWS = isWorldSpace ? brushPosWS * previewSize : Vector3.zero;
 
             // // override noise transform
-            Quaternion rotQ             = Quaternion.AngleAxis( -brushRotation, Vector3.up );
-            Matrix4x4 translation       = Matrix4x4.Translate( brushPosWS );
-            Matrix4x4 rotation          = Matrix4x4.Rotate( rotQ );
-            Matrix4x4 scale             = Matrix4x4.Scale( Vector3.one * brushSize );
-            Matrix4x4 noiseToWorld      = translation * scale;
+            var rotQ              = Quaternion.AngleAxis( -brushRotation, Vector3.up );
+            var translation       = Matrix4x4.Translate( brushPosWS );
+            var rotation          = Matrix4x4.Rotate( rotQ );
+            var scale             = Matrix4x4.Scale( Vector3.one * brushSize );
+            var noiseToWorld      = translation * scale;
 
             matNoise.SetMatrix( NoiseSettings.ShaderStrings.transform,
                                 noiseSettings.trs * noiseToWorld );
 
+            var noisePass = NoiseUtils.kNumBlitPasses * NoiseLib.GetNoiseIndex( noiseSettings.domainSettings.noiseTypeName );
+
             // render the noise field to a texture
             // TODO(wyatt): Handle the 3D case. Would need to blit to Volume Texture
-            int rtW = ctx.destinationRenderTexture.width;
-            int rtH = ctx.destinationRenderTexture.height;
-            RenderTextureFormat rtF = RenderTextureFormat.RFloat;
-            RenderTextureDescriptor rtDesc = new RenderTextureDescriptor( rtW, rtH, rtF );
-            RenderTexture noiseRT = RenderTexture.GetTemporary( rtDesc );
-
-            RenderTexture tempRT = RenderTexture.GetTemporary( noiseRT.descriptor );
-            RenderTexture prev = RenderTexture.active;
-            RenderTexture.active = tempRT;
-
-            int noisePass = NoiseUtils.kNumBlitPasses * NoiseLib.GetNoiseIndex( noiseSettings.domainSettings.noiseTypeName );
-
-            Graphics.Blit(tempRT, matNoise, noisePass);
-
-            RenderTexture.active = noiseRT;
-
-            // if(noiseSettings.filterSettings.filterStack != null)
-            // {
-            //     noiseSettings.filterSettings.filterStack.Eval(tempRT, noiseRT);
-            // }
-            // else
-            {
-                Graphics.Blit( tempRT, noiseRT );
-            }
-
-            RenderTexture.active = prev;
-
-            RenderTexture.ReleaseTemporary(tempRT);
-
-            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-            FilterContext fc = new FilterContext( terrain, brushPos, brushSize, brushRotation );
-            fc.renderTextureCollection.GatherRenderTextures(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height);
-            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, ctx.sourceRenderTexture);
+            var rtDesc = ctx.destinationRenderTexture.descriptor;
+            rtDesc.graphicsFormat = NoiseUtils.singleChannelFormat;
+            rtDesc.sRGB = false;
+            var noiseRT = RTUtils.GetTempHandle( rtDesc );
+            RenderTexture.active = noiseRT; // keep this
+            Graphics.Blit(noiseRT, matNoise, noisePass);
 
             // then add the result to the heightmap using the noise height tool shader
             Material matFinal = paintMaterial;
+            var brushMask = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+            Utility.SetFilterRT(commonUI, ctx.sourceRenderTexture, brushMask, matFinal);
             TerrainPaintUtility.SetupTerrainToolMaterialProperties( ctx, brushXform, matFinal );
             // set brush params
             Vector4 brushParams = new Vector4( 0.01f * brushStrength, 0.0f, brushSize, 1 / brushSize );
             matFinal.SetVector( "_BrushParams", brushParams );
             matFinal.SetTexture( "_BrushTex", brushTexture );
             matFinal.SetTexture( "_NoiseTex", noiseRT );
-            matFinal.SetTexture("_FilterTex", filterMaskRT);
             matFinal.SetVector( "_WorldHeightRemap", m_toolSettings.worldHeightRemap );
             Graphics.Blit( ctx.sourceRenderTexture, ctx.destinationRenderTexture, matFinal, 0 );
 
-            RenderTexture.ReleaseTemporary( noiseRT );
+            RTUtils.Release( noiseRT );
+            RTUtils.Release( brushMask );
+            
+            RenderTexture.active = prevRT;
         }
 
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
@@ -669,8 +638,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
-            Init();
-            
             commonUI.OnPaint(terrain, editContext);
 
             if (commonUI.allowPaint)
@@ -772,5 +739,87 @@ namespace UnityEditor.Experimental.TerrainAPI
             public static GUIContent worldSpaceHeightRange = EditorGUIUtility.TrTextContent("World Height Range");
             public static GUIContent noiseToolSettings = EditorGUIUtility.TrTextContent("Noise Height Tool Settings", "Settings for the Noise Height Tool");
         }
+
+        #region Analytics
+        List<TerrainToolsAnalytics.IBrushParameter> m_AnalyticsData = new List<TerrainToolsAnalytics.IBrushParameter>();
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters()
+        {
+            m_AnalyticsData.Clear();
+
+            SerializedProperty transformSettings = noiseSettingsGUI.serializedNoise.FindProperty("transformSettings");
+            SerializedProperty domainSettings = noiseSettingsGUI.serializedNoise.FindProperty("domainSettings");
+            SerializedProperty fractalTypeName = domainSettings.FindPropertyRelative("fractalTypeName");
+            SerializedProperty fractalTypeParams = domainSettings.FindPropertyRelative("fractalTypeParams");
+
+            //Add Generic, Transform, and Domain type settings to be sent as analytic data
+            m_AnalyticsData.AddRange(new TerrainToolsAnalytics.IBrushParameter[]{ 
+                //Generic Settings
+                new TerrainToolsAnalytics.BrushParameter<string>{Name = Styles.coordSpace.text,
+                    Value = m_toolSettings.coordSpace.ToString()},
+
+                //Transform Settings
+                new TerrainToolsAnalytics.BrushParameter<Vector3>{Name = "Translation",
+                    Value = transformSettings.FindPropertyRelative("translation").vector3Value},
+                new TerrainToolsAnalytics.BrushParameter<Vector3>{Name = "Rotation",
+                    Value = transformSettings.FindPropertyRelative("rotation").vector3Value},
+                new TerrainToolsAnalytics.BrushParameter<Vector3>{Name = "Scale",
+                    Value = transformSettings.FindPropertyRelative("scale").vector3Value},
+                new TerrainToolsAnalytics.BrushParameter<bool>{Name = NoiseSettingsGUI.Styles.flipScaleX.text,
+                    Value = transformSettings.FindPropertyRelative("flipScaleX").boolValue},
+                new TerrainToolsAnalytics.BrushParameter<bool>{Name = NoiseSettingsGUI.Styles.flipScaleY.text,
+                    Value = transformSettings.FindPropertyRelative("flipScaleY").boolValue},
+                new TerrainToolsAnalytics.BrushParameter<bool>{Name = NoiseSettingsGUI.Styles.flipScaleZ.text,
+                    Value = transformSettings.FindPropertyRelative("flipScaleZ").boolValue},
+
+                //Domain
+                new TerrainToolsAnalytics.BrushParameter<string>{Name = NoiseSettingsGUI.Styles.noiseType.text,
+                        Value = domainSettings.FindPropertyRelative("noiseTypeName").stringValue},
+                new TerrainToolsAnalytics.BrushParameter<string>{Name = NoiseSettingsGUI.Styles.fractalType.text,
+                        Value = domainSettings.FindPropertyRelative("fractalTypeName").stringValue}}
+            );
+
+            //Add fractal specific settings to be sent as analytic data
+            IFractalType fractalType = NoiseLib.GetFractalTypeInstance(fractalTypeName.stringValue);
+            switch(domainSettings.FindPropertyRelative("fractalTypeName").stringValue)
+            {
+                case "Fbm":
+                    FbmFractalType.FbmFractalInput fbmFractalSettings = (FbmFractalType.FbmFractalInput)fractalType.FromSerializedString(fractalTypeParams.stringValue);
+                    m_AnalyticsData.AddRange(new TerrainToolsAnalytics.IBrushParameter[]{
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = FbmFractalType.Styles.octaves.text, Value = fbmFractalSettings.octaves},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = FbmFractalType.Styles.amplitude.text, Value = fbmFractalSettings.amplitude},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = FbmFractalType.Styles.persistence.text, Value = fbmFractalSettings.persistence},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = FbmFractalType.Styles.frequency.text, Value = fbmFractalSettings.frequency},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = FbmFractalType.Styles.lacunarity.text, Value = fbmFractalSettings.lacunarity},
+                        new TerrainToolsAnalytics.BrushParameter<bool>{Name = FbmFractalType.Styles.domainWarpSettings.text, Value = fbmFractalSettings.warpEnabled},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = FbmFractalType.Styles.warpIterations.text, Value = fbmFractalSettings.warpIterations},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = FbmFractalType.Styles.warpStrength.text, Value = fbmFractalSettings.warpStrength},
+                        new TerrainToolsAnalytics.BrushParameter<Vector4>{Name = FbmFractalType.Styles.warpOffsets.text, Value = fbmFractalSettings.warpOffsets},
+                     });
+                    break;
+                case "Strata":
+                    StrataFractalType.StrataFractalInput strataFractalSettings = (StrataFractalType.StrataFractalInput)fractalType.FromSerializedString(fractalTypeParams.stringValue);
+                    m_AnalyticsData.AddRange(new TerrainToolsAnalytics.IBrushParameter[]{
+                        
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = StrataFractalType.Styles.octaves.text, Value = strataFractalSettings.octaves},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = StrataFractalType.Styles.amplitude.text, Value = strataFractalSettings.amplitude},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = StrataFractalType.Styles.persistence.text, Value = strataFractalSettings.persistence},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = StrataFractalType.Styles.frequency.text, Value = strataFractalSettings.frequency},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = StrataFractalType.Styles.lacunarity.text, Value = strataFractalSettings.lacunarity},
+                        new TerrainToolsAnalytics.BrushParameter<bool>{Name = StrataFractalType.Styles.domainWarpSettings.text, Value = strataFractalSettings.warpEnabled},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = StrataFractalType.Styles.warpIterations.text, Value = strataFractalSettings.warpIterations},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = StrataFractalType.Styles.warpStrength.text, Value = strataFractalSettings.warpStrength},
+                        new TerrainToolsAnalytics.BrushParameter<Vector4>{Name = StrataFractalType.Styles.warpOffsets.text, Value = strataFractalSettings.warpOffsets},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = StrataFractalType.Styles.strataOffset.text, Value = strataFractalSettings.strataOffset},
+                        new TerrainToolsAnalytics.BrushParameter<float>{Name = StrataFractalType.Styles.strataScale.text, Value = strataFractalSettings.strataScale},
+                     });
+                    break;
+                case "None":
+                default:
+                    break;
+            }
+
+            return m_AnalyticsData.ToArray();
+        }
+        #endregion
     }
 }

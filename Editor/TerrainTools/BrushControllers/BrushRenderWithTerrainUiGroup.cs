@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.Experimental.TerrainAPI;
 
@@ -32,7 +31,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_BrushTexture = brushTexture;
 		}
 
-#region Brush Transform
+		#region Brush Transform
 		public virtual bool CalculateBrushTransform(Terrain terrain, Vector2 uv, float size, float rotation, out BrushTransform brushTransform)
 		{
 			if(m_UiGroup.ScatterBrushStamp(ref terrain, ref uv))
@@ -56,16 +55,16 @@ namespace UnityEditor.Experimental.TerrainAPI
 		{
 			return CalculateBrushTransform(terrain, uv, brushSize, brushRotation, out brushTransform);
 		}
-#endregion
+		#endregion
 
-#region Material Set-up
+		#region Material Set-up
 		public void SetupTerrainToolMaterialProperties(PaintContext paintContext, BrushTransform brushTransform, Material material)
 		{
-            TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushTransform, material);
+			Utility.SetupMaterialForPainting(paintContext, brushTransform, material);
 		}
-#endregion
+		#endregion
 
-#region Rendering
+		#region Rendering
 		public void RenderBrush(PaintContext paintContext, Material material, int pass)
 		{
 			Texture sourceTexture = paintContext.sourceRenderTexture;
@@ -73,9 +72,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             Graphics.Blit(sourceTexture, destinationTexture, material, pass);
 		}
-#endregion
+		#endregion
 
-#region Texture Acquisition
+		#region Texture Acquisition
 		public PaintContext AcquireHeightmap(bool writable, Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
 		{
 			m_WriteToHeightmap = writable;
@@ -102,10 +101,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 			m_WriteToHoles = writable;
 #if UNITY_2019_3_OR_NEWER
 			m_HolesContext = TerrainPaintUtility.BeginPaintHoles(terrain, boundsInTerrainSpace, extraBorderPixels);
-			return m_HolesContext;
-#else
-			return null;
 #endif
+
+			return m_HolesContext;
 		}
 
 		public void Release(PaintContext paintContext)
@@ -157,9 +155,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 			}
 #endif
 		}
-#endregion
+		#endregion
 
-#region IDisposable
+		#region IDisposable
 		public void Dispose()
 		{
 			if(m_HeightmapContext != null)
@@ -177,7 +175,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 				Release(m_TextureContext);
 			}
 		}
-#endregion
+		#endregion
 	}
 	
 	public class BrushRenderPreviewWithTerrainUiGroup : BrushRenderWithTerrainUiGroup, IBrushRenderPreviewWithTerrain
@@ -186,20 +184,20 @@ namespace UnityEditor.Experimental.TerrainAPI
 		{
 		}
 		
-#region Brush Transform
+		#region Brush Transform
 		public override bool CalculateBrushTransform(Terrain terrain, Vector2 uv, float size, float rotation, out BrushTransform brushTransform)
 		{
 			// TODO: Remove this method and replace the preview with a radius effect and scatter at the correct position...
 			brushTransform = TerrainPaintUtility.CalculateBrushTransform(terrain, uv, size, rotation);
 			return true;
 		}
-#endregion
+		#endregion
 		
-#region Rendering
+		#region Rendering
 		public void RenderBrushPreview(PaintContext paintContext, TerrainPaintUtilityEditor.BrushPreview previewTexture, BrushTransform brushTransform, Material material, int pass)
 		{
 			TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, previewTexture, brushTexture, brushTransform, material, pass);
 		}
-#endregion
+		#endregion
 	}
 }

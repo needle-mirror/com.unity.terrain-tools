@@ -1,9 +1,6 @@
 using UnityEngine;
 using UnityEditorInternal;
 using System;
-using System.Linq;
-using System.Reflection;
-using System.Collections.Generic;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -36,67 +33,9 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
         
-        private static Type[] s_filterTypes;
-        private static GUIContent[] s_displayNames;
-        private static string[] s_paths;
         public SerializedObject serializedFilterStack
         {
-            get { return m_serializedObject; }
-        }
-
-        static FilterStackView()
-        {
-            var gatheredFilterTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(
-                asm =>
-                {
-                    Type[] asmTypes = null;
-                    List< Type > types = null;
-
-                    try
-                    {
-                        asmTypes = asm.GetTypes();
-                        var whereTypes = asmTypes.Where( t =>
-                            {
-                                return t != typeof(Filter) && t.BaseType == typeof(Filter);
-                            } );
-                        
-                        if( whereTypes != null )
-                        {
-                            types = new List< Type >( whereTypes );
-                        }
-                    }
-                    catch( Exception )
-                    {
-                        asmTypes = null;
-                        types = null;
-                    }
-
-                    return types == null ? new List< Type >() : types;
-                }
-            );
-
-            List<Type> filterTypes = gatheredFilterTypes.ToList();
-
-            List<string> paths = new List<string>();
-            List<GUIContent> displayNames = new List<GUIContent>();
-
-            for(int i = 0; i < filterTypes.Count; ++i)
-            {
-                Type filterType = filterTypes[i];
-                Filter tempFilter = ( Filter )ScriptableObject.CreateInstance(filterType);
-                string path = tempFilter.GetDisplayName();
-                string toolTip = tempFilter.GetToolTip();
-
-                int separatorIndex = path.LastIndexOf("/");
-                separatorIndex = Mathf.Max(0, separatorIndex);
-
-                paths.Add(path);
-                displayNames.Add(new GUIContent(path.Substring(separatorIndex, path.Length - separatorIndex), toolTip));
-            }
-
-            s_paths = paths.ToArray();
-            s_displayNames = displayNames.ToArray();
-            s_filterTypes = filterTypes.ToArray();
+            get { return m_SerializedObject; }
         }
 
         /*===========================================================================================
@@ -105,21 +44,28 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         ===========================================================================================*/
 
-        private ReorderableList m_reorderableList;
-        private SerializedObject m_serializedObject;
-        private SerializedProperty m_filtersProperty;
-        private FilterStack m_filterStack;
-        private GenericMenu m_contextMenu;
-        private GUIContent m_label;
-        private bool m_dragging;
+        private ReorderableList     m_ReorderableList;
+        private SerializedObject    m_SerializedObject;
+        private SerializedProperty  m_FiltersProperty;
+        private FilterStack         m_FilterStack;
+        private GenericMenu         m_ContextMenu;
+        private GUIContent          m_Label;
+        private FilterContext       m_FilterContext;
+        private bool                m_Dragging;
 
+        public FilterContext FilterContext
+        {
+            get => m_FilterContext;
+            set => m_FilterContext = value;
+        }
+        
         public FilterStackView( GUIContent label, SerializedObject serializedFilterStackObject )
         {
-            m_label = label;
-            m_serializedObject = serializedFilterStackObject;
-            m_filterStack = serializedFilterStackObject.targetObject as FilterStack;
-            m_filtersProperty = serializedFilterStackObject.FindProperty( "filters" );
-            m_reorderableList = new ReorderableList( serializedFilterStackObject, m_filtersProperty, true, true, true, true );
+            m_Label = label;
+            m_SerializedObject = serializedFilterStackObject;
+            m_FilterStack = serializedFilterStackObject.targetObject as FilterStack;
+            m_FiltersProperty = serializedFilterStackObject.FindProperty( "filters" );
+            m_ReorderableList = new ReorderableList( serializedFilterStackObject, m_FiltersProperty, true, true, true, true );
 
             Init();
             SetupCallbacks();
@@ -127,34 +73,28 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         private void Init()
         {
-            m_contextMenu = new GenericMenu();
+            m_ContextMenu = new GenericMenu();
 
-            string[] paths = s_paths;
-            Type[] filterTypes = s_filterTypes;
-
-            for(int i = 0; i < filterTypes.Length; ++i)
+            var count = FilterUtility.GetFilterTypeCount();
+            for(int i = 0; i < count; ++i)
             {
-                Type filterType = filterTypes[i];
-                string path = paths[ i ];
-
-                int separatorIndex = path.LastIndexOf("/");
-                separatorIndex = Mathf.Max(0, separatorIndex);
-
-                m_contextMenu.AddItem( new GUIContent(path), false, () => AddFilter( filterType ) );
+                Type filterType = FilterUtility.GetFilterType(i);
+                string path = FilterUtility.GetFilterPath(i);
+                m_ContextMenu.AddItem( new GUIContent(path), false, () => AddFilter( filterType ) );
             }
         }
 
         private void SetupCallbacks()
         {
             // setup the callbacks
-            m_reorderableList.drawHeaderCallback = DrawHeaderCB;
-            m_reorderableList.drawElementCallback = DrawElementCB;
-            m_reorderableList.elementHeightCallback = ElementHeightCB;
-            m_reorderableList.onAddCallback = AddCB;
-            m_reorderableList.onRemoveCallback = RemoveFilter;
+            m_ReorderableList.drawHeaderCallback = DrawHeaderCB;
+            m_ReorderableList.drawElementCallback = DrawElementCB;
+            m_ReorderableList.elementHeightCallback = ElementHeightCB;
+            m_ReorderableList.onAddCallback = AddCB;
+            m_ReorderableList.onRemoveCallback = RemoveFilter;
             // need this line because there is a bug in editor source. ReorderableList.cs : 708 - 709
 #if UNITY_2019_2_OR_NEWER
-            m_reorderableList.onMouseDragCallback = MouseDragCB;
+            m_ReorderableList.onMouseDragCallback = MouseDragCB;
 #endif
         }
 
@@ -162,54 +102,37 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             Init();
 
-            m_serializedObject.ApplyModifiedProperties();
-            m_serializedObject.Update();
+            m_SerializedObject.ApplyModifiedProperties();
+            m_SerializedObject.Update();
 
-            m_reorderableList.DoLayoutList();
+            m_ReorderableList.DoLayoutList();
             
-            m_serializedObject.ApplyModifiedProperties();
-            m_serializedObject.Update();
+            m_SerializedObject.ApplyModifiedProperties();
+            m_SerializedObject.Update();
         }
 
-        public void OnSceneGUI2D( SceneView sceneView )
+        public void OnSceneGUI(SceneView sceneView)
         {
-            Handles.BeginGUI();
+            foreach (var filter in m_FilterStack.filters)
             {
-                if( m_reorderableList.index != -1 && m_reorderableList.index < m_filterStack.filters.Count )
+                if (filter.enabled)
                 {
-                    m_filterStack.filters[ m_reorderableList.index ].DoSceneGUI2D( sceneView );
-                }
-            }
-            Handles.EndGUI();
-        }
-
-        public void OnSceneGUI3D( SceneView sceneView )
-        {
-            if( m_reorderableList.index != -1 && m_reorderableList.index < m_filterStack.filters.Count )
-            {
-                m_filterStack.filters[ m_reorderableList.index ].DoSceneGUI3D( sceneView );
-            }
-        }
-
-        public void OnSceneGUI(Terrain terrain, IBrushUIGroup brushContext) {
-            foreach (var filter in m_filterStack.filters) {
-                if (filter.enabled) {
-                    filter.OnSceneGUI(terrain, brushContext);
+                    filter.SceneGUI(sceneView, FilterContext);
                 }
             }
         }
 
         private void AddFilter(Type type)
         {
-            InsertFilter(m_filtersProperty.arraySize, type);
+            InsertFilter(m_FiltersProperty.arraySize, type);
         }
 
         private void InsertFilter(int index, Type type, bool recordFullObject = true)
         {
-            m_serializedObject.ApplyModifiedProperties();
-            m_serializedObject.Update();
+            m_SerializedObject.ApplyModifiedProperties();
+            m_SerializedObject.Update();
 
-            Undo.RegisterCompleteObjectUndo( m_filterStack, "Add Filter" );
+            Undo.RegisterCompleteObjectUndo( m_FilterStack, "Add Filter" );
 
             Filter filter = ScriptableObject.CreateInstance( type ) as Filter;
 
@@ -220,26 +143,26 @@ namespace UnityEditor.Experimental.TerrainAPI
                 Undo.RegisterCreatedObjectUndo( filter, "Add Filter" );
             }
 
-            if( EditorUtility.IsPersistent(m_filterStack) )
+            if( EditorUtility.IsPersistent(m_FilterStack) )
             {
-                AssetDatabase.AddObjectToAsset( filter, ( m_serializedObject.targetObject as FilterStack ) );
+                AssetDatabase.AddObjectToAsset( filter, ( m_SerializedObject.targetObject as FilterStack ) );
                 AssetDatabase.ImportAsset( AssetDatabase.GetAssetPath( filter ) );
             }
 
-            m_filtersProperty.arraySize++;
-            var filterProp = m_filtersProperty.GetArrayElementAtIndex( index );
+            m_FiltersProperty.arraySize++;
+            var filterProp = m_FiltersProperty.GetArrayElementAtIndex( index );
             filterProp.objectReferenceValue = filter;
 
-            m_serializedObject.ApplyModifiedProperties();
-            m_serializedObject.Update();
+            m_SerializedObject.ApplyModifiedProperties();
+            m_SerializedObject.Update();
 
-            if( EditorUtility.IsPersistent(m_filterStack) )
+            if( EditorUtility.IsPersistent(m_FilterStack) )
             {
-                EditorUtility.SetDirty(m_filterStack);
+                EditorUtility.SetDirty(m_FilterStack);
                 AssetDatabase.SaveAssets();
             }
 
-            m_reorderableList.index = index;
+            m_ReorderableList.index = index;
         }
 
         void RemoveFilter( ReorderableList list )
@@ -249,29 +172,29 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         void INTERNAL_RemoveFilter( int index, ReorderableList list, bool recordFullObject = true )
         {
-            m_serializedObject.ApplyModifiedProperties();
-            m_serializedObject.Update();
+            m_SerializedObject.ApplyModifiedProperties();
+            m_SerializedObject.Update();
 
             if(recordFullObject)
             {
-                Undo.RegisterCompleteObjectUndo( m_filterStack, "Remove Filter" );
+                Undo.RegisterCompleteObjectUndo( m_FilterStack, "Remove Filter" );
             }
 
-            var prop = m_filtersProperty.GetArrayElementAtIndex( index );
+            var prop = m_FiltersProperty.GetArrayElementAtIndex( index );
             var filter = prop.objectReferenceValue;
 
             prop.objectReferenceValue = null;
 
-            m_filtersProperty.DeleteArrayElementAtIndex( index );
+            m_FiltersProperty.DeleteArrayElementAtIndex( index );
 
-            m_serializedObject.ApplyModifiedProperties();
-            m_serializedObject.Update();
+            m_SerializedObject.ApplyModifiedProperties();
+            m_SerializedObject.Update();
 
             Undo.DestroyObjectImmediate( filter );
 
-            if( EditorUtility.IsPersistent( m_filterStack ) )
+            if( EditorUtility.IsPersistent( m_FilterStack ) )
             {
-                EditorUtility.SetDirty( m_filterStack );
+                EditorUtility.SetDirty( m_FilterStack );
                 AssetDatabase.SaveAssets();
             }
         }
@@ -280,17 +203,17 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             Rect labelRect = rect;
             labelRect.width -= 60f;
-            EditorGUI.LabelField(labelRect, m_label);
+            EditorGUI.LabelField(labelRect, m_Label);
         }
 
         private float ElementHeightCB(int index)
         {
-            m_serializedObject.ApplyModifiedProperties();
-            m_serializedObject.Update();
+            m_SerializedObject.ApplyModifiedProperties();
+            m_SerializedObject.Update();
 
             Filter filter = GetFilterAtIndex( index );
 
-            if(filter == null || ( m_dragging && m_reorderableList.index == index ) )
+            if(filter == null || ( m_Dragging && m_ReorderableList.index == index ) )
             {
                 return EditorGUIUtility.singleLineHeight * 2;
             }
@@ -306,7 +229,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             float labelWidth = 80f;
             float iconSize = 14f;
 
-            bool isSelected = m_reorderableList.index == index;
+            bool isSelected = m_ReorderableList.index == index;
 
             Color bgColor;
 
@@ -357,17 +280,12 @@ namespace UnityEditor.Experimental.TerrainAPI
             totalRect.xMin -= 20f;
             totalRect.xMax += 4f;
             
-            bool containsMouse = false;
-
-            if(totalRect.Contains(Event.current.mousePosition))
-            {
-                containsMouse = true;
-            }
+            bool containsMouse = totalRect.Contains(Event.current.mousePosition);
 
             // modify currently selected element if mouse down in this elements GUI rect
             if(containsMouse && Event.current.type == EventType.MouseDown)
             {
-                m_reorderableList.index = index;
+                m_ReorderableList.index = index;
             }
 
             // draw list element separator
@@ -400,10 +318,10 @@ namespace UnityEditor.Experimental.TerrainAPI
             Rect moveRect = new Rect( totalRect.xMin + paddingH, totalRect.yMin + paddingV, iconSize, iconSize );
             Rect enabledRect = new Rect( moveRect.xMax + paddingH, moveRect.yMin, iconSize, iconSize );
             Rect elementRect = new Rect( enabledRect.xMax + paddingH,
-                                         enabledRect.yMin,
-                                         totalRect.xMax - ( enabledRect.xMax + paddingH ),
-                                         totalRect.height - paddingV * 2);
-            Rect dropdownRect = new Rect( enabledRect.xMax + paddingH, moveRect.yMin, labelWidth, EditorGUIUtility.singleLineHeight );
+                enabledRect.yMin,
+                totalRect.xMax - ( enabledRect.xMax + paddingH ),
+                totalRect.height - paddingV * 2);
+            Rect labelRect = new Rect( enabledRect.xMax + paddingH, moveRect.yMin, labelWidth, EditorGUIUtility.singleLineHeight );
             Rect removeRect = new Rect( elementRect.xMax - iconSize - paddingH, moveRect.yMin, iconSize, iconSize );
 
             // draw move handle rect
@@ -418,13 +336,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                 // show eye for toggling enabled state of the filter
                 if(GUI.Button(enabledRect, Styles.GetEyeTexture(filter.enabled), GUIStyle.none))
                 {
-                    // m_filterStack.filters[index].enabled = !m_filterStack.filters[index].enabled;
                     Undo.RecordObject( filter, "Toggle Filter Enable" );
                     filter.enabled = !filter.enabled;
 
-                    if(EditorUtility.IsPersistent(m_filterStack))
+                    if(EditorUtility.IsPersistent(m_FilterStack))
                     {
-                        EditorUtility.SetDirty(m_filterStack);
+                        EditorUtility.SetDirty(m_FilterStack);
                         AssetDatabase.SaveAssets();
                     }
                 }
@@ -434,24 +351,24 @@ namespace UnityEditor.Experimental.TerrainAPI
             // update dragging state
             if(containsMouse && isSelected)
             {
-                if (Event.current.type == EventType.MouseDrag && !m_dragging && isFocused)
+                if (Event.current.type == EventType.MouseDrag && !m_Dragging && isFocused)
                 {
-                    m_dragging = true;
-                    m_reorderableList.index = index;
+                    m_Dragging = true;
+                    m_ReorderableList.index = index;
                 }
             }
 
-            if(m_dragging)
+            if(m_Dragging)
             {
                 if(Event.current.type == EventType.MouseUp)
                 {
-                    m_dragging = false;
+                    m_Dragging = false;
                 }
             }
 
-            using( new EditorGUI.DisabledScope( !m_filterStack.filters[index].enabled || (m_dragging && m_reorderableList.index == index) ) )
+            using( new EditorGUI.DisabledScope( !m_FilterStack.filters[index].enabled || (m_Dragging && m_ReorderableList.index == index) ) )
             {
-                int selected = GetFilterIndex(filter.GetDisplayName());
+                int selected = FilterUtility.GetFilterIndex(filter.GetDisplayName());
                 
                 if(selected < 0)
                 {
@@ -459,29 +376,27 @@ namespace UnityEditor.Experimental.TerrainAPI
                     Debug.Log($"Could not find correct filter type for: {filter.GetDisplayName()}. Defaulting to first filter type");
                 }
 
-                EditorGUI.LabelField(dropdownRect, s_displayNames[selected]);
+                EditorGUI.LabelField(labelRect, FilterUtility.GetDisplayName(selected));
 
-                if(!m_dragging)
+                //if(!m_dragging)
                 {
-                    Rect filterRect = new Rect( dropdownRect.xMax + paddingH, dropdownRect.yMin, removeRect.xMin - dropdownRect.xMax - paddingH * 2, elementRect.height );
+                    Rect filterRect = new Rect( labelRect.xMax + paddingH, labelRect.yMin, removeRect.xMin - labelRect.xMax - paddingH * 2, elementRect.height );
                     
                     GUI.color = prevColor;
                     Undo.RecordObject(filter, "Filter Changed");
 
                     EditorGUI.BeginChangeCheck();
-
-                    filter.DoGUI( filterRect );
-
+                    filter.DrawGUI( filterRect, m_FilterContext );
                     changed |= EditorGUI.EndChangeCheck();
                 }
             }
 
             if( changed )
             {
-                m_serializedObject.ApplyModifiedProperties();
-                m_serializedObject.Update();
+                m_SerializedObject.ApplyModifiedProperties();
+                m_SerializedObject.Update();
 
-                onChanged?.Invoke( m_serializedObject.targetObject as FilterStack );
+                onChanged?.Invoke( m_SerializedObject.targetObject as FilterStack );
             }
 
             GUI.color = prevColor;
@@ -489,20 +404,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         private Filter GetFilterAtIndex(int index)
         {
-            return m_filtersProperty.GetArrayElementAtIndex( index ).objectReferenceValue as Filter;
-        }
-
-        private int GetFilterIndex(string name)
-        {
-            for(int i = 0; i < s_paths.Length; ++i)
-            {
-                if(name.CompareTo(s_paths[i]) == 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
+            return m_FiltersProperty.GetArrayElementAtIndex( index ).objectReferenceValue as Filter;
         }
 
         private void MouseDragCB(ReorderableList list)
@@ -512,7 +414,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         private void AddCB(ReorderableList list)
         {
-            m_contextMenu.ShowAsContext();
+            m_ContextMenu.ShowAsContext();
         }
 
         private void OnMenuItemSelected()

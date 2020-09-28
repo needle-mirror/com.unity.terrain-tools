@@ -106,7 +106,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
 
                 float n = noise_StrataBillow( pos, GetStrataFractalInput() );
 
-                return n;
+                return PackHeightmap(n);
             }
 
             ENDHLSL
@@ -146,7 +146,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
 
                 float n = noise_StrataBillow( pos, GetStrataFractalInput() );
 
-                return n;
+                return PackHeightmap(n);
             }
 
             ENDHLSL
@@ -214,7 +214,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
 
                 float n = noise_StrataPerlin( pos, GetStrataFractalInput() );
 
-                return n;
+                return PackHeightmap(n);
             }
 
             ENDHLSL
@@ -254,7 +254,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
 
                 float n = noise_StrataPerlin( pos, GetStrataFractalInput() );
 
-                return n;
+                return PackHeightmap(n);
             }
 
             ENDHLSL
@@ -322,7 +322,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
 
                 float n = noise_StrataRidge( pos, GetStrataFractalInput() );
 
-                return n;
+                return PackHeightmap(n);
             }
 
             ENDHLSL
@@ -362,7 +362,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
 
                 float n = noise_StrataRidge( pos, GetStrataFractalInput() );
 
-                return n;
+                return PackHeightmap(n);
             }
 
             ENDHLSL
@@ -430,7 +430,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
 
                 float n = noise_StrataValue( pos, GetStrataFractalInput() );
 
-                return n;
+                return PackHeightmap(n);
             }
 
             ENDHLSL
@@ -470,7 +470,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
 
                 float n = noise_StrataValue( pos, GetStrataFractalInput() );
 
-                return n;
+                return PackHeightmap(n);
             }
 
             ENDHLSL
@@ -538,7 +538,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
 
                 float n = noise_StrataVoronoi( pos, GetStrataFractalInput() );
 
-                return n;
+                return PackHeightmap(n);
             }
 
             ENDHLSL
@@ -578,7 +578,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
 
                 float n = noise_StrataVoronoi( pos, GetStrataFractalInput() );
 
-                return n;
+                return PackHeightmap(n);
             }
 
             ENDHLSL

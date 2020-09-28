@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -50,12 +51,6 @@ namespace UnityEditor.Experimental.TerrainAPI
         // private FilterStack m_filterStack;
         // private SerializedObject m_serializedFilterStack;
         // private bool m_showFilterStack;
-
-        private RenderTexture m_previewRT;
-        public RenderTexture previewRT
-        {
-            get { return m_previewRT; }
-        }
 
         /// <summary>
         /// The current NoiseSettings object that is associated with this instance of NoiseSettingsGUI.
@@ -138,9 +133,9 @@ namespace UnityEditor.Experimental.TerrainAPI
             EditorGUILayout.BeginHorizontal();
             {
                 EditorGUILayout.PrefixLabel(Styles.flipScale);
-                flipScaleX.boolValue = TerrainToolGUIHelper.ToggleButton(Styles.flipScaleX, flipScaleX.boolValue);
-                flipScaleY.boolValue = TerrainToolGUIHelper.ToggleButton(Styles.flipScaleY, flipScaleY.boolValue);
-                flipScaleZ.boolValue = TerrainToolGUIHelper.ToggleButton(Styles.flipScaleZ, flipScaleZ.boolValue);
+                flipScaleX.boolValue = GUILayout.Toggle(flipScaleX.boolValue, Styles.flipScaleX, GUI.skin.button);
+                flipScaleY.boolValue = GUILayout.Toggle(flipScaleY.boolValue, Styles.flipScaleY, GUI.skin.button);
+                flipScaleZ.boolValue = GUILayout.Toggle(flipScaleZ.boolValue, Styles.flipScaleZ, GUI.skin.button);
             }
             EditorGUILayout.EndHorizontal();
         }
@@ -285,34 +280,27 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             if ( Event.current.type == EventType.Repaint )
             {
+                RenderTexture prevActive = RenderTexture.active;
+
                 // create preview RT here and keep until the next Repaint
-                if( m_previewRT != null )
-                {
-                    RenderTexture.ReleaseTemporary( m_previewRT );
-                }
+                var previewRT = RenderTexture.GetTemporary(512, 512, 0, NoiseUtils.previewFormat);
 
                 NoiseSettings noiseSettings = serializedNoise.targetObject as NoiseSettings;
-
-                m_previewRT = RenderTexture.GetTemporary(512, 512, 0, RenderTextureFormat.ARGB32);
-                RenderTexture tempRT = RenderTexture.GetTemporary(512, 512, 0, RenderTextureFormat.RFloat);
-
-                RenderTexture prevActive = RenderTexture.active;
+                RenderTexture tempRT = RenderTexture.GetTemporary(512, 512, 0, NoiseUtils.singleChannelFormat);
                 
                 NoiseUtils.Blit2D(noiseSettings, tempRT);
-
-                NoiseUtils.BlitPreview2D(tempRT, m_previewRT);
-
+                NoiseUtils.BlitPreview2D(tempRT, previewRT);
                 RenderTexture.active = prevActive;
-
-                GUI.DrawTexture(previewRect, m_previewRT, ScaleMode.ScaleToFit, false);
+                GUI.DrawTexture(previewRect, previewRT, ScaleMode.ScaleToFit, false);
 
                 RenderTexture.ReleaseTemporary(tempRT);
+                RenderTexture.ReleaseTemporary(previewRT);
             }
 
             GUI.color = prev;
         }
 
-        static class Styles
+        public static class Styles
         {
             public static GUIContent noiseSettings = EditorGUIUtility.TrTextContent("Noise Settings:");
             public static GUIContent randomize = EditorGUIUtility.TrTextContent("Randomize");

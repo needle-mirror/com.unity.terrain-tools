@@ -190,7 +190,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return target;
         }
 
-        private static class Styles
+        internal static class Styles
         {
             public static GUIContent warpStrength = EditorGUIUtility.TrTextContent("Strength", "The overall strength of the warping effect");
             public static GUIContent warpIterations = EditorGUIUtility.TrTextContent("Iterations", "The number of warping iterations applied to the Noise");

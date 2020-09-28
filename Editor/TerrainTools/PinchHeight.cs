@@ -11,6 +11,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;              // gets interface to modify state of TerrainTools
             context.SelectPaintTool<PinchHeightTool>();                                                  // set active tool
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Pinch Tool");
         }
 #endif
 
@@ -24,6 +25,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
+                    LoadSettings();
                     m_commonUI = new DefaultBrushUIGroup( "PinchTool" );
                     m_commonUI.OnEnterToolMode();
                 }
@@ -117,15 +119,9 @@ namespace UnityEditor.Experimental.TerrainAPI
                 }
             }
         }
-        bool m_initialized = false;
+
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-
-            if (!m_initialized)
-            {
-                LoadSettings();
-                m_initialized = true;
-            }
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
@@ -139,8 +135,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                     EditorGUILayout.BeginHorizontal();
                     {
                         EditorGUILayout.PrefixLabel(Styles.targets);
-                        m_AffectMaterials = TerrainToolGUIHelper.ToggleButton(Styles.materials, m_AffectMaterials);
-                        m_AffectHeight = TerrainToolGUIHelper.ToggleButton(Styles.heightmap, m_AffectHeight);
+                        m_AffectMaterials = GUILayout.Toggle(m_AffectMaterials, Styles.materials, GUI.skin.button);
+                        m_AffectHeight = GUILayout.Toggle(m_AffectHeight, Styles.heightmap, GUI.skin.button);
                     }
                     EditorGUILayout.EndHorizontal();
 
@@ -153,17 +149,19 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 SaveSetting();
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
         }
+
         private void Reset()
         {
             m_PinchAmount = 5.0f;
             m_AffectMaterials = true;
             m_AffectHeight = true;
-
         }
 
-    public void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, float pinchAmount, Texture brushTexture, BrushTransform brushXform) {
+        public void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, float pinchAmount, Texture brushTexture, BrushTransform brushXform) 
+        {
             Material mat = GetPaintMaterial();
 
             pinchAmount = Event.current.control ? -pinchAmount : pinchAmount; //TODO - use shortcut system once it supports binding modifiers
@@ -200,34 +198,28 @@ namespace UnityEditor.Experimental.TerrainAPI
                         {
                             TerrainLayer layer = terrain.terrainData.terrainLayers[i];
                             PaintContext paintContext = brushRender.AcquireTexture(true, brushXform.GetBrushXYBounds(), layer);
-
-                            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-                            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-                            fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-                            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-                            mat.SetTexture("_FilterTex", filterMaskRT);
+                            var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                            Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
 
                             paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
 
                             brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                             brushRender.RenderBrush(paintContext, mat, 0);
                             brushRender.Release(paintContext);
+                            RTUtils.Release(brushMask);
                         }
                     }
 
                     if (m_AffectHeight) {
                         PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
-
-                        Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-                        FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-                        fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-                        RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-                        mat.SetTexture("_FilterTex", filterMaskRT);
+                        var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                        Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
 
                         paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
 
                         ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, finalPinchAmount, editContext.brushTexture, brushXform);
                         brushRender.Release(paintContext);
+                        RTUtils.Release(brushMask);
                     }
                 }
             }
@@ -248,7 +240,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             EditorPrefs.SetFloat("Unity.TerrainTools.Pinch.PinchAmount", m_PinchAmount);
             EditorPrefs.SetBool("Unity.TerrainTools.Pinch.Heightmap", m_AffectHeight);
             EditorPrefs.SetBool("Unity.TerrainTools.Pinch.Materials", m_AffectMaterials);
-
         }
 
         private void LoadSettings()
@@ -256,7 +247,15 @@ namespace UnityEditor.Experimental.TerrainAPI
             m_PinchAmount = EditorPrefs.GetFloat("Unity.TerrainTools.Pinch.PinchAmount", 5.0f);
             m_AffectHeight = EditorPrefs.GetBool("Unity.TerrainTools.Pinch.Heightmap", true);
             m_AffectMaterials = EditorPrefs.GetBool("Unity.TerrainTools.Pinch.Materials", true);
-
         }
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.pinchAmount.text, Value = m_PinchAmount},
+            new TerrainToolsAnalytics.BrushParameter<bool>{Name = Styles.materials.text, Value = m_AffectHeight},
+            new TerrainToolsAnalytics.BrushParameter<bool>{Name = Styles.heightmap.text, Value = m_AffectMaterials},
+        
+        };
+        #endregion
     }
 }

@@ -2,6 +2,7 @@
 using System.Text;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using UnityEngine.Experimental.TerrainAPI;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -50,8 +51,28 @@ namespace UnityEditor.Experimental.TerrainAPI
             base.OnEnterToolMode(shortcutHandler);
             
             shortcutHandler.AddActions(BrushShortcutType.Size, BeginAdjustingSize, EndAdjustingSize);
+           
+            float minBrushWorldSize, maxBrushWorldSize;
+            float mininumTerrainSize = float.MaxValue;
+            int maxTextureResolution = 0;
+            foreach (var terrain in Terrain.activeTerrains)
+            {
+                var terrainData = terrain.terrainData;
+                maxTextureResolution = Mathf.Max(maxTextureResolution, terrainData.heightmapResolution);
+                mininumTerrainSize = Mathf.Min(mininumTerrainSize, terrainData.size.x, terrainData.size.z);
+            }
+            // caculate the minimum / maximum brush ranges from a set of selected terrains
+            TerrainPaintUtility.GetBrushWorldSizeLimits(out minBrushWorldSize, out maxBrushWorldSize, mininumTerrainSize, maxTextureResolution);
+            m_BrushSize.shouldClampMax = false;
+            m_BrushSize.shouldClampMin = false;
+            m_BrushSize.maxClamp = maxBrushWorldSize;
+            m_BrushSize.minClamp = minBrushWorldSize;
+            m_BrushSize.shouldClampMax = true;
+            m_BrushSize.shouldClampMin = true;
             
             m_BrushSize.value = GetEditorPrefs("TerrainBrushSize", kDefaultBrushSize);
+            m_BrushSize.minValue = GetEditorPrefs("TerrainBrushSizeMin", 0.0f);
+            m_BrushSize.maxValue = GetEditorPrefs("TerrainBrushSizeMax", 500.0f);
             //m_BrushSize.mouseSensitivity = GetEditorPrefs("TerrainBrushSizeMouseSensitivity", kDefaultMouseSensitivity);
             m_JitterHandler.jitter = GetEditorPrefs("TerrainBrushSizeJitter", 0.0f);
         }
@@ -60,10 +81,12 @@ namespace UnityEditor.Experimental.TerrainAPI
             SetEditorPrefs("TerrainBrushSize", m_BrushSize.value);
             SetEditorPrefs("TerrainBrushSizeMouseSensitivity", m_BrushSize.mouseSensitivity);
             SetEditorPrefs("TerrainBrushSizeJitter", m_JitterHandler.jitter);
-
+            SetEditorPrefs("TerrainBrushSizeMin", m_BrushSize.minValue);
+            SetEditorPrefs("TerrainBrushSizeMax", m_BrushSize.maxValue);
             shortcutHandler.RemoveActions(BrushShortcutType.Size);
 
             base.OnExitToolMode(shortcutHandler);
+            
         }
 
         public override void OnSceneGUI(Event currentEvent, int controlId, Terrain terrain, IOnSceneGUI editContext) {

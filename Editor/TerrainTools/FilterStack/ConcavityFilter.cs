@@ -1,8 +1,11 @@
 ﻿using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.Experimental.TerrainAPI {
+namespace UnityEditor.Experimental.TerrainAPI
+{
     [System.Serializable]
-    public class ConcavityFilter : Filter {
+    public class ConcavityFilter : Filter
+    {
         static readonly int RemapTexWidth = 1024;
 
         [SerializeField]
@@ -17,61 +20,90 @@ namespace UnityEditor.Experimental.TerrainAPI {
         private AnimationCurve m_ConcavityRemapCurve = new AnimationCurve(new Keyframe(0, 0), new Keyframe(1, 1));
         Texture2D m_ConcavityRemapTex = null;
 
-        public enum ConcavityMode {
+        public enum ConcavityMode
+        {
             Recessed = 0,
             Exposed = 1
         }
 
-        Texture2D GetRemapTexture() {
-            if (m_ConcavityRemapTex == null) {
+        Texture2D GetRemapTexture()
+        {
+            if (m_ConcavityRemapTex == null)
+            {
                 m_ConcavityRemapTex = new Texture2D(RemapTexWidth, 1, TextureFormat.RFloat, false, true);
                 m_ConcavityRemapTex.wrapMode = TextureWrapMode.Clamp;
 
-                TerrainTools.Utility.AnimationCurveToRenderTexture(m_ConcavityRemapCurve, ref m_ConcavityRemapTex);
+                Utility.AnimationCurveToRenderTexture(m_ConcavityRemapCurve, ref m_ConcavityRemapTex);
             }
             
             return m_ConcavityRemapTex;
         }
 
         //Compute Shader resource helper
-        ComputeShader m_ConcavityCS = null;
-        ComputeShader GetComputeShader() {
-            if (m_ConcavityCS == null) {
+        ComputeShader m_ConcavityCS;
+        ComputeShader GetComputeShader()
+        {
+            if (m_ConcavityCS == null)
+            {
                 m_ConcavityCS = (ComputeShader)Resources.Load("Concavity");
             }
             return m_ConcavityCS;
         }
 
-        public override string GetDisplayName() {
-            return "Concavity";
-        }
-
-        public override string GetToolTip()
+        public override string GetDisplayName() => "Concavity";
+        public override string GetToolTip() => "Uses the concavity of a heightmap to mask the effect of a chosen Brush.";
+        public override bool ValidateFilter(FilterContext filterContext, out string message)
         {
-            return "Uses the concavity of a heightmap to mask the effect of a chosen Brush.";
+            message = string.Empty;
+
+            if (!SystemInfo.supportsComputeShaders)
+            {
+                message = "The current Graphics API does not support compute shaders.";
+                return false;
+            }
+
+            if (!SystemInfo.IsFormatSupported(filterContext.targetFormat, FormatUsage.LoadStore))
+            {
+                message = $"The current Graphics API does not support UAV resource access for GraphicsFormat.{filterContext.targetFormat}.";
+                return false;
+            }
+            
+            return true;
         }
 
-        public override void Eval(FilterContext fc) {
-            ComputeShader cs = GetComputeShader();
-            int kidx = cs.FindKernel("ConcavityMultiply");
+        protected override void OnEval(FilterContext fc, RenderTexture source, RenderTexture dest)
+        {
+            var desc = dest.descriptor;
+            desc.enableRandomWrite = true;
+            var sourceHandle = RTUtils.GetTempHandle(desc);
+            var destHandle = RTUtils.GetTempHandle(desc);
+            using (sourceHandle.Scoped())
+            using (destHandle.Scoped())
+            {
+                Graphics.Blit(source, sourceHandle);
+                Graphics.Blit(dest, destHandle);
 
-            Texture2D remapTex = GetRemapTexture();
+                ComputeShader cs = GetComputeShader();
+                int kidx = cs.FindKernel("ConcavityMultiply");
 
-            cs.SetTexture(kidx, "In_BaseMaskTex", fc.sourceRenderTexture);
-            cs.SetTexture(kidx, "In_HeightTex", fc.renderTextureCollection["heightMap"]);
-            cs.SetTexture(kidx, "OutputTex", fc.destinationRenderTexture);
-            cs.SetTexture(kidx, "RemapTex", remapTex);
-            cs.SetInt("RemapTexRes", remapTex.width);
-            cs.SetFloat("EffectStrength", m_ConcavityStrength);
-            cs.SetVector("TextureResolution", new Vector4(fc.sourceRenderTexture.width, fc.sourceRenderTexture.height, m_ConcavityEpsilon, m_ConcavityScalar));
+                Texture2D remapTex = GetRemapTexture();
 
-            //using 1s here so we don't need a multiple-of-8 texture in the compute shader (probably not optimal?)
-            cs.Dispatch(kidx, fc.sourceRenderTexture.width, fc.sourceRenderTexture.height, 1);
+                cs.SetTexture(kidx, "In_BaseMaskTex", sourceHandle);
+                cs.SetTexture(kidx, "In_HeightTex", fc.rtHandleCollection[FilterContext.Keywords.Heightmap]);
+                cs.SetTexture(kidx, "OutputTex", destHandle);
+                cs.SetTexture(kidx, "RemapTex", remapTex);
+                cs.SetInt("RemapTexRes", remapTex.width);
+                cs.SetFloat("EffectStrength", m_ConcavityStrength);
+                cs.SetVector("TextureResolution", new Vector4(source.width, source.height, m_ConcavityEpsilon, m_ConcavityScalar));
+                cs.Dispatch(kidx, source.width, source.height, 1);
+                
+                Graphics.Blit(destHandle, dest);
+            }
         }
 
-        public override void DoGUI(Rect rect) {
-
-            //Precaculate dimensions
+        protected override void OnDrawGUI(Rect rect, FilterContext filterContext)
+        {
+            //Calculate dimensions
             float epsilonLabelWidth = GUI.skin.label.CalcSize(epsilonLabel).x;
             float modeLabelWidth = GUI.skin.label.CalcSize(modeLabel).x;
             float strengthLabelWidth = GUI.skin.label.CalcSize(strengthLabel).x;
@@ -81,6 +113,8 @@ namespace UnityEditor.Experimental.TerrainAPI {
             //Concavity Mode Drop Down
             Rect modeRect = new Rect(rect.x + labelWidth, rect.y, rect.width - labelWidth, EditorGUIUtility.singleLineHeight);
             ConcavityMode mode = m_ConcavityScalar > 0.0f ? ConcavityMode.Recessed : ConcavityMode.Exposed;
+            Rect modeLabelRect = new Rect(rect.x, rect.y, labelWidth, EditorGUIUtility.singleLineHeight);
+            GUI.Label(modeLabelRect, modeLabel);
             switch(EditorGUI.EnumPopup(modeRect, mode)) {
                 case ConcavityMode.Recessed:
                     m_ConcavityScalar = 1.0f;
@@ -109,14 +143,14 @@ namespace UnityEditor.Experimental.TerrainAPI {
 
             EditorGUI.BeginChangeCheck();
             m_ConcavityRemapCurve = EditorGUI.CurveField(curveRect, m_ConcavityRemapCurve);
-            if(EditorGUI.EndChangeCheck()) {
-                Vector2 range = TerrainTools.Utility.AnimationCurveToRenderTexture(m_ConcavityRemapCurve, ref m_ConcavityRemapTex);
+            if(EditorGUI.EndChangeCheck())
+            {
+                var tex = GetRemapTexture();
+                Utility.AnimationCurveToRenderTexture(m_ConcavityRemapCurve, ref tex);
             }
         }
 
-        public override float GetElementHeight() {
-            return EditorGUIUtility.singleLineHeight * 5;
-        }
+        public override float GetElementHeight() => EditorGUIUtility.singleLineHeight * 5;
 
         private static GUIContent strengthLabel = EditorGUIUtility.TrTextContent("Strength", "Controls the strength of the masking effect.");
         private static GUIContent epsilonLabel = EditorGUIUtility.TrTextContent("Feature Size", "Specifies the scale of Terrain features that affect the mask. This determines the size of features to which to apply the effect.");

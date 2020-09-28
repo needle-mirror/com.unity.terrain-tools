@@ -7,10 +7,11 @@ namespace UnityEditor.Experimental.TerrainAPI
     public class ContrastTool : TerrainPaintTool<ContrastTool>
     {
 #if UNITY_2019_1_OR_NEWER
-        [Shortcut("Terrain/Select Constrast Tool", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Select Contrast Tool", typeof(TerrainToolShortcutContext))]
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             context.SelectPaintTool<ContrastTool>();
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Contrast Tool");
         }
 #endif
 
@@ -22,7 +23,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "ContrastTool" );
+                    LoadSettings();
+                    m_commonUI = new DefaultBrushUIGroup( "ContrastTool", UpdateAnalyticParameters );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -108,14 +110,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         bool m_ShowControls = true;
-        bool m_initialized = false;
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            if (!m_initialized)
-            {
-                LoadSettings();
-                m_initialized = true;
-            }
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
@@ -131,6 +127,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 SaveSetting();
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
         }
 
@@ -160,15 +157,11 @@ namespace UnityEditor.Experimental.TerrainAPI
                     PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
 
                     Material mat = GetPaintMaterial();
-                    Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-                    FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-                    fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-                    RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-                    mat.SetTexture("_FilterTex", filterMaskRT);
-
+                    var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                    Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                     paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
-
                     ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, editContext.brushTexture, brushXform);
+                    RTUtils.Release(brushMask);
                 }
             }
             return false;
@@ -183,13 +176,17 @@ namespace UnityEditor.Experimental.TerrainAPI
         private void SaveSetting()
         {
             EditorPrefs.SetFloat("Unity.TerrainTools.Contrast.FeatureSize", m_FeatureSize);
-
         }
 
         private void LoadSettings()
         {
             m_FeatureSize = EditorPrefs.GetFloat("Unity.TerrainTools.Contrast.FeatureSize", 25.0f);
-
         }
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
+            new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.featureSize.text, Value = m_FeatureSize},
+        };
+        #endregion
     }
 }

@@ -11,6 +11,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             context.SelectPaintTool<SlopeFlattenTool>();
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Slope Flatten Tool");
         }
 #endif
 
@@ -111,21 +112,15 @@ namespace UnityEditor.Experimental.TerrainAPI
                     {
                         PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
                         Material mat = GetPaintMaterial();
-
-                        Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-                        FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-                        fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-                        RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-                        mat.SetTexture("_FilterTex", filterMaskRT);
-
+                        var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                        Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                         paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
-
                         Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, commonUI.brushSize, 0);
                         mat.SetTexture("_BrushTex", editContext.brushTexture);
                         mat.SetVector("_BrushParams", brushParams);
-                    
                         brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                         brushRender.RenderBrush(paintContext, mat, 0);
+                        RTUtils.Release(brushMask);
                     }
                 }
             }

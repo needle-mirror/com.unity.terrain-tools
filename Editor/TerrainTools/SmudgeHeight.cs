@@ -11,6 +11,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             context.SelectPaintTool<SmudgeHeightTool>();
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Smudge Tool");
         }
 #endif
 
@@ -22,7 +23,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "SmudgeTool" );
+                    LoadSettings();
+                    m_commonUI = new DefaultBrushUIGroup("SmudgeTool", UpdateAnalyticParameters);
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -98,15 +100,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         private bool m_ShowControls = true;
-        bool m_initialized = false;
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            if (!m_initialized)
-            {
-                LoadSettings();
-                m_initialized = true;
-            }
-
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
@@ -117,8 +112,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                 EditorGUILayout.BeginHorizontal("GroupBox");
                 {
                     EditorGUILayout.PrefixLabel(Styles.affect);
-                    m_AffectMaterials = TerrainToolGUIHelper.ToggleButton(Styles.alphamap, m_AffectMaterials);
-                    m_AffectHeight = TerrainToolGUIHelper.ToggleButton(Styles.heightmap, m_AffectHeight);
+                    m_AffectMaterials = GUILayout.Toggle(m_AffectMaterials, Styles.alphamap, GUI.skin.button);
+                    m_AffectHeight = GUILayout.Toggle(m_AffectHeight, Styles.heightmap, GUI.skin.button);
                 }
                 EditorGUILayout.EndHorizontal();
             }
@@ -127,6 +122,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 SaveSetting();
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
         }
 
@@ -173,15 +169,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                             if (layer == null) continue; // nothing to paint if the layer is NULL
 
                             PaintContext sampleContext = TerrainPaintUtility.BeginPaintTexture(terrain, brushXform.GetBrushXYBounds(), layer);
-
-                            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-                            FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-                            fc.renderTextureCollection.GatherRenderTextures(sampleContext.sourceRenderTexture.width, sampleContext.sourceRenderTexture.height);
-                            RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, sampleContext.sourceRenderTexture);
-                            mat.SetTexture("_FilterTex", filterMaskRT);
-
+                            var brushMask = RTUtils.GetTempHandle(sampleContext.sourceRenderTexture.width, sampleContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                            Utility.SetFilterRT(commonUI, sampleContext.sourceRenderTexture, brushMask, mat);
+                            TerrainPaintUtility.SetupTerrainToolMaterialProperties(sampleContext, brushXform, mat);
                             Graphics.Blit(sampleContext.sourceRenderTexture, sampleContext.destinationRenderTexture, mat, 0);
                             TerrainPaintUtility.EndPaintTexture(sampleContext, "Terrain Paint - Smudge Brush (Texture)");
+                            RTUtils.Release(brushMask);
                         }
                     }
 
@@ -189,16 +182,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                     if (m_AffectHeight)
                     {
                         PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
-
-                        Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-                        FilterContext fc = new FilterContext( terrain, brushPos, commonUI.brushSize, commonUI.brushRotation );
-                        fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-                        RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-                        mat.SetTexture("_FilterTex", filterMaskRT);
-
+                        var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                        Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                         TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                         Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, 0);
                         TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Smudge Brush (Height)");
+                        RTUtils.Release(brushMask);
                     }
 
                     m_PrevBrushPos = uv;
@@ -220,14 +209,19 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             EditorPrefs.SetBool("Unity.TerrainTools.Smudge.Heightmap", m_AffectHeight);
             EditorPrefs.SetBool("Unity.TerrainTools.Smudge.Materials", m_AffectMaterials);
-
         }
 
         private void LoadSettings()
         {
             m_AffectHeight = EditorPrefs.GetBool("Unity.TerrainTools.Smudge.Heightmap", true);
             m_AffectMaterials = EditorPrefs.GetBool("Unity.TerrainTools.Smudge.Materials", true);
-
         }
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
+            new TerrainToolsAnalytics.BrushParameter<bool>{Name = Styles.heightmap.text, Value = m_AffectHeight},
+            new TerrainToolsAnalytics.BrushParameter<bool>{Name = Styles.alphamap.text, Value = m_AffectMaterials},
+        };
+        #endregion
     }
 }

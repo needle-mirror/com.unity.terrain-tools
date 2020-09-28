@@ -9,7 +9,7 @@
         CGINCLUDE
 
             #include "UnityCG.cginc"
-            #include "TerrainTool.cginc"
+            #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
 
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
@@ -73,7 +73,7 @@
             float4 TwistHeight(v2f i) : SV_Target
             {
                 float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
-                float2 heightmapUV = PaintContextUVToHeightmapUV(i.pcUV);
+                float2 heightmapUV = i.pcUV;
 
                 // out of bounds multiplier
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
@@ -88,7 +88,7 @@
                 float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
                 float h = UnpackHeightmap(tex2D(_MainTex, twistedUVs.xy));
 
-                return PackHeightmap(lerp(height, h, brushStrength));
+                return PackHeightmap(lerp(height, h, saturate(brushStrength)));
             }
             ENDCG
         }

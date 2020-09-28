@@ -11,6 +11,7 @@ Shader "Hidden/TerrainEngine/PaintMaterialBrushPreview"
 
             #include "UnityCG.cginc"
             #include "TerrainPreview.cginc"
+            #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
 
             sampler2D _BrushTex;
 
@@ -27,7 +28,7 @@ Shader "Hidden/TerrainEngine/PaintMaterialBrushPreview"
             struct v2f {
                 float4 clipPosition : SV_POSITION;
                 float3 positionWorld : TEXCOORD0;
-                float3 positionWorldOrig : TEXCOORD1;
+                float3 positionObject : TEXCOORD1;
                 float2 pcPixels : TEXCOORD2;
                 float2 brushUV : TEXCOORD3;
             };
@@ -51,7 +52,7 @@ Shader "Hidden/TerrainEngine/PaintMaterialBrushPreview"
                 v2f o;
                 o.pcPixels = pcPixels;
                 o.positionWorld = positionWorld;
-                o.positionWorldOrig = positionWorld;
+                o.positionObject = positionObject;
                 o.clipPosition = UnityWorldToClipPos(positionWorld);
                 o.brushUV = brushUV;
                 return o;
@@ -61,6 +62,9 @@ Shader "Hidden/TerrainEngine/PaintMaterialBrushPreview"
             float4 frag(v2f i) : SV_Target
             {
                 float brushSample = UnpackHeightmap(tex2D(_BrushTex, i.brushUV));
+                
+                float iib = IsPcUvPartOfValidTerrainTileTexel(i.pcPixels / _PcPixelRect.zw);
+                clip(iib - .01);
 
                 // out of bounds multiplier
                 float oob = all(saturate(i.brushUV) == i.brushUV) ? 1.0f : 0.0f;

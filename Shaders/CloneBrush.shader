@@ -5,7 +5,7 @@ Shader "Hidden/TerrainTools/CloneBrush"
         _MainTex ("Texture", any) = "" {}
     }
 
-    SubShader
+        SubShader
     {
 
         ZTest Always Cull Off ZWrite Off
@@ -13,7 +13,9 @@ Shader "Hidden/TerrainTools/CloneBrush"
         CGINCLUDE
 
             #include "UnityCG.cginc"
-            #include "TerrainTool.cginc"
+		    #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
+
+            float4 _SampleUVScaleOffset;
 
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
@@ -35,6 +37,7 @@ Shader "Hidden/TerrainTools/CloneBrush"
             struct v2f {
                 float4 vertex : SV_POSITION;
                 float2 pcUV : TEXCOORD0;
+                float2 sampleUV: TEXCOORD1;
             };
 
             v2f vert(appdata_t v)
@@ -42,6 +45,7 @@ Shader "Hidden/TerrainTools/CloneBrush"
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.pcUV = v.pcUV;
+                o.sampleUV = v.pcUV.xy * _SampleUVScaleOffset.xy +_SampleUVScaleOffset.zw;
                 return o;
             }
 
@@ -58,11 +62,6 @@ Shader "Hidden/TerrainTools/CloneBrush"
                     height = height > targetHeight ? height : targetHeight;
                 }
                 return height;
-            }
-
-            float ApplyBrush(float height, float brushStrength)
-            {
-                return SmoothApply(height, brushStrength, BRUSH_TARGETHEIGHT);
             }
 
         ENDCG
@@ -88,9 +87,9 @@ Shader "Hidden/TerrainTools/CloneBrush"
                 float b = oob * UnpackHeightmap( tex2D( _BrushTex, brushUV ) ) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
 
                 float currentAlpha = tex2D(_MainTex, i.pcUV).r;
-                float sampleAlpha = tex2D(_CloneTex, i.pcUV).r;
+                float sampleAlpha = tex2D(_CloneTex, i.sampleUV).r;
 
-                return SmoothApply(currentAlpha, b * BRUSH_STRENGTH, sampleAlpha);
+                return saturate(lerp(currentAlpha, sampleAlpha, saturate(BRUSH_STRENGTH * b)));
             }
             ENDCG
         }
@@ -104,6 +103,7 @@ Shader "Hidden/TerrainTools/CloneBrush"
             #pragma fragment CloneHeightmap
 
             sampler2D _CloneTex;
+            float4 _CloneTex_TexelSize;
 
             #define HeightOffset     ( _BrushParams[ 1 ] )
             #define TerrainMaxHeight ( _BrushParams[ 2 ] )
@@ -120,10 +120,11 @@ Shader "Hidden/TerrainTools/CloneBrush"
                 // get brush mask value
                 float b = oob * UnpackHeightmap( tex2D( _BrushTex, brushUV ) ) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
 
-                float sampleHeight = UnpackHeightmap( tex2D( _CloneTex, i.pcUV ) ) + ( HeightOffset / TerrainMaxHeight );
+                // get the height value to clone
+                float sampleHeight = UnpackHeightmap( tex2D( _CloneTex, i.sampleUV ) ) + ( HeightOffset / TerrainMaxHeight );
 
-                // * 0.5f since strength in this is far more potent than other tools since its not smoothly applied to a target
-                return PackHeightmap( clamp( lerp( h, sampleHeight, BRUSH_STRENGTH * b ), 0.0f, 0.5f ) );
+                // blend the current height and the height to clone based on brush strength and mask
+                return PackHeightmap( clamp( lerp( h, sampleHeight, saturate(BRUSH_STRENGTH * b)), 0.0f, 0.5f ) );
             }
             ENDCG
         }

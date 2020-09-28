@@ -1,6 +1,6 @@
 ## Import Heightmap
 
-The **Create New Terrain** wizard has an **Import Heightmap** section, which allows you to import a RAW heightmap or a series of heightmaps for creating new Terrain. Click the checkbox on the expander menu to enable this option.
+The **Create New Terrain** wizard has an **Import Heightmap** section, which allows you to import a heightmap or a series of heightmaps for creating new Terrain. Click the checkbox on the expander menu to enable this option.
 
 ![](images/Toolbox_Create_Heightmap.png)
 
@@ -10,7 +10,15 @@ Heightmaps must be in the RAW format, and the size of each heightmap must be a p
 
 #### Global
 
-**Global** mode lets you import one heightmap for use on all Terrain tiles.
+**Global** mode lets you import one heightmap for use on all Terrain tiles. There are two options for the heightmap format.
+
+By default, you can select a single channel heightmap from the project in the Texture field. 
+
+![](images/Toolbox_Heightmap_UseTexture2D.png)
+
+The second option is to enable the **Use Raw File** checkbox, which lets you select a RAW file heightmap texture to use. 
+
+![](images/Toolbox_Heightmap_UseRawFile.png)
 
 #### Batch
 
@@ -32,7 +40,7 @@ Heightmap filenames must end with two index digits — the index along the X axi
 
 ![](images/Toolbox_Heightmap_InfoBox.png)
 
-The information box shows you the resolution and bit depth of the imported heightmaps. It also displays the total number of Terrain tiles.
+The information box shows you the resolution of the imported heightmaps. It also displays the total number of Terrain tiles.
 
 ### Heightmap Settings
 

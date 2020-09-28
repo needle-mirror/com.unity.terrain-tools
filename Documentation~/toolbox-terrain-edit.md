@@ -27,5 +27,6 @@ The **Split** tool lets you divide Terrain into smaller tiles while properly pre
 | **Tiles X Axis**                 | The number of tiles along the X axis.                        |
 | **Tiles Z Axis**                 | The number of tiles along the Z axis.                        |
 | **Auto Update Terrain Settings** | Enable the checkbox to copy settings from the original Terrain. Disable the checkbox to use default Terrain settings on the new tiles. |
+| **Keep Original Terrain**        | Enable the checkbox to keep a copy of the original Terrain even after the split. Disable the checkbox to remove the original Terrain after the split. |
 
 After configuring the settings and options, click the **Split** button to begin dividing the selected Terrain in the Scene or hierarchy.

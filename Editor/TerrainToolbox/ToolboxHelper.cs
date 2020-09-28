@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Experimental.TerrainAPI;
 using UnityEngine.Rendering;
+using UnityEngine.UI;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -82,6 +83,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 			LW,
 			Universal
 		}
+
+		public static int[] GUITextureResolutions = new int[] { 32, 64, 128, 256, 512, 1024, 2048, 4096 };
+		public static string[] GUITextureResolutionNames = new string[] { "32", "64", "128", "256", "512", "1024", "2048", "4096" };
+		public static int[] GUIHeightmapResolutions = new int[] { 33, 65, 129, 257, 513, 1025, 2049, 4097 };
+		public static string[] GUIHeightmapResolutionNames = new string[] { "33", "65", "129", "257", "513", "1025", "2049", "4097" };
 
 		const string GizmoGOName = "TERRAIN_GIZMO";
 
@@ -184,7 +190,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 			for (int i = 0; i < oldAlphaMaps.Length; i++)
 			{
 				terrainData.alphamapTextures[i].filterMode = FilterMode.Bilinear;
-				oldAlphaMaps[i] = RenderTexture.GetTemporary(resolution, resolution, 0, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
+				oldAlphaMaps[i] = RenderTexture.GetTemporary(resolution, resolution, 0, SystemInfo.GetGraphicsFormat(DefaultFormat.HDR));
 				Graphics.Blit(terrainData.alphamapTextures[i], oldAlphaMaps[i]);
 			}
 
@@ -208,7 +214,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 		}
 
 		// referencing from TerrainData.GPUCopy.CopyActiveRenderTextureToTexture()
-		private static void CopyActiveRenderTextureToTexture(Texture2D dstTexture, RectInt sourceRect, Vector2Int dest, bool allowDelayedCPUSync)
+		public static void CopyActiveRenderTextureToTexture(Texture2D dstTexture, RectInt sourceRect, Vector2Int dest, bool allowDelayedCPUSync)
 		{
 			var source = RenderTexture.active;
 			if (source == null)
@@ -256,6 +262,31 @@ namespace UnityEditor.Experimental.TerrainAPI
 				const CopyTextureSupport kRT2TexAndTex2RT = CopyTextureSupport.RTToTexture | CopyTextureSupport.TextureToRT;
 				return (SystemInfo.copyTextureSupport & kRT2TexAndTex2RT) == kRT2TexAndTex2RT;
 			}
+		}
+
+		public static float kNormalizedHeightScale => 32766.0f / 65535.0f;
+		public static void CopyTextureToTerrainHeight(TerrainData terrainData, Texture2D heightmap, Vector2Int indexOffset, int resolution, int numTiles, float baseLevel, float remap)
+		{
+			terrainData.heightmapResolution = resolution + 1;
+
+			float hWidth = heightmap.height;
+			float div = hWidth / numTiles;			
+			
+			float scale = ((resolution / (resolution + 1.0f)) * (div + 1)) / hWidth;
+			float offset = ((resolution / (resolution + 1.0f)) * div) / hWidth;
+
+			Vector2 scaleV = new Vector2(scale, scale);
+			Vector2 offsetV = new Vector2(offset * indexOffset.x, offset * indexOffset.y);
+
+			Material blitMaterial = GetHeightBlitMaterial();
+			blitMaterial.SetFloat("_Height_Offset", baseLevel * kNormalizedHeightScale);
+			blitMaterial.SetFloat("_Height_Scale", remap * kNormalizedHeightScale);
+			RenderTexture heightmapRT = RenderTexture.GetTemporary(terrainData.heightmapTexture.descriptor);
+			Graphics.Blit(heightmap, heightmapRT, blitMaterial);
+
+			Graphics.Blit(heightmapRT, terrainData.heightmapTexture, scaleV, offsetV);
+
+			terrainData.DirtyHeightmapRegion(new RectInt(0, 0, terrainData.heightmapTexture.width, terrainData.heightmapTexture.height), TerrainHeightmapSyncControl.HeightAndLod);
 		}
 
 		public static void ResizeHeightmap(TerrainData terrainData, int resolution)
@@ -313,7 +344,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 		}
 
 		// Unity PNG encoder does not support 16bit export, change will come later 2019
-		public static void ExportTerrainHeightsToTexture(TerrainData terrainData, Heightmap.Format format, string path)
+		public static void ExportTerrainHeightsToTexture(TerrainData terrainData, Heightmap.Format format, string path, bool flipVertical, Vector2 inputLevelsRange)
 		{
 			RenderTexture oldRT = RenderTexture.active;
 			int width = terrainData.heightmapTexture.width - 1;
@@ -321,9 +352,24 @@ namespace UnityEditor.Experimental.TerrainAPI
 			var texture = new Texture2D(width, height, terrainData.heightmapTexture.graphicsFormat, TextureCreationFlags.None);
 			RenderTexture.active = terrainData.heightmapTexture;
 			texture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-			texture.Apply();
 
-			byte[] bytes;
+            //Remap Texture
+            Color[] pixels = texture.GetPixels();
+            for (int i = 0; i < pixels.Length; i += 4)
+            {
+                pixels[i].r = (pixels[i].r * 2) * (inputLevelsRange.y - inputLevelsRange.x) + inputLevelsRange.x;
+                pixels[i + 1].r = (pixels[i + 1].r * 2) * (inputLevelsRange.y - inputLevelsRange.x) + inputLevelsRange.x;
+                pixels[i + 2].r = (pixels[i + 2].r * 2) * (inputLevelsRange.y - inputLevelsRange.x) + inputLevelsRange.x;
+                pixels[i + 3].r = (pixels[i + 3].r * 2) * (inputLevelsRange.y - inputLevelsRange.x) + inputLevelsRange.x;
+            }
+            texture.SetPixels(pixels);
+            texture.Apply();
+
+            //Flip Texture
+			if(flipVertical)
+            ToolboxHelper.FlipTexture(texture, true);
+
+            byte[] bytes;
 			switch (format)
 			{
 				case Heightmap.Format.TGA:
@@ -363,7 +409,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 						int index = x + y * heightmapWidth;
 						int srcY = flipVertical ? heightmapHeight - 1 - y : y;
 
-						float remappedHeight = (heights[srcY, x] - inputLevelsRange.x) / (inputLevelsRange.y - inputLevelsRange.x);
+						float remappedHeight = heights[srcY, x] * (inputLevelsRange.y - inputLevelsRange.x) + inputLevelsRange.x;
 
 						int height = Mathf.RoundToInt(remappedHeight * normalize);
 						ushort compressedHeight = (ushort)Mathf.Clamp(height, 0, ushort.MaxValue);
@@ -389,9 +435,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 				{
 					for (int x = 0; x < heightmapWidth; ++x)
 					{
-						int index = x + y * heightmapWidth;
-						int srcY = flipVertical ? heightmapHeight - 1 - y : y;
-						int height = Mathf.RoundToInt(heights[srcY, x] * normalize);
+                        int index = x + y * heightmapWidth;
+                        int srcY = flipVertical ? heightmapHeight - 1 - y : y;
+
+                        float remappedHeight = heights[y, x] * (inputLevelsRange.y - inputLevelsRange.x) + inputLevelsRange.x;
+
+                        int height = Mathf.RoundToInt(remappedHeight * normalize);
 						byte compressedHeight = (byte)Mathf.Clamp(height, 0, byte.MaxValue);
 						data[index] = compressedHeight;
 					}
@@ -401,6 +450,31 @@ namespace UnityEditor.Experimental.TerrainAPI
 			FileStream fs = new FileStream((path + ".raw"), FileMode.Create);
 			fs.Write(data, 0, data.Length);
 			fs.Close();
+		}
+
+		public static Material GetHeightBlitMaterial()
+		{
+			return new Material(Shader.Find("Hidden/TerrainTools/HeightBlit"));
+		}
+
+		public static void FlipTexture(Texture2D texture, bool isHorizontal)
+		{
+			Color[] originalPixels = texture.GetPixels();
+			Color[] flippedPixels = new Color[originalPixels.Length];
+			int width = texture.width;
+			int height = texture.height;
+			for (int y = 0; y < height; y++)
+			{
+				for (int x = 0; x < width; x++)
+				{
+					int flippedIndex = isHorizontal ? y * width + width - 1 - x : (height-1)*width - y * width + x;
+					int originalIndex = y * width + x;
+					if (flippedIndex < 0) continue;
+					flippedPixels[flippedIndex] = originalPixels[originalIndex];
+				}
+			}
+			texture.SetPixels(flippedPixels);
+			texture.Apply();
 		}
 
 		public static GameObject GetGizmo()

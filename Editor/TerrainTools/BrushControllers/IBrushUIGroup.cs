@@ -1,7 +1,6 @@
 
 using System.Text;
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -52,7 +51,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 		void OnSceneGUI2D(Terrain terrain, IOnSceneGUI editContext);
         void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext);
 		void AppendBrushInfo(Terrain terrain, IOnSceneGUI editContext, StringBuilder builder);
-        RenderTexture GetBrushMask(FilterContext fc, RenderTexture heightContext);
+        void GetBrushMask(RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture);
 
         /// <summary>
         /// Scatters the brush around the specified UV on the specified terrain. If the scattered UV leaves

@@ -11,6 +11,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         static void SelectShortcut(ShortcutArguments args) {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;          // gets interface to modify state of TerrainTools
             context.SelectPaintTool<BridgeTool>();                                                  // set active tool
+            TerrainToolsAnalytics.OnShortcutKeyRelease("Select Bridge Tool");
         }
 #endif
 
@@ -22,7 +23,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if( m_commonUI == null )
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "BridgeTool", DefaultBrushUIGroup.Feature.NoScatter );
+                    LoadSettings();
+                    m_commonUI = new DefaultBrushUIGroup( "BridgeTool", UpdateAnalyticParameters, DefaultBrushUIGroup.Feature.NoScatter );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -92,16 +94,13 @@ namespace UnityEditor.Experimental.TerrainAPI
                     return;
                 }
 
-				if (bridgeToolProperties != null && bridgeToolProperties.widthProfile != null)
-				{
-					float endWidth = Mathf.Abs(bridgeToolProperties.widthProfile.Evaluate(1.0f));
+                float endWidth = Mathf.Abs(bridgeToolProperties.widthProfile.Evaluate(1.0f));
 
-					BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, commonUI.raycastHitUnderCursor.textureCoord, commonUI.brushSize * endWidth, commonUI.brushRotation);
-					PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
-					TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
-					TerrainPaintUtility.ReleaseContextResources(ctx);
-				}                
-			}
+                BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, commonUI.raycastHitUnderCursor.textureCoord, commonUI.brushSize * endWidth, commonUI.brushRotation);
+                PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
+                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
+                TerrainPaintUtility.ReleaseContextResources(ctx);
+            }
 
             if (Event.current.type != EventType.Repaint)
             {
@@ -122,15 +121,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         bool m_ShowBridgeControls = true;
-        bool m_initialized = false;
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-
-            if (!m_initialized)
-            {
-                LoadSettings();
-                m_initialized = true;
-            }
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
@@ -149,6 +141,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 SaveSetting();
                 Save(true);
+                TerrainToolsAnalytics.OnParameterChange();
             }
         }
 
@@ -251,13 +244,11 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                         mat.SetVector("_BrushParams", brushParams);
 
-                        FilterContext fc = new FilterContext(terrain, currPos, finalBrushSize, commonUI.brushRotation);
-                        fc.renderTextureCollection.GatherRenderTextures(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height);
-                        RenderTexture filterMaskRT = commonUI.GetBrushMask(fc, paintContext.sourceRenderTexture);
-                        mat.SetTexture("_FilterTex", filterMaskRT);
-
+                        var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                        Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                         brushRenderWithTerrain.SetupTerrainToolMaterialProperties(paintContext, brushTransform, mat);
                         brushRenderWithTerrain.RenderBrush(paintContext, mat, 0);
+                        RTUtils.Release(brushMask);
                     }
                 }
             }
@@ -303,15 +294,22 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             string bridgeToolData = JsonUtility.ToJson(bridgeToolProperties);
             EditorPrefs.SetString("Unity.TerrainTools.Bridge", bridgeToolData);
-
         }
 
         private void LoadSettings()
         {
-
             string bridgeToolData = EditorPrefs.GetString("Unity.TerrainTools.Bridge");
             bridgeToolProperties.SetDefaults();
             JsonUtility.FromJsonOverwrite(bridgeToolData, bridgeToolProperties);
         }
+
+        #region Analytics
+        private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
+            new TerrainToolsAnalytics.BrushParameter<Keyframe[]>{Name = Styles.widthProfileContent.text, Value = bridgeToolProperties.widthProfile.keys},
+            new TerrainToolsAnalytics.BrushParameter<Keyframe[]>{Name = Styles.heightProfileContent.text, Value = bridgeToolProperties.heightProfile.keys},
+            new TerrainToolsAnalytics.BrushParameter<Keyframe[]>{Name = Styles.strengthProfileContent.text, Value = bridgeToolProperties.strengthProfile.keys},
+            new TerrainToolsAnalytics.BrushParameter<Keyframe[]>{Name = Styles.jitterProfileContent.text, Value = bridgeToolProperties.jitterProfile.keys},
+        };
+        #endregion
     }
 }

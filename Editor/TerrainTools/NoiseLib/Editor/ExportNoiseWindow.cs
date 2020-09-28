@@ -13,13 +13,10 @@ namespace UnityEditor.Experimental.TerrainAPI
     {
         public static void ShowWindow( NoiseSettings noise )
         {
-            var wnd = ScriptableObject.CreateInstance<ExportNoiseWindow>();
-
-            wnd.titleContent = Styles.title;
+            var wnd = GetWindow<ExportNoiseWindow>(Styles.title.text, true);
             wnd.Init( noise );
             wnd.minSize = new Vector2( 400f, 160f );
             wnd.maxSize = new Vector2( 400f, 160f );
-
             wnd.Show();
         }
 
@@ -33,7 +30,6 @@ namespace UnityEditor.Experimental.TerrainAPI
         private ExportMode m_exportMode = ExportMode.Texture2D;
         private Vector2Int dims2D = new Vector2Int(512,512);
         private Vector3Int dims3D = new Vector3Int(64, 64, 64);
-        private bool m_normalize;
         private GraphicsFormat m_format = GraphicsFormat.R16_UNorm;
 
         /// <summary>
@@ -71,13 +67,6 @@ namespace UnityEditor.Experimental.TerrainAPI
                     EditorGUILayout.PrefixLabel( Styles.dims3D );
                     dims3D = EditorGUILayout.Vector3IntField(GUIContent.none, dims3D);
                 }
-            }
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
-            {
-                EditorGUILayout.PrefixLabel( Styles.normalize );
-                m_normalize = GUILayout.Toggle( m_normalize, GUIContent.none );
             }
             EditorGUILayout.EndHorizontal();
 
@@ -200,7 +189,6 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             public static GUIContent title = EditorGUIUtility.TrTextContent("Export Noise to Texture");
             public static GUIContent noise = EditorGUIUtility.TrTextContent("Noise Settings");
-            public static GUIContent normalize = EditorGUIUtility.TrTextContent("Normalize", "Normalize pixel values so they fit between a 0 - 1 range");
             public static GUIContent exportMode = EditorGUIUtility.TrTextContent("Export Mode");
             public static GUIContent export = EditorGUIUtility.TrTextContent("Export");
             public static GUIContent dims2D = EditorGUIUtility.TrTextContent("Dimensions", "Texture Dimensions. X = Width, Y = Height");

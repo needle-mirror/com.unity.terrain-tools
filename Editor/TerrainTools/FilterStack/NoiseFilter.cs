@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
@@ -38,7 +37,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Applies noise to the brush mask based on the Noise Settings associated with this filter. To edit the noise, press the \"Edit\" or \"E\" button";
         }
 
-        public override void Eval( FilterContext fc )
+        protected override void OnEval(FilterContext fc, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
         {
             if( m_noiseSettings == null )
             {
@@ -49,7 +48,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             if( m_useHeightmap )
             {
-                m_noiseSettings.positionTexture = fc.renderTextureCollection[ FilterContext.Keywords.Heightmap ];
+                m_noiseSettings.positionTexture = fc.rtHandleCollection[ FilterContext.Keywords.Heightmap ];
             }
 
             Vector3 brushPosWS = fc.brushPos;
@@ -85,22 +84,21 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             int pass = NoiseUtils.kNumBlitPasses * NoiseLib.GetNoiseIndex( noiseSettings.domainSettings.noiseTypeName );
 
-            RenderTextureDescriptor desc = new RenderTextureDescriptor( fc.destinationRenderTexture.width, fc.destinationRenderTexture.height, RenderTextureFormat.RFloat );
-            RenderTexture rt = RenderTexture.GetTemporary( desc );
-
-            Graphics.Blit( fc.sourceRenderTexture, rt, mat, pass );
+            var desc = destinationRenderTexture.descriptor;
+            desc.graphicsFormat = NoiseUtils.singleChannelFormat;
+            desc.sRGB = false;
+            RTHandle rt = RTUtils.GetTempHandle( desc );
+            Graphics.Blit( sourceRenderTexture, rt, mat, pass );
 
             Material blendMat = FilterUtility.blendModesMaterial;
-
-            blendMat.SetTexture("_MainTex", fc.sourceRenderTexture);
+            blendMat.SetTexture("_MainTex", sourceRenderTexture);
             blendMat.SetTexture("_BlendTex", rt);
+            Graphics.Blit( sourceRenderTexture, destinationRenderTexture, blendMat, 1 );
 
-            Graphics.Blit( fc.sourceRenderTexture, fc.destinationRenderTexture, blendMat, 1 );
-
-            RenderTexture.ReleaseTemporary( rt );
+            RTUtils.Release( rt );
         }
 
-        public override void DoGUI( Rect rect )
+        protected override void OnDrawGUI(Rect rect, FilterContext filterContext)
         {
             if( m_noiseSettings == null )
             {
@@ -164,17 +162,17 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             GUI.Label( labelRect, coordinateLabel );
 
-            if( TerrainToolGUIHelper.ToggleButton( worldRect, worldLabel, !m_isLocalSpace ) )
+            if( GUI.Toggle( worldRect, !m_isLocalSpace,  worldLabel, GUI.skin.button ) )
             {
                 m_isLocalSpace = false;
             }
-
-            if( TerrainToolGUIHelper.ToggleButton( localRect, localLabel, m_isLocalSpace ) )
+            
+            if( GUI.Toggle( localRect, m_isLocalSpace,  localLabel, GUI.skin.button ) )
             {
                 m_isLocalSpace = true;
             }
-
-            m_useHeightmap = TerrainToolGUIHelper.ToggleButton( heightmapRect, heightmapLabel, m_useHeightmap );
+            
+            m_useHeightmap = GUI.Toggle( heightmapRect, m_useHeightmap, heightmapLabel, GUI.skin.button );
 
             m_noiseSettings.useTextureForPositions = m_useHeightmap;
 
