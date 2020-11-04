@@ -139,7 +139,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         private void ApplyBrushInternal(PaintContext paintContext, IBrushRenderUnderCursor brushRender, float brushStrength, Texture brushTexture, BrushTransform brushTransform, Terrain terrain)
         {
-            Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
+            Material mat = GetPaintMaterial();
 #if UNITY_2019_3_OR_NEWER
             float brushTargetHeight = Mathf.Clamp01((m_TargetHeight - paintContext.heightWorldSpaceMin) / paintContext.heightWorldSpaceSize);
             Vector4 brushParams = new Vector4(brushStrength * 0.01f, PaintContext.kNormalizedHeightScale * brushTargetHeight, 0.0f, 0.0f);
@@ -147,15 +147,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             float terrainHeight = Mathf.Clamp01((m_TargetHeight - terrain.transform.position.y) / terrain.terrainData.size.y);
             Vector4 brushParams = new Vector4(brushStrength * 0.01f, 0.5f * terrainHeight, 0.0f, 0.0f);
 #endif
-            var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-            Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
 
+            var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+            commonUI.GetBrushMask(paintContext.sourceRenderTexture, brushMask);
+            mat.SetTexture("_FilterTex", brushMask);
 
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
 
             brushRender.SetupTerrainToolMaterialProperties(paintContext, brushTransform, mat);
-            brushRender.RenderBrush(paintContext, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.SetHeights);
+            brushRender.RenderBrush(paintContext, mat, 0);
             RTUtils.Release(brushMask);
         }
 
@@ -197,7 +198,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             Undo.RegisterCompleteObjectUndo(terrain.terrainData, "Set Height - Flatten Tile");
 
-            RenderTexture heightmap = terrain.terrainData.heightmapTexture;
+            var ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, new Rect(0, 0, terrain.terrainData.size.x, terrain.terrainData.size.z), 1);
 
             Material mat = GetPaintMaterial();
 
@@ -206,17 +207,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             Vector4 brushParams = new Vector4(0, 0.5f * terrainHeight, 0.0f, 0.0f);
             mat.SetVector("_BrushParams", brushParams);
 
-            Vector3 brushPos = new Vector3( commonUI.raycastHitUnderCursor.point.x, 0, commonUI.raycastHitUnderCursor.point.z );
-            var brushMask = RTUtils.GetTempHandle(heightmap.width, heightmap.height, 0, FilterUtility.defaultFormat);
-            Utility.SetFilterRT(commonUI, heightmap, brushMask, mat);
-            mat.SetTexture("_MainTex", heightmap);
-            var temp = RTUtils.GetTempHandle(heightmap.descriptor);
-            Graphics.Blit(heightmap, temp); // copy heightmap into temp
-            Graphics.Blit(temp, heightmap, mat, 1);
-            terrain.terrainData.DirtyHeightmapRegion(new RectInt(0, 0, heightmap.width, heightmap.height), TerrainHeightmapSyncControl.HeightAndLod);
-            terrain.terrainData.SyncHeightmap();
+            var size = terrain.terrainData.size;
+            size.y = 0;
+            var brushMask = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+            commonUI.GetBrushMask(terrain, ctx.sourceRenderTexture, brushMask, terrain.transform.position, Mathf.Min(size.x, size.z), 0f); // TODO(wyatt): need to handle seams
+            mat.SetTexture("_FilterTex", brushMask);
+            mat.SetTexture("_MainTex", ctx.sourceRenderTexture);
+            Graphics.Blit(ctx.sourceRenderTexture, ctx.destinationRenderTexture, mat, 1);
+            TerrainPaintUtility.EndPaintHeightmap(ctx, "Set Height - Flatten Tile");
             RTUtils.Release(brushMask);
-            RTUtils.Release(temp);
+            PaintContext.ApplyDelayedActions();
         }
 
         void FlattenAll(Terrain terrain)

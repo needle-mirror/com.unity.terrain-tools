@@ -473,5 +473,17 @@ namespace UnityEditor.Experimental.TerrainAPI
             InitTerrainTypesWithReflection("PaintHeightTool");
             SetupTerrain("Terrain");
         }
+        
+        [UnityTest]
+        public IEnumerator Test_SetHeight_FlattenTile()
+        {
+            yield return null;
+
+            InitTerrainTypesWithReflection("SetHeightTool");
+            SetupTerrain("Terrain");
+
+            var fillHeightFunc = terrainToolType.GetMethod("Flatten", BindingFlags.Instance | BindingFlags.NonPublic);
+            fillHeightFunc.Invoke(terrainToolInstance, new[] {terrainObj});
+        }
     }
 }

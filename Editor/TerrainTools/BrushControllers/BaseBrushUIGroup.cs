@@ -82,22 +82,21 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
 
-        public void GetBrushMask(RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
+        public void GetBrushMask(Terrain terrain, RenderTexture sourceRenderTexture,
+            RenderTexture destinationRenderTexture,
+            Vector3 position, float scale, float rotation)
         {
             filterContext.ReleaseRTHandles();
 
             using(new ActiveRenderTextureScope(null))
             {
-                sourceRenderTexture.name = "Terrain Tools - Brush Mask Source RT";
-                destinationRenderTexture.name = "Terrain Tools - Brush Mask Destination RT";
-
                 // set the filter context properties
-                filterContext.brushPos = raycastHitUnderCursor.point;
-                filterContext.brushSize = brushSize;
-                filterContext.brushRotation = brushRotation;
+                filterContext.brushPos = position;
+                filterContext.brushSize = scale;
+                filterContext.brushRotation = rotation;
 
                 // bind properties for filters to read/write to
-                var terrainData = terrainUnderCursor.terrainData;
+                var terrainData = terrain.terrainData;
                 filterContext.floatProperties[FilterContext.Keywords.TerrainScale] = Mathf.Sqrt(terrainData.size.x * terrainData.size.x + terrainData.size.z * terrainData.size.z);
                 filterContext.vectorProperties["_TerrainSize"] = new Vector4(terrainData.size.x, terrainData.size.y, terrainData.size.z, 0.0f);
                 
@@ -109,6 +108,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
             
             filterContext.ReleaseRTHandles();
+        }
+
+        public void GetBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
+        {
+            GetBrushMask(terrain, sourceRenderTexture, destinationRenderTexture, raycastHitUnderCursor.point, brushSize, brushRotation);
+        }
+        
+        public void GetBrushMask(RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
+        {
+            GetBrushMask(terrainUnderCursor, sourceRenderTexture, destinationRenderTexture);
         }
 
         public string brushName => m_Name;

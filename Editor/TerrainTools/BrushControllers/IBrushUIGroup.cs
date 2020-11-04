@@ -52,6 +52,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext);
 		void AppendBrushInfo(Terrain terrain, IOnSceneGUI editContext, StringBuilder builder);
         void GetBrushMask(RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture);
+        void GetBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture);
+        void GetBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture, Vector3 position, float scale, float rotation);
 
         /// <summary>
         /// Scatters the brush around the specified UV on the specified terrain. If the scattered UV leaves

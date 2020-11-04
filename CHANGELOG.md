@@ -4,7 +4,12 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [3.0.2-preview.2] - 2020-09-28
+## [3.0.2-preview.3] - 2020-11-04
+### Fixed
+- Fixed regression with SetHeight Flatten Tile option
+- Fixed brush mask filters with SetHeight painting
+
+## [3.0.2-preview.2] - 2020-11-02
 ### Added
 - Editor Analytics integration.
 - Fallback shader to the HDRP Visualization shader.

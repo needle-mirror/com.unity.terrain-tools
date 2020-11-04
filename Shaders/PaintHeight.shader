@@ -139,6 +139,12 @@
             #pragma vertex vert
             #pragma fragment SetHeight
 
+            /*============================================================================
+
+                NOTE(wyatt): use SetExactHeight.shader instead
+
+            ============================================================================*/
+
             float4 SetHeight(v2f i) : SV_Target
             {
                 float2 brushUV = PaintContextUVToBrushUV(i.pcUV);

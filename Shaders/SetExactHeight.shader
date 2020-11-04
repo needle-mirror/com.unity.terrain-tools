@@ -51,27 +51,6 @@
             #pragma vertex vert
             #pragma fragment SetExactHeight
 
-			/*
-            float3 RotateUVs(float2 sourceUV, float rotAngle)
-            {
-                float4 rotAxes;
-                rotAxes.x = cos(rotAngle);
-                rotAxes.y = sin(rotAngle);
-                rotAxes.w = rotAxes.x;
-                rotAxes.z = -rotAxes.y;
-
-                float2 tempUV = sourceUV - float2(0.5, 0.5);
-                float3 retVal;
-
-                // We fix some flaws by setting zero-value to out of range UVs, so what we do here
-                // is test if we're out of range and store the mask in the third component.
-                retVal.xy = float2(dot(rotAxes.xy, tempUV), dot(rotAxes.zw, tempUV)) + float2(0.5, 0.5);
-                tempUV = clamp(retVal.xy, float2(0.0, 0.0), float2(1.0, 1.0));
-                retVal.z = ((tempUV.x == retVal.x) && (tempUV.y == retVal.y)) ? 1.0 : 0.0;
-                return retVal;
-            }
-		*/
-
             float4 SetExactHeight(v2f i) : SV_Target
             {
                 float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
@@ -80,14 +59,14 @@
                 // out of bounds multiplier
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
-                float oldHeight = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
+                float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
 				//float brushStrength = saturate(BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)));
 				float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
 
                 float targetHeight = BRUSH_TARGETHEIGHT;
 
                 // have to do this check to ensure strength 0 == no change (code below makes a super tiny change even with strength 0)
-                /*if (brushStrength > 0.0f)
+                if (brushStrength > 0.0f)
                 {
                     float deltaHeight = height - targetHeight;
 
@@ -102,10 +81,10 @@
 
                     height = targetHeight + deltaHeight;
                 }
-				*/
+				
 
                 //return PackHeightmap(saturate(brushStrength) * targetHeight);
-				return PackHeightmap(lerp(oldHeight, targetHeight, brushStrength));
+				return PackHeightmap(lerp(height, targetHeight, brushStrength));
             }
             ENDCG
         }
