@@ -10,9 +10,9 @@ namespace UnityEditor.TerrainTools
     internal class TerrainCreationSettings : ScriptableObject
     {
         // Terrain Size	
-        public float TerrainWidth = 500;
-        public float TerrainLength = 500;
-        public float TerrainHeight = 500;
+        public float TerrainWidth = 1000;
+        public float TerrainLength = 1000;
+        public float TerrainHeight = 600;
         public Vector3 StartPosition = new Vector3(0, 0, 0);
         public int TilesX = 1;
         public int TilesZ = 1;

@@ -11,11 +11,14 @@ namespace UnityEditor.TerrainTools
         private const float kMaxBrushSize = 500.0f;
         private const float kDefaultBrushSize = 100.0f;
         private const float kDefaultMouseSensitivity = 0.1f;
-
-        private readonly TerrainFloatMinMaxValue m_BrushSize = new TerrainFloatMinMaxValue(styles.brushSize, kDefaultBrushSize, kMinBrushSize, kMaxBrushSize, true);
+        
+        internal readonly TerrainFloatMinMaxValue m_BrushSize = new TerrainFloatMinMaxValue(styles.brushSize, kDefaultBrushSize, kMinBrushSize, kMaxBrushSize, true);
         private readonly BrushJitterHandler m_JitterHandler = new BrushJitterHandler(0.0f, kMinBrushSize, kMaxBrushSize);
 
         private bool m_AdjustingSize;
+
+        private float m_defaultBrushSize;
+
         public override bool isInUse => m_AdjustingSize;
 
         class Styles
@@ -30,8 +33,9 @@ namespace UnityEditor.TerrainTools
             set { m_BrushSize.value = Mathf.Clamp(value, kMinBrushSize, kMaxBrushSize); }
         }
 
-        public BrushSizeVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache) : base(toolName, eventHandler, terrainCache)
+        public BrushSizeVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache, float defaultValue = kDefaultBrushSize) : base(toolName, eventHandler, terrainCache)
         {
+            m_defaultBrushSize = defaultValue;
         }
 
         private void BeginAdjustingSize()
@@ -75,7 +79,7 @@ namespace UnityEditor.TerrainTools
             m_BrushSize.shouldClampMax = true;
             m_BrushSize.shouldClampMin = true;
 
-            m_BrushSize.value = GetEditorPrefs("TerrainBrushSize", kDefaultBrushSize);
+            m_BrushSize.value = GetEditorPrefs("TerrainBrushSize", m_defaultBrushSize);
             m_BrushSize.minValue = GetEditorPrefs("TerrainBrushSizeMin", 0.0f);
             m_BrushSize.maxValue = GetEditorPrefs("TerrainBrushSizeMax", 500.0f);
             //m_BrushSize.mouseSensitivity = GetEditorPrefs("TerrainBrushSizeMouseSensitivity", kDefaultMouseSensitivity);

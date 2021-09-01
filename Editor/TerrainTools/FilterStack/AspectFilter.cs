@@ -108,17 +108,17 @@ namespace UnityEditor.TerrainTools
             //Strength Slider
             Rect strengthLabelRect = new Rect(rect.x, rect.y, labelWidth, EditorGUIUtility.singleLineHeight);
             EditorGUI.LabelField(strengthLabelRect, strengthLabel);
-            Rect strengthSliderRect = new Rect(strengthLabelRect.xMax, strengthLabelRect.y, rect.width - labelWidth, strengthLabelRect.height);
+            Rect strengthSliderRect = new Rect(strengthLabelRect.xMax, strengthLabelRect.y, rect.width - labelWidth, EditorGUIUtility.singleLineHeight);
             m_EffectStrength = EditorGUI.Slider(strengthSliderRect, m_EffectStrength, 0.0f, 1.0f);
 
             //Epsilon (kernel size) Slider
-            Rect epsilonLabelRect = new Rect(rect.x, strengthSliderRect.yMax, labelWidth, EditorGUIUtility.singleLineHeight);
+            Rect epsilonLabelRect = new Rect(rect.x, strengthSliderRect.yMax + EditorGUIUtility.standardVerticalSpacing, labelWidth, EditorGUIUtility.singleLineHeight);
             EditorGUI.LabelField(epsilonLabelRect, epsilonLabel);
             Rect epsilonSliderRect = new Rect(epsilonLabelRect.xMax, epsilonLabelRect.y, rect.width - labelWidth, epsilonLabelRect.height);
             m_Epsilon = EditorGUI.Slider(epsilonSliderRect, m_Epsilon, 1.0f, 20.0f);
 
             //Value Remap Curve
-            Rect curveLabelRect = new Rect(rect.x, epsilonSliderRect.yMax, labelWidth, EditorGUIUtility.singleLineHeight);
+            Rect curveLabelRect = new Rect(rect.x, epsilonSliderRect.yMax + EditorGUIUtility.standardVerticalSpacing, labelWidth, EditorGUIUtility.singleLineHeight);
             EditorGUI.LabelField(curveLabelRect, curveLabel);
             Rect curveRect = new Rect(curveLabelRect.xMax, curveLabelRect.y, rect.width - labelWidth, curveLabelRect.height);
 

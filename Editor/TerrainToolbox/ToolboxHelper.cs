@@ -120,6 +120,16 @@ namespace UnityEditor.TerrainTools
                 }
             }
         }
+        public static Texture2D GetTextureCopy(Texture2D texture)
+        {
+            var creationFlags = texture.mipmapCount > 0
+                ? TextureCreationFlags.MipChain
+                : TextureCreationFlags.None;
+            var textureCopy = new Texture2D(texture.width, texture.height, texture.graphicsFormat, texture.mipmapCount,
+                creationFlags);
+            Graphics.CopyTexture(texture, textureCopy);
+            return textureCopy;
+        }
 
         public static Texture2D GetPartialTexture(Texture2D sourceTexture, Vector2Int resolution, Vector2Int offset)
         {
@@ -237,6 +247,7 @@ namespace UnityEditor.TerrainTools
             Graphics.Blit(heightmapRT, terrainData.heightmapTexture, scaleV, offsetV);
 
             terrainData.DirtyHeightmapRegion(new RectInt(0, 0, terrainData.heightmapTexture.width, terrainData.heightmapTexture.height), TerrainHeightmapSyncControl.HeightAndLod);
+            RenderTexture.ReleaseTemporary(heightmapRT);
         }
 
         public static void ResizeHeightmap(TerrainData terrainData, int resolution)
@@ -385,6 +396,7 @@ namespace UnityEditor.TerrainTools
             return GetProjectRelativeSaveDirectory(requestedDirectory, false) ==
                    GetProjectRelativeSaveDirectory(requestedDirectory);
         }
+
         public static void ExportTerrainHeightsToRawFile(TerrainData terrainData, string path, Heightmap.Depth depth, bool flipVertical, ByteOrder byteOrder, Vector2 inputLevelsRange)
         {
             // trim off the extra 1 pixel, so we get a power of two sized texture
@@ -392,8 +404,8 @@ namespace UnityEditor.TerrainTools
             int heightmapWidth = terrainData.heightmapResolution - 1;
             int heightmapHeight = terrainData.heightmapResolution - 1;
 #else
-			int heightmapWidth = terrainData.heightmapWidth - 1;
-			int heightmapHeight = terrainData.heightmapHeight - 1;
+            int heightmapWidth = terrainData.heightmapWidth - 1;
+            int heightmapHeight = terrainData.heightmapHeight - 1;
 #endif
             float[,] heights = terrainData.GetHeights(0, 0, heightmapWidth, heightmapHeight);
             byte[] data = new byte[heightmapWidth * heightmapHeight * (int)depth];

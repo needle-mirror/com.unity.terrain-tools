@@ -21,6 +21,9 @@ namespace UnityEditor.TerrainTools
         GameObject m_CurrentGroup = null;
         const int kPixelErrorMax = 200;
         const int kBaseMapDistMax = 20000;
+        const int kMinTerrainSize = 1;
+        const int kMaxTerrainSize = 100000;
+        const int kMaxTerrainHeight = 10000;
 
         // Gizmo
         Color m_GizmoWireColor = new Color(0f, 0.9f, 1f, 1f);
@@ -44,6 +47,8 @@ namespace UnityEditor.TerrainTools
 
         // Heightmap
         Texture2D m_HeightmapGlobal = null;
+        string m_HeightmapWarningMessage;
+        bool m_HeightmapInputValid;
 
         static class Styles
         {
@@ -163,44 +168,38 @@ namespace UnityEditor.TerrainTools
             // Options
             ShowOptionsGUI();
 
-            // Terrain info box
             --EditorGUI.indentLevel;
-            string sizeMsg = string.Format("Terrain Size: {0}m x {1}m		", m_Settings.TerrainWidth, m_Settings.TerrainLength);
-            string tileMsg = string.Format("Number of Tiles: {0} x {1} \n", m_Settings.TilesX, m_Settings.TilesZ);
-            string heightMsg = string.Format("Terrain Height: {0}m		", m_Settings.TerrainHeight);
-            string tileSizeMsg = string.Format("Tile Size: {0} x {1} ", (m_Settings.TerrainWidth / m_Settings.TilesX), (m_Settings.TerrainLength / m_Settings.TilesZ));
-            m_TerrainMessage = sizeMsg + tileMsg + heightMsg + tileSizeMsg;
-            EditorGUILayout.HelpBox(m_TerrainMessage, MessageType.Info);
-
             // Create			
+            m_HeightmapInputValid = RunCreateValidations();
+
+            if(!m_HeightmapInputValid)
+            {
+                EditorGUILayout.HelpBox("Fix the warnings above before creating a new terrain.", MessageType.Warning);
+            }
+            
             EditorGUILayout.BeginHorizontal();
+            EditorGUI.BeginDisabledGroup(!m_HeightmapInputValid);
             if (GUILayout.Button(Styles.CreateBtn, GUILayout.Height(40)))
             {
-                if (!RunCreateValidations())
+                if (m_Settings.EnableHeightmapImport && m_Settings.HeightmapMode == Heightmap.Mode.Global
+                    && File.Exists(m_Settings.GlobalHeightmapPath))
                 {
-                    EditorUtility.DisplayDialog("Error", "There are incompatible terrain creation settings that need to be resolved to continue. Please check Console for details.", "OK");
+                    m_Settings.UseGlobalHeightmap = true;
                 }
                 else
                 {
-                    if (m_Settings.EnableHeightmapImport && m_Settings.HeightmapMode == Heightmap.Mode.Global
-                        && File.Exists(m_Settings.GlobalHeightmapPath))
-                    {
-                        m_Settings.UseGlobalHeightmap = true;
-                    }
-                    else
-                    {
-                        m_Settings.UseGlobalHeightmap = false;
-                    }
-
-                    if (m_Settings.HeightmapMode == Heightmap.Mode.Global && m_HeightmapGlobal != null && m_Settings.FlipMode != Heightmap.Flip.None)
-                    {
-                        bool horizontal = m_Settings.FlipMode == Heightmap.Flip.Horizontal ? true : false;
-                        ToolboxHelper.FlipTexture(m_HeightmapGlobal, horizontal);
-                    }
-
-                    Create();
+                    m_Settings.UseGlobalHeightmap = false;
                 }
+
+                if (m_Settings.HeightmapMode == Heightmap.Mode.Global && m_HeightmapGlobal != null && m_Settings.FlipMode != Heightmap.Flip.None)
+                {
+                    bool horizontal = m_Settings.FlipMode == Heightmap.Flip.Horizontal ? true : false;
+                    ToolboxHelper.FlipTexture(m_HeightmapGlobal, horizontal);
+                }
+
+                Create();
             }
+            EditorGUI.EndDisabledGroup();
             EditorGUILayout.EndHorizontal();
         }
 
@@ -267,34 +266,20 @@ namespace UnityEditor.TerrainTools
 
         bool RunCreateValidations()
         {
-            // check if same grouping ID terrain exists
-            if (GroupExists(m_Settings.GroupID) && !m_Settings.EnableClearExistingData)
-            {
-                if (!EditorUtility.DisplayDialog("Warning", "You are trying to create same grouping ID terrains. This may result seam when sculpting across terrain tiles. Are you sure you want to continue?", "Continue", "Cancel"))
-                {
-                    Debug.LogWarning("TerrainToobox: Trying to create same grouping ID terrains. You may want to create a different ID.");
-                    return false;
-                }
-            }
-
             // validate heightmap input data
             if (m_Settings.EnableHeightmapImport)
             {
                 if (m_Settings.HeightmapMode == Heightmap.Mode.Global)
                 {
-                    if (!m_Settings.UseRawFile && m_HeightmapGlobal == null)
+                    if ((!m_Settings.UseRawFile && m_HeightmapGlobal == null) || 
+                        (m_Settings.UseRawFile && !File.Exists(m_Settings.GlobalHeightmapPath)))
                     {
-                        Debug.LogError("TerrainToolbox: Missing imported heightmap.");
-                        return false;
-                    }
-                    if (m_Settings.UseRawFile && !File.Exists(m_Settings.GlobalHeightmapPath))
-                    {
-                        Debug.LogError("TerrainToolbox: Missing imported heightmap.");
+                        m_HeightmapWarningMessage = "Missing heightmap texture.";
                         return false;
                     }
                     if (!ToolboxHelper.IsPowerOfTwo(m_Settings.HeightmapWidth) || !ToolboxHelper.IsPowerOfTwo(m_Settings.HeightmapHeight))
                     {
-                        Debug.LogError("TerrainToolbox: Imported heightmap resolution is not power of two.");
+                        m_HeightmapWarningMessage = "Imported heightmap resolution is not power of two.";
                         return false;
                     }
 
@@ -304,16 +289,12 @@ namespace UnityEditor.TerrainTools
                         float tileHeightZ = (float)m_Settings.HeightmapHeight / (float)m_Settings.TilesZ;
                         if (tileHeightX != tileHeightZ)
                         {
-                            Debug.LogError("TerrainToolbox: Heightmap resolution per tile is not square size with current settings.");
+                            m_HeightmapWarningMessage = "Heightmap resolution per tile is not square size with current settings.";
                             return false;
-                        }
-                        if (!ToolboxHelper.IsInteger(tileHeightX) || !ToolboxHelper.IsInteger(tileHeightZ))
-                        {
-                            Debug.LogWarning("TerrainToolbox: Heightmap resolution per tile is not integer with current settings. You will get seams between tiles.");
                         }
                         if (tileHeightX > 4096 || tileHeightX < 32)
                         {
-                            Debug.LogError("TerrainToolbox: Heightmap resolution per tile is out of range. Supported resolution is from 32 to 4096.");
+                            m_HeightmapWarningMessage = "Heightmap resolution per tile is out of range. Supported resolution is from 32 to 4096.";
                             return false;
                         }
                     }
@@ -322,14 +303,14 @@ namespace UnityEditor.TerrainTools
                 {
                     if (!Directory.Exists(m_Settings.BatchHeightmapFolder))
                     {
-                        Debug.LogError(string.Format("TerrainToolbox: Invalid batch heightmap folder: \"{0}\"", m_Settings.BatchHeightmapFolder));
+                        m_HeightmapWarningMessage = string.Format("Invalid batch heightmap folder: \"{0}\"", m_Settings.BatchHeightmapFolder);
                         return false;
                     }
 
                     int tilesCount = m_Settings.TilesX * m_Settings.TilesZ;
                     if (m_Settings.TileHeightmapPaths.Count != tilesCount)
                     {
-                        Debug.LogError(string.Format("TerrainToolbox: Number of heightmaps ({0}) in the batch heightmap folder does not match number of desired terrain tiles ({1}).", m_Settings.TileHeightmapPaths.Count, tilesCount));
+                        m_HeightmapWarningMessage = string.Format("Number of heightmaps ({0}) in the batch heightmap folder does not match number of desired terrain tiles ({1}).", m_Settings.TileHeightmapPaths.Count, tilesCount);
                         return false;
                     }
                 }
@@ -345,9 +326,9 @@ namespace UnityEditor.TerrainTools
             ++EditorGUI.indentLevel;
             // Terrain Sizing
             EditorGUI.BeginChangeCheck();
-            m_Settings.TerrainWidth = Mathf.Max(1, EditorGUILayout.FloatField(Styles.TerrainWidth, m_Settings.TerrainWidth));
-            m_Settings.TerrainLength = Mathf.Max(1, EditorGUILayout.FloatField(Styles.TerrainLength, m_Settings.TerrainLength));
-            m_Settings.TerrainHeight = Mathf.Max(1, EditorGUILayout.FloatField(Styles.TerrainHeight, m_Settings.TerrainHeight));
+            m_Settings.TerrainWidth = Mathf.Clamp(EditorGUILayout.FloatField(Styles.TerrainWidth, m_Settings.TerrainWidth), kMinTerrainSize, kMaxTerrainSize);
+            m_Settings.TerrainLength = Mathf.Clamp(EditorGUILayout.FloatField(Styles.TerrainLength, m_Settings.TerrainLength), kMinTerrainSize, kMaxTerrainSize);
+            m_Settings.TerrainHeight = Mathf.Clamp(EditorGUILayout.FloatField(Styles.TerrainHeight, m_Settings.TerrainHeight), kMinTerrainSize, kMaxTerrainHeight);
             var originalWideMode = EditorGUIUtility.wideMode;
             // use widemode to correct the position of the tooltip / label
             EditorGUIUtility.wideMode = true;
@@ -373,10 +354,16 @@ namespace UnityEditor.TerrainTools
 
             // Terrain Group Settings
             m_Settings.GroupID = EditorGUILayout.IntField(Styles.GroupingID, m_Settings.GroupID);
+            if (GroupExists(m_Settings.GroupID) && !m_Settings.EnableClearExistingData)
+            {
+                EditorGUILayout.HelpBox($"There's already a terrain group with an ID of {m_Settings.GroupID} within the scene. Creating a new group with the same ID may result in seams when sculpting across terrain tiles.",
+                    MessageType.Info);
+            }
+
             m_Settings.ShowGroupSettings = EditorGUILayout.Foldout(m_Settings.ShowGroupSettings, Styles.GroupSettings, true);
             if (m_Settings.ShowGroupSettings)
             {
-                m_Settings.PixelError = EditorGUILayout.IntSlider(Styles.PixelError, m_Settings.PixelError, 0, kPixelErrorMax);
+                m_Settings.PixelError = EditorGUILayout.IntSlider(Styles.PixelError, m_Settings.PixelError, 1, kPixelErrorMax);
                 m_Settings.BaseMapDistance = EditorGUILayout.IntSlider(Styles.BaseMapDistance, m_Settings.BaseMapDistance, 0, kBaseMapDistMax);
                 m_Settings.DrawInstanced = EditorGUILayout.Toggle(Styles.DrawInstanced, m_Settings.DrawInstanced);
                 m_Settings.MaterialOverride = EditorGUILayout.ObjectField(Styles.ShareMaterial, m_Settings.MaterialOverride, typeof(Material), false) as Material;
@@ -457,9 +444,7 @@ namespace UnityEditor.TerrainTools
                         EditorGUILayout.BeginHorizontal();
                         string tileIndex = "X-" + x + " | " + "Y-" + y;
                         EditorGUILayout.LabelField(tileIndex);
-
-                        EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
-                        EditorGUILayout.LabelField(new GUIContent(m_Settings.TileHeightmapPaths[fileIndex], m_Settings.TileHeightmapPaths[fileIndex] + " ")); //note: tooltip currently won't display if it's identical to the text field
+                        m_Settings.TileHeightmapPaths[fileIndex] = EditorGUILayout.TextField(m_Settings.TileHeightmapPaths[fileIndex]);
                         EditorGUI.BeginChangeCheck();
                         if (GUILayout.Button("...", GUILayout.Width(25.0f)))
                         {
@@ -470,7 +455,6 @@ namespace UnityEditor.TerrainTools
                             UpdateHeightmapInformation(m_Settings.TileHeightmapPaths[fileIndex]);
                         }
                         EditorGUILayout.EndHorizontal();
-                        EditorGUILayout.EndHorizontal();
 
                         fileIndex++;
                     }
@@ -480,20 +464,24 @@ namespace UnityEditor.TerrainTools
             {
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField(Styles.SelectBatchHeightmapFolder);
-                EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
-                EditorGUILayout.LabelField(new GUIContent(m_Settings.BatchHeightmapFolder, m_Settings.BatchHeightmapFolder + " ")); //note: tooltip currently won't display if it's identical to the text field
+                m_Settings.BatchHeightmapFolder = EditorGUILayout.TextField(m_Settings.BatchHeightmapFolder);
                 EditorGUI.BeginChangeCheck();
                 if (GUILayout.Button("...", GUILayout.Width(25.0f)))
                 {
+                    // clear the keyboard focus so we can update the value
+                    GUIUtility.keyboardControl = -1;
                     m_Settings.BatchHeightmapFolder = EditorUtility.OpenFolderPanel("Select heightmaps folder...", "", "");
                 }
+
                 if ((EditorGUI.EndChangeCheck() || modeChanged) && Directory.Exists(m_Settings.BatchHeightmapFolder))
                 {
                     List<string> heightFiles = Directory.GetFiles(m_Settings.BatchHeightmapFolder, "*.raw").ToList();
-                    m_Settings.TileHeightmapPaths = SortBatchHeightmapFiles(heightFiles);
-                    UpdateHeightmapInformation(m_Settings.TileHeightmapPaths[0]);
+                    if (heightFiles.Count > 0)
+                    {
+                        m_Settings.TileHeightmapPaths = SortBatchHeightmapFiles(heightFiles);
+                        UpdateHeightmapInformation(m_Settings.TileHeightmapPaths[0]);
+                    }
                 }
-                EditorGUILayout.EndHorizontal();
                 EditorGUILayout.EndHorizontal();
             }
             // Heightmap settings
@@ -516,8 +504,23 @@ namespace UnityEditor.TerrainTools
                 msg = sizeMsg + tileMsg;
             }
 
-            EditorGUILayout.HelpBox(msg, MessageType.Info);
-            m_Settings.HeightmapResolution = EditorGUILayout.IntPopup(Styles.TileHeightResolution, m_Settings.HeightmapResolution, ToolboxHelper.GUIHeightmapResolutionNames, ToolboxHelper.GUIHeightmapResolutions);
+            if (!m_HeightmapInputValid)
+            {
+                EditorGUILayout.HelpBox(m_HeightmapWarningMessage, MessageType.Warning);
+            }
+
+            if (m_HeightmapGlobal != null)
+            {
+                Vector2Int tileHeightmapResolution = new Vector2Int((m_HeightmapGlobal.width / m_Settings.TilesX) + 1, (m_HeightmapGlobal.height / m_Settings.TilesZ) + 1);
+                if(tileHeightmapResolution.x != m_Settings.HeightmapResolution)
+                {
+                    EditorGUILayout.HelpBox(
+                    string.Format("The inputed heightmap's resolution of {0} x {1} does not match selected heightmap resolution. The generated heightmap will be resized to {2} x {2}", tileHeightmapResolution.x, tileHeightmapResolution.y, m_Settings.HeightmapResolution),
+                    MessageType.Info
+                    );
+                }
+            }
+
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.MinMaxSlider(Styles.HeightmapRemap, ref m_Settings.HeightmapRemapMin, ref m_Settings.HeightmapRemapMax, 0f, (float)m_Settings.TerrainHeight);
             EditorGUILayout.LabelField(Styles.HeightmapRemapMin, GUILayout.Width(40.0f));
@@ -844,7 +847,7 @@ namespace UnityEditor.TerrainTools
                             newTerrain.materialTemplate = m_Settings.MaterialOverride;
 #if UNITY_2019_2_OR_NEWER
 #else
-							newTerrain.materialType = Terrain.MaterialType.Custom;
+                            newTerrain.materialType = Terrain.MaterialType.Custom;
 #endif
                         }
 
@@ -905,10 +908,6 @@ namespace UnityEditor.TerrainTools
                         // finally, resize height resolution if needed
                         if (terrainData.heightmapResolution != m_Settings.HeightmapResolution)
                         {
-                            Debug.LogWarning(
-                                string.Format("TerrainToolbox: New terrain \"{0}\" - input heightmap resolution of {1} x {2} does not match output resolution. Resizing to {3} x {4}", 
-                                newGO.name, terrainData.heightmapResolution, terrainData.heightmapResolution, m_Settings.HeightmapResolution, m_Settings.HeightmapResolution),
-                                newGO);
                             ToolboxHelper.ResizeHeightmap(terrainData, m_Settings.HeightmapResolution);
                         }
 

@@ -1,20 +1,24 @@
+
+
 # Hydraulic Erosion
 
-Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** (brush) icon, and select **Erosion > Hydraulic** from the list of Terrain tools.
+Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Erosion** > **Hydraulic** from the list of Terrain tools.
 
-![](images/Tools_HowToSelection.png)
+![](images/2-31-hydraulic-erosion-01.png)
 
 The Hydraulic Erosion Tool simulates the effect of water flowing across the Terrain surface, and the transport of sediment along the flow field. Use this tool to create valley and fluvial features.
+
+![](images/2-31-hydraulic-erosion-03.png)
 
 The erosion effect depends on the Terrain size and heightmap resolution. For highly detailed erosion features, use a Terrain heightmap resolution of 1025 or greater.
 
 ## Parameters
 
-![](images/hydraulic_erosion.png)
+![](images/2-31-hydraulic-erosion-02.png)
 
-| **Property**                   | **Function**                                                 |
-| ------------------------------ | ------------------------------------------------------------ |
-| **Simulation Scale**           | Controls the scale of the simulation, which controls the size of the Terrain features produced by erosion. Increasing this value produces higher frequency details, while decreasing it produces smoother features. |
+| **Property** | | **Description** |
+| ---- | ---- | ---- |
+| **Simulation Scale** | | Controls the scale of the simulation, which controls the size of the Terrain features produced by erosion. Increasing this value produces higher frequency details, while decreasing it produces smoother features. |
 
 | **Advanced**     |      |      |
 | ---- | ---- | ---- |

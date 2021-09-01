@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 namespace UnityEditor.TerrainTools
 {
+    /// <summary>
+    /// Provides methods for handling individual <see cref="Filter"/> within a FilterStack.
+    /// </summary>
     [Serializable]
     public class FilterStack : ScriptableObject
     {
@@ -11,10 +14,26 @@ namespace UnityEditor.TerrainTools
         const string k_BufferName1 = "FilterStack.SwapBuffer[1]";
 
         /// <summary>
-        /// The System.Collections.Generic.List`1 that contains all the Filters for this FilterStack
+        /// The System.Collections.Generic.List`1 that contains all the Filters for this FilterStack.
         /// </summary>
         [SerializeField]
         public List< Filter > filters = new List<Filter>();
+
+        /// <summary>
+        /// Checks if the filters are enabled.
+        /// </summary>
+        public bool hasEnabledFilters
+        {
+            get
+            {
+                foreach(var f in filters)
+                {
+                    if(f.enabled) return true;
+                }
+
+                return false;
+            }
+        }
 
         private RTHandle[] swapBuffer = new RTHandle[2];
 
@@ -25,50 +44,52 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Adds a Filter reference to the end of the FilterStack list of Filters
-        /// <param name="filter">The Filter reference to add</param>
+        /// Adds a Filter reference to the end of the FilterStack list of Filters.
         /// </summary>
+        /// <param name="filter">The Filter reference to add.</param>
         public void Add(Filter filter)
         {
             filters.Add(filter);
         }
 
         /// <summary>
-        /// Inserts the specified Filter at the specified index
-        /// <param name="index">The index at which the Filter reference should be inserted</param>
-        /// <param name="filter">The Filter reference to insert</param>
-        /// <exception>Throws an exception if the specified index is not within the valid range</exception>
+        /// Inserts the specified Filter at the specified index.
         /// </summary>
+        /// <param name="index">The index at which the Filter reference should be inserted.</param>
+        /// <param name="filter">The Filter reference to insert.</param>
+        /// <exception>Throws an exception if the specified index is not within the valid range.</exception>
         public void Insert(int index, Filter filter)
         {
             filters.Insert(index, filter);
         }
 
         /// <summary>
-        /// Removes the specified Filter
-        /// <param name="filter">The Filter reference to remove</param>
-        /// <returns>Returns true if the specified Filter was found and removed; otherwise, returns false.</returns>
+        /// Removes the specified Filter.
         /// </summary>
+        /// <param name="filter">The Filter reference to remove.</param>
+        /// <returns>Returns true if the specified Filter was found and removed; otherwise, returns false.</returns>
         public bool Remove(Filter filter)
         {
             return filters.Remove(filter);
         }
 
         /// <summary>
-        /// Removes the Filter at the specified index
-        /// <param name="index">The index of the Filter to be removed</param>
-        /// <exception>Throws an exception if the specified index is not within the valid range</exception>
+        /// Removes the Filter at the specified index.
         /// </summary>
+        /// <param name="index">The index of the Filter to be removed.</param>
+        /// <exception>Throws an exception if the specified index is not within the valid range.</exception>
         public void RemoveAt(int index)
         {
             filters.RemoveAt(index);
         }
 
         /// <summary>
-        /// Evaluate the FilterStack. Composited result will be copied into fc.destinationRenderTexture
-        /// <param name="fc">The FilterContext that should be used for composition</param>
-        /// <exception>Throws an exception if source or destination RenderTexture is null</exception>
+        /// Evaluates the FilterStack. Composited result will be copied into fc.destinationRenderTexture.
         /// </summary>
+        /// <param name="fc">The FilterContext that should be used for composition.</param>
+        /// <param name="source">The source render texture to blit from.</param>
+        /// <param name="dest">The destination render texture for blitting to.</param>
+        /// <exception>Throws an exception if source or destination RenderTexture is null.</exception>
         public void Eval(FilterContext fc, RenderTexture source, RenderTexture dest)
         {
             if (dest == null)
@@ -117,8 +138,9 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Removes all Filters
+        /// Removes all Filters.
         /// </summary>
+        /// <param name="destroy">When the value is true, the filters will be destroyed.</param>
         public void Clear(bool destroy = false)
         {
             if (destroy)

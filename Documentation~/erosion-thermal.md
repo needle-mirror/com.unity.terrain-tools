@@ -1,16 +1,16 @@
 # Thermal Erosion
 
-Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** (brush) icon, and select **Erosion > Thermal** from the list of Terrain tools.
+Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Erosion** > **Thermal** from the list of Terrain tools.
 
-![](images/Tools_HowToSelection.png)
+![](images/2-32-Thermal-Erosion-01.png)
 
 The Thermal Erosion Tool simulates the effect of sediment settling on a Terrain. Different sediment types naturally settle at specific slope angles, known as the *angle of repose* or *talus angle*. This Tool enforces such an angle on the Terrain height field, resulting in natural-looking slopes.
 
 ## Parameters
 
-![](images/thermal_erosion.png)
+![](images/2-32-Thermal-Erosion-02.png)
 
-| **Property**                  | **Description**          |                                                              |
+| **Property**                  |                          | **Description**                                              |
 | ----------------------------- | ------------------------ | ------------------------------------------------------------ |
 | **Physical Material Presets** |                          | Use the drop-down to select the type of sediment material:<br />&#8226; Dry Ash<br />&#8226; Chalk<br />&#8226; Dry Clay<br />&#8226; Wet Clay<br />&#8226; Soil<br />&#8226; Granite Scree<br />&#8226; Wet Sand<br />&#8226; Quick Sand<br />&#8226; Snow<br />Each sediment material preset applies a default set of **Advanced** property values. |
 | **Advanced**                  |                          | Use the **Advanced** properties to customize the Thermal Erosion Brush. When you edit these properties, the **Physical Material Presets** property value changes to **Custom**. |

@@ -55,5 +55,15 @@ namespace UnityEditor.TerrainTools
                 Assert.That(ToolboxHelper.IsPowerOfTwo(heightmapResolution-1), Is.True);
             }        
         }
+
+        [Test]
+        [TestCase(2)]
+        [TestCase(-1)]
+        public void GetTextureCopy_HandlesMips(int mipCount)
+        {
+            Texture2D texture = new Texture2D(512, 512, TextureFormat.RGBA32, mipCount, false);
+            ToolboxHelper.GetTextureCopy(texture);
+            UnityEngine.TestTools.LogAssert.NoUnexpectedReceived();
+        }
     }
 }

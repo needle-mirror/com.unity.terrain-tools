@@ -68,7 +68,9 @@ namespace UnityEditor.TerrainTools
 
         public override string GetDescription()
         {
-            return "Control + Click to Set the start point, click to connect the bridge.";
+            return "Connects two points on a terrain creating a bridge.\n\n" +
+                "Hold Ctrl + Click to select the starting position.\n" +
+                "Release Ctrl + Click to set the end position.";
         }
 
         public override void OnEnterToolMode() {
@@ -94,16 +96,19 @@ namespace UnityEditor.TerrainTools
                     return;
                 }
 
+                var previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
                 float endWidth = Mathf.Abs(bridgeToolProperties.widthProfile.Evaluate(1.0f));
-                Material previewMaterial = Utility.GetDefaultPreviewMaterial();
                 BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, commonUI.raycastHitUnderCursor.textureCoord, commonUI.brushSize * endWidth, commonUI.brushRotation);
                 PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
+                var brushMask = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, brushMask, previewMaterial);
                 var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
                 Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
                 TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
                     editContext.brushTexture, brushXform, previewMaterial, 0);
                 texelCtx.Cleanup();
                 ctx.Cleanup();
+                RTUtils.Release(brushMask);
             }
 
             if (Event.current.type != EventType.Repaint)
@@ -116,16 +121,15 @@ namespace UnityEditor.TerrainTools
             {
                 float startWidth = Mathf.Abs(bridgeToolProperties.widthProfile.Evaluate(0.0f));
 
+                float brushSize = commonUI.brushSize * startWidth;
                 Material previewMaterial = Utility.GetDefaultPreviewMaterial();
-                BrushTransform brushTransform = TerrainPaintUtility.CalculateBrushTransform(m_StartTerrain, m_StartPoint, commonUI.brushSize * startWidth, commonUI.brushRotation);
+                BrushTransform brushTransform = TerrainPaintUtility.CalculateBrushTransform(m_StartTerrain, m_StartPoint, brushSize, commonUI.brushRotation);
                 PaintContext sampleContext = TerrainPaintUtility.BeginPaintHeightmap(m_StartTerrain, brushTransform.GetBrushXYBounds());
-                
                 var texelCtx = Utility.CollectTexelValidity(sampleContext.originTerrain, brushTransform.GetBrushXYBounds());
                 Utility.SetupMaterialForPaintingWithTexelValidityContext(sampleContext, texelCtx, brushTransform, previewMaterial);
                 TerrainPaintUtilityEditor.DrawBrushPreview(sampleContext, TerrainBrushPreviewMode.SourceRenderTexture,
                     editContext.brushTexture, brushTransform, previewMaterial, 0);
                 texelCtx.Cleanup();
-                
                 sampleContext.Cleanup();
             }
         }
@@ -256,7 +260,7 @@ namespace UnityEditor.TerrainTools
                         mat.SetVector("_BrushParams", brushParams);
 
                         var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                        Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
+                        Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                         brushRenderWithTerrain.SetupTerrainToolMaterialProperties(paintContext, brushTransform, mat);
                         brushRenderWithTerrain.RenderBrush(paintContext, mat, 0);
                         RTUtils.Release(brushMask);

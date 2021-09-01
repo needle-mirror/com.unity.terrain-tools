@@ -43,7 +43,12 @@ namespace UnityEditor.TerrainTools
             {
                 if (m_commonUI == null)
                 {
-                    m_commonUI = new DefaultBrushUIGroup("PaintTexture", UpdateAnalyticParameters);
+                    m_commonUI = new DefaultBrushUIGroup(
+                        "PaintTexture",
+                        UpdateAnalyticParameters,
+                        DefaultBrushUIGroup.Feature.All,
+                        new DefaultBrushUIGroup.FeatureDefaults { Strength = 0.71f }
+                        );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -114,15 +119,6 @@ namespace UnityEditor.TerrainTools
                 m_BlendMat = new Material(Shader.Find("Hidden/TerrainTools/BlendModes"));
             }
             return m_BlendMat;
-        }
-        Material m_BrushPreviewMat = null;
-        Material GetBrushPreviewMaterial()
-        {
-            if (m_BrushPreviewMat == null)
-            {
-                m_BrushPreviewMat = new Material(Shader.Find("Hidden/TerrainEngine/PaintMaterialBrushPreview"));
-            }
-            return m_BrushPreviewMat;
         }
 
         internal void SetSelectedTerrainLayer(TerrainLayer terrainLayer)
@@ -233,7 +229,7 @@ namespace UnityEditor.TerrainTools
                             // Evaluate the brush mask filter stack
                             Material mat = GetPaintMaterial();
                             var brushMask = RTUtils.GetTempHandle(heightContext.sourceRenderTexture.width, heightContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                            Utility.SetFilterRT(commonUI, heightContext.sourceRenderTexture, brushMask, mat);
+                            Utility.GenerateAndSetFilterRT(commonUI, heightContext.sourceRenderTexture, brushMask, mat);
 
                             // apply brush
                             float targetAlpha = m_TargetStrength;
@@ -300,29 +296,17 @@ namespace UnityEditor.TerrainTools
                     RenderTexture tmpRT = RenderTexture.active;
                     Rect brushBounds = brushTransform.GetBrushXYBounds();
                     PaintContext heightmapContext = brushRender.AcquireHeightmap(false, brushBounds, 1);
-                    Material brushMaterial = GetBrushPreviewMaterial();
-                    brushMaterial.SetFloat("_BrushStrength", commonUI.brushStrength);
-                    var defaultPreviewMaterial = Utility.GetDefaultPreviewMaterial();
+                    var previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
 
                     var texelCtx = Utility.CollectTexelValidity(heightmapContext.originTerrain, brushTransform.GetBrushXYBounds());
-                    Utility.SetupMaterialForPaintingWithTexelValidityContext(heightmapContext, texelCtx, brushTransform, defaultPreviewMaterial);
+                    Utility.SetupMaterialForPaintingWithTexelValidityContext(heightmapContext, texelCtx, brushTransform, previewMaterial);
 
-                    if (commonUI.brushMaskFilterStack.filters.Count > 0)
-                    {
-                        // Evaluate the brush mask filter stack
-                        var brushMask = RTUtils.GetTempHandle(heightmapContext.sourceRenderTexture.width, heightmapContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                        commonUI.GetBrushMask(heightmapContext.sourceRenderTexture, brushMask);
-
-                        RenderTexture.active = tmpRT;
-
-                        Utility.SetupMaterialForPaintingWithTexelValidityContext(heightmapContext, texelCtx, brushTransform, brushMaterial);
-                        brushMaterial.SetTexture("_FilterTex", brushMask);
-                        TerrainPaintUtilityEditor.DrawBrushPreview(heightmapContext, TerrainBrushPreviewMode.SourceRenderTexture, editContext.brushTexture, brushTransform, brushMaterial, 0);
-                        RTUtils.Release(brushMask);
-                    }
-
-                    brushRender.RenderBrushPreview(heightmapContext, TerrainBrushPreviewMode.SourceRenderTexture, brushTransform, defaultPreviewMaterial, 0);
+                    var filterRT = RTUtils.GetTempHandle(heightmapContext.sourceRenderTexture.width, heightmapContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                    Utility.GenerateAndSetFilterRT(commonUI, heightmapContext.sourceRenderTexture, filterRT, previewMaterial);
+                    
+                    brushRender.RenderBrushPreview(heightmapContext, TerrainBrushPreviewMode.SourceRenderTexture, brushTransform, previewMaterial, 0);
                     texelCtx.Cleanup();
+                    RTUtils.Release(filterRT);
                 }
             }
         }
@@ -381,7 +365,8 @@ namespace UnityEditor.TerrainTools
 
         private static class Styles
         {
-            public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Add material layers to use on the terrain. Left click to paint the selected material layer onto the terrain. \n\nHold Shift and A to pick a material layer from the terrain.");
+            public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Applies tiled Textures onto the Terrain.\n\n" +
+                "Hold Shift + A + Click to sample layers from the terrain.");
 #if UNITY_2019_2_OR_NEWER
             public static readonly GUIContent materialControls = EditorGUIUtility.TrTextContent("Material");
             public static readonly GUIContent layerProperties = EditorGUIUtility.TrTextContent("Layer Properties");
@@ -392,10 +377,10 @@ namespace UnityEditor.TerrainTools
             public static readonly GUIContent CreateLayersBtn = EditorGUIUtility.TrTextContent("Create...", "Create a new layer.");
             public static readonly GUIContent SavePaletteBtn = EditorGUIUtility.TrTextContent("Save", "Save the current layer list into selected palette asset file on disk.");
             public static readonly GUIContent SaveAsPaletteBtn = EditorGUIUtility.TrTextContent("Save As", "Save the current palette asset as a new file on disk.");
-            public static readonly GUIContent RefreshPaletteBtn = EditorGUIUtility.TrTextContent("Revert", "Load selected palette and apply to the layer list.");
+            public static readonly GUIContent RevertPaletteBtn = EditorGUIUtility.TrTextContent("Revert", "Load selected palette and apply to the layer list.");
             public static readonly GUIContent RemoveLayersBtn = EditorGUIUtility.TrTextContent("Remove Selected Layers", "Removes layers that are selected within the Layer Palette.");
             public static readonly GUIContent targetStrengthTxt = EditorGUIUtility.TrTextContent("Target Strength", "Maximum opacity this brush will paint to.");
-            public static readonly string LayersWarning = "The selected terrain doesn't contain any layers. Add layer(s) to paint on the terrain.";
+            public static readonly string LayersWarning = "The selected terrain doesn't contain any layers. Add or create layer(s) to paint on the terrain.";
         }
 
         // layer list view
@@ -442,7 +427,7 @@ namespace UnityEditor.TerrainTools
             {
                 CreateNewPalette();
             }
-            if (GUILayout.Button(Styles.RefreshPaletteBtn))
+            if (GUILayout.Button(Styles.RevertPaletteBtn))
             {
                 if (GetPalette())
                 {

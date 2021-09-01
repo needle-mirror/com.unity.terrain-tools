@@ -1,23 +1,53 @@
 # Changelog
 All notable changes to this package will be documented in this file.
 
-The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
-and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [4.0.0-pre.2] - 2021-11-03
+## [4.0.0] - 2021-09-01
+### Added:
+- Added Brush Mask Filter previews to all Paint Terrain tools.
+- Added the option to let you set default parameter values for Brushes.
+- Added a warning message (specifically for Vulkan and DX12) about Brush sizes and heightmaps that are possibly too large to allocate in GPU memory.
 
-## Fixed:
-- Fixed warnings regarding meta files for empty or non-existent directories
+### Changed:
+- Improved Brush preview feedback when you paint holes to make it more obvious which parts of the Terrain the Paint Holes tool affects.
+- Changed Noise Editor window behavior so that when you open the Noise Editor window, Unity opens an existing Noise Editor window instead of creating a new one.
+- Changed the way Unity handles NaN and INF input for the transform values of Noise Settings.
+- Changed the Paint Height tool's Brush Strength slider range to cover more usable values, and changed the default Brush Strength on various other tools.
+- Improved Brush descriptions for standardization, and to make the descriptions for different sculpting brushes easier to understand.
+- Moved Mesh Stamp tool features into the Stamp Terrain tool.
+- Moved Terrain Toolbox warnings from the Console to the Inspector window.
 
-## [4.0.0-pre.1] - 2021-11-03
-## Changed:
-- Moved Terrain API's out of Experimental
-- Added additional Stamp Height behaviors and changed the stamping operation to be based off the terrain height under the cursor.
+### Fixed:
+- Fixed RenderTexture leak in `ToolboxHelper.CopyTextureToTerrainHeight`.
+- Fixed an exception that occurred when you specified an empty directory path in the Export Splatmaps or Export Heightmaps tool.
+- Fixed serialization errors in the Noise Editor when you reload scenes.
+- Fixed the Terrain Toolbox window so that it scales properly when docked.
+- Fixed the Terrain Toolbox folder path GUI so that it now sizes correctly and consistently.
+- Constrained Terrain splits to split equally along the X and Z axes, since heightmap resolution must be equal along the X and Z axes. (case 1358022)
+- Fixed CopyTexture error due to mipcount mismatch when you added Terrain splatmaps.
+- Fixed Remove Terrain so that it no longer removes child objects. It now only removes Terrain components, and leaves everything else intact. GameObjects without children nor components aren't affected.
+- Fixed the Split tool so that it no longer deletes the selected Terrain GameObject. Instead, Unity removes the Terrain component, and makes the selected Terrain parent of all subtiles. Also now, you can't undo a split operation.
+- Fixed an issue where the `NoiseLib` constructor required a large amount of CPU time when you entered and exited play mode, by using `TypeCache` instead.
+- Fixed an issue where the split Terrain process was slow when there were many trees.
+- Fixed the Split tool to prevent the split of Terrain with split values <= 1.
+- Fixed an issue with overlapping Brush Mask Filter property fields.
+- Fixed incorrect positioning of the Noise Field Preview tooltip.
+- Fixed distorted reset icons.
 
-## Added:
-- Added a tooltip for the **Tile Height Resolution** property.
+## [4.0.0-pre.2] - 2021-05-12
+### Fixed:
+- Fixed warnings about meta files for empty or non-existent directories.
 
-## Fixed:
+## [4.0.0-pre.1] - 2021-05-11
+### Changed:
+- Moved Terrain APIs out of Experimental.
+- Added additional Stamp Height behaviors, and changed the stamp operation so that it's now based off the Terrain height under the cursor.
+
+### Added:
+- Added a tooltip for the Tile Height Resolution property.
+
+### Fixed:
 - Fixed a Render Texture leak in `FilterContext`.
 - Fixed an issue where the Brush cursor disappeared after you removed a Brush Mask Filter.
 - Fixed an exception that occasionally appeared when you created a new Terrain with custom `TerrainData`.
@@ -32,7 +62,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed an issue where Detail Meshes were removed from Terrain objects after you used the Terrain Toolbox to split them.
 - Fixed some tooltip alignment issues. Tooltips should now properly appear beneath your cursor.
 - Fixed an issue where the Bridge Tool anchor didn't resize properly when you changed the Brush Size.
-- Fixed an issue where the **Brush Size** slider didn't update properly  when you changed the Brush Size.
+- Fixed an issue where the Brush Size slider didn't update properly  when you changed the Brush Size.
 - Fixed an issue where tooltips didn't appear when you pressed multiple hotkeys at the same time.
 - Fixed an issue where the Altitude Heightmap didn't render properly when you set the Graphics API to OpenGL.
 - Fixed a Render Texture leak when you used the Hydraulic Erosion Tool.
@@ -51,7 +81,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - PNG/TGA heightmaps support level remapping and vertical flipping.
 - Create New Terrain supports heightmaps in Texture2D format.
 - Validation function for Brush Filters.
-- Clear button to Brush Filter stack header.
 
 ### Changed
 - Changed the package name that's used to get core Universal Render Pipeline (URP) HLSL code from Lightweight to Universal.

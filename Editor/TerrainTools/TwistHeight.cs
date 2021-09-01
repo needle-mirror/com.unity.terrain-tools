@@ -57,7 +57,7 @@ namespace UnityEditor.TerrainTools
 
         public override string GetDescription()
         {
-            return "Click to Twist the terrain height.";
+            return "Rotates Terrain features and layers around the center of the Brush.";
         }
 
         public override void OnEnterToolMode()
@@ -102,10 +102,13 @@ namespace UnityEditor.TerrainTools
                     if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
                         PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                        Material previewMaterial = Utility.GetDefaultPreviewMaterial();
+                        Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
 
                         var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
                         Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                        var filterRT = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width,
+                            ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                        Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filterRT, previewMaterial);
                         TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
                             editContext.brushTexture, brushXform, previewMaterial, 0);
 
@@ -128,6 +131,7 @@ namespace UnityEditor.TerrainTools
                         }
 
                         texelCtx.Cleanup();
+                        RTUtils.Release(filterRT);
                     }
                 }
             }
@@ -219,7 +223,7 @@ namespace UnityEditor.TerrainTools
                                 TerrainLayer layer = terrain.terrainData.terrainLayers[i];
                                 PaintContext paintContext = brushRender.AcquireTexture(true, brushXform.GetBrushXYBounds(), layer);
                                 var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                                Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
+                                Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                                 paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
                                 brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                                 brushRender.RenderBrush(paintContext, mat, 0);
@@ -233,7 +237,7 @@ namespace UnityEditor.TerrainTools
                         {
                             PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
                             var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                            Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
+                            Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                             paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
                             ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, finalTwistAmount, brushTexture, brushXform);
                             brushRender.Release(paintContext);

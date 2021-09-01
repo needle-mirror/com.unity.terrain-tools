@@ -24,7 +24,12 @@ namespace UnityEditor.TerrainTools
                 if (m_commonUI == null)
                 {
                     LoadSettings();
-                    m_commonUI = new DefaultBrushUIGroup("TerraceTool", UpdateAnalyticParameters);
+                    m_commonUI = new DefaultBrushUIGroup(
+                        "TerraceTool",
+                        UpdateAnalyticParameters,
+                        DefaultBrushUIGroup.Feature.All,
+                        new DefaultBrushUIGroup.FeatureDefaults { Strength = 0.99f }
+                        );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -66,7 +71,7 @@ namespace UnityEditor.TerrainTools
 
         public override string GetDescription()
         {
-            return "Use to terrace terrain";
+            return "Transforms Terrain features into a series of flat areas resembling steps.";
         }
 
         public override void OnEnterToolMode()
@@ -105,13 +110,17 @@ namespace UnityEditor.TerrainTools
             {
                 if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
-                    var previewMaterial = Utility.GetDefaultPreviewMaterial();
+                    var previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
                     var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
                     Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                    var filterRT = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height,
+                        0, FilterUtility.defaultFormat);
+                    Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filterRT, previewMaterial);
                     TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
                         editContext.brushTexture, brushXform, previewMaterial, 0);
                     texelCtx.Cleanup();
+                    RTUtils.Release(filterRT);
                 }
             }
         }
@@ -147,7 +156,7 @@ namespace UnityEditor.TerrainTools
         {
             Material mat = GetPaintMaterial();
             var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-            Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
+            Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
             float delta = terraceToolProperties.m_JitterTerraceCount * 50.0f;
             float jitteredFeatureSize = terraceToolProperties.m_FeatureSize + Random.Range(terraceToolProperties.m_FeatureSize - delta, terraceToolProperties.m_FeatureSize + delta);
             Vector4 brushParams = new Vector4(brushStrength, jitteredFeatureSize, terraceToolProperties.m_BevelAmountInterior, 0.0f);

@@ -13,6 +13,8 @@ namespace UnityEditor.TerrainTools
         private float m_DistanceTravelled = 0.0f;
         private Vector3 m_LastBrushPos;
 
+        private float m_defaultBrushSpacing;
+        
         public float brushSpacing => m_BrushSpacing;
         public bool allowPaint {
             get => m_AllowPaint; set => m_AllowPaint = value; }
@@ -24,14 +26,15 @@ namespace UnityEditor.TerrainTools
 
         static readonly Styles styles = new Styles();
 
-        public BrushSpacingVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache) : base(toolName, eventHandler, terrainCache)
+        public BrushSpacingVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache, float defaultValue = 0.0f) : base(toolName, eventHandler, terrainCache)
         {
+            m_defaultBrushSpacing = defaultValue;
         }
 
         public override void OnEnterToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler)
         {
             base.OnEnterToolMode(shortcutHandler);
-            m_BrushSpacing = GetEditorPrefs("TerrainBrushSpacing", 0.0f);
+            m_BrushSpacing = GetEditorPrefs("TerrainBrushSpacing", m_defaultBrushSpacing);
         }
 
         public override void OnExitToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler)

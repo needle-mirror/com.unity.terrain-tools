@@ -15,9 +15,13 @@
             
             #define CLIP_PREVIEW   clip( IsPcUvPartOfValidTerrainTileTexelSobel( (i.pcPixels + (.5).xx) / _PcPixelRect.zw, _BrushTex_TexelSize.xy * .5 ) - 1 );
 
+            sampler2D _FilterTex;
             sampler2D _BrushTex;
             float4 _BrushTex_TexelSize;
 
+            float _HoleStripeThreshold;
+            float _UseAltColor;
+            float _IsPaintHolesTool;
         ENDCG
 
         Pass    // 0
@@ -28,12 +32,15 @@
             #pragma vertex vert
             #pragma fragment frag
 
+            #pragma shader_feature_local TERRAINTOOLS_FILTERS_ENABLED
+
             struct v2f {
                 float4 clipPosition : SV_POSITION;
-                float3 positionWorld : TEXCOORD0;
-                float3 positionWorldOrig : TEXCOORD1;
-                float2 pcPixels : TEXCOORD2;
-                float2 brushUV : TEXCOORD3;
+                float2 uv : TEXCOORD0;
+                float3 positionWorld : TEXCOORD1;
+                float3 positionWorldOrig : TEXCOORD2;
+                float2 pcPixels : TEXCOORD3;
+                float2 brushUV : TEXCOORD4;
             };
 
             v2f vert(uint vid : SV_VertexID)
@@ -53,6 +60,7 @@
                 float3 positionWorld = TerrainObjectToWorldPosition(positionObject);
 
                 v2f o;
+                o.uv = heightmapUV;
                 o.pcPixels = pcPixels;
                 o.positionWorld = positionWorld;
                 o.positionWorldOrig = positionWorld;
@@ -61,12 +69,11 @@
                 return o;
             }
 
-
             float4 frag(v2f i) : SV_Target
             {
-                float brushSample = UnpackHeightmap(tex2D(_BrushTex, i.brushUV));
-
                 CLIP_PREVIEW
+
+                float brushSample = UnpackHeightmap(tex2D(_BrushTex, i.brushUV));
 
                 // out of bounds multiplier
                 float oob = all(saturate(i.brushUV) == i.brushUV) ? 1.0f : 0.0f;
@@ -75,9 +82,50 @@
                 float stripeWidth = 1.0f;       // pixels
                 float stripeLocation = 0.0025f;
                 float brushStripe = Stripe(brushSample, stripeLocation, stripeWidth);
-
                 float4 color = float4(0.5f, 0.5f, 1.0f, 1.0f);
-                color.a = lerp(.75f * brushSample, 1, saturate(brushStripe));
+                float opacity = .75f * brushSample;
+
+            #if TERRAINTOOLS_FILTERS_ENABLED
+                float filter = UnpackHeightmap(tex2D(_FilterTex, i.uv));
+            #endif
+ 
+                if (_IsPaintHolesTool)  //override the color on the pixels that will be affected by the tool
+                {
+                    float holeStripeLocation = saturate(abs(_HoleStripeThreshold));
+                    float4 holeColor = _UseAltColor ?
+                        float4(0.5f, 0.0f, 1.0f, 1.0f) :    //alternate color = purplish  
+                        float4(0.0f, 0.0f, 1.0f, 1.0f);     //regular color = blue
+
+                    //clearly mark which pixels will be affected by the PaintHoles brush
+                    float val = brushSample;
+                #if TERRAINTOOLS_FILTERS_ENABLED
+                     val = val * filter;
+                #endif
+                    opacity = abs(val) > (abs(holeStripeLocation)) && abs(val) > .0001f ? sign(holeStripeLocation) * sign(val) : 0.0f;
+                    if (opacity > 0.0f)
+                    {
+                        //Blend in some cyan based on the brushSample (to subtly visualize the brush texture)
+                        color.rgb = lerp(holeColor.rgb, float3(0.0f, 1.0f, 1.0f), 0.5f*brushSample);
+
+                        brushStripe = Stripe(brushSample, holeStripeLocation, stripeWidth);
+                    }
+                }
+
+                #if TERRAINTOOLS_FILTERS_ENABLED
+
+                    float4 filterColor = float4(1.0f, 0.6f, 0.05f, 1);
+                    float fstripe = Stripe(filter, stripeLocation, stripeWidth);
+                    float t = saturate((filter + fstripe) * brushSample     // mult by brushSample to hide filter pixels outside brush boundaries.
+                                        - brushStripe                       // brush outline stripe should take precendence.
+                                        - stripeLocation);                  // dim color contribution based on threshold which
+                                                                            // should keep filter-tinted pixels within filter stripe boundaries.
+                    color.rgb = lerp(color.rgb, filterColor.rgb, t);
+                    brushStripe = max(fstripe * brushSample, brushStripe); // ensure stripe pixels are always 1 alpha
+
+                #endif
+
+                color.a = lerp(opacity, 1, saturate(brushStripe));
+
                 return color * oob;
             }
             ENDCG

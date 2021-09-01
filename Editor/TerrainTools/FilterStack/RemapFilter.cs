@@ -38,7 +38,7 @@ namespace UnityEditor.TerrainTools
 
             var fromLabelRect = new Rect(rect.x, rect.y, width, EditorGUIUtility.singleLineHeight);
             var fromRangeRect = new Rect(fromLabelRect.xMax, fromLabelRect.y, rect.width - width, fromLabelRect.height);
-            var toLabelRect = new Rect(rect.x, fromLabelRect.yMax, width, EditorGUIUtility.singleLineHeight);
+            var toLabelRect = new Rect(rect.x, fromLabelRect.yMax + EditorGUIUtility.standardVerticalSpacing, width, EditorGUIUtility.singleLineHeight);
             var toRangeRect = new Rect(toLabelRect.xMax, toLabelRect.y, rect.width - width, toLabelRect.height);
 
             EditorGUI.LabelField(fromLabelRect, s_FromLabel);

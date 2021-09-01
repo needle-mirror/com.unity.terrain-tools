@@ -1,8 +1,8 @@
 # General settings
 
-The **General** settings include basic information needed to create a new Terrain, such as Terrain width, length, height, and number of tiles. 
+The **General** settings include basic information you need to create a new Terrain, such as Terrain width, length, height, and number of tiles.
 
-![](images/Toolbox_Create_General.png)
+![](images/4-11-toolbox-create-settings.png)
 
 | **Property**       | **Description**                                              |
 | ------------------ | ------------------------------------------------------------ |
@@ -15,14 +15,15 @@ The **General** settings include basic information needed to create a new Terrai
 
 ## Group Settings
 
-**Group Settings** allow you to apply the same settings to new Terrain tiles in a group. Often, a group of Terrain tiles share the same Grouping ID, heightmap resolution, and Material.
+**Group Settings** let you apply the same settings to new Terrain tiles in a group. Often, a group of Terrain tiles share the same Grouping ID, heightmap resolution, and Material.
 
-![](images/Toolbox_Create_Group.png)
+![](images/4-11-toolbox-create-groupsettings.png)
 
 | **Property**               | **Description**                                              |
 | -------------------------- | ------------------------------------------------------------ |
 | **Grouping ID**            | The grouping ID for the new Terrain tiles.                   |
 | **Pixel Error**            | The accuracy of the mapping between Terrain maps (such as height maps and textures) and generated Terrain. Higher values indicate lower accuracy, but with lower rendering overhead. |
 | **Base Map Distance**      | The maximum distance at which Unity displays Terrain textures at full resolution. Beyond this distance, the system uses a lower resolution composite image for efficiency. |
+| **Draw Instanced**      | Check this box to enable instanced rendering, where Unity uses GPU instancing to calculate Terrain data on the GPU and efficiently render the Terrain mesh. |
 | **Material Override**      | A custom Material to render the Terrain with. Specify **None** to use the default material. |
 | **Tile Height Resolution** | The pixel resolution of the Terrain’s heightmap, also known as Heightmap Resolution. |

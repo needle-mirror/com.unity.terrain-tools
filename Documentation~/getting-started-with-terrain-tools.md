@@ -1,11 +1,21 @@
 # Getting started with Terrain Tools
 
-Terrain Tools is a package that you can optionally add to any project in Unity 2019.1 or later.
+You should read the [built-in Terrain documentation](https://docs.unity3d.com/Manual/script-Terrain.html) before you use the Terrain Tools package. Terrain Tools provides add-on tooling, which means it modifies and improves Unity's built-in set of Terrain features. Below are some examples of these advanced features.
 
-To add the package to your project, you must install it from Package Manager. Click **Window** > **Package Manager**, search for *Terrain Tools*, and click the **Install** button in the lower right corner.
+For information about how to install Terrain Tools and Asset Samples, see [Installing Terrain Tools and Sample Assets](installing-terrain-tools.md).
 
-![img](images/TerrainTools_PackMan.png)
+## Paint Terrain
 
-After you've installed the package, a new **Download Asset Samples from Asset Store** button appears on the top. Clicking it directs you to Unity's Asset Store, where you can download the Terrain Tools Asset Sample Pack. The sample pack includes many high-quality Terrain Brushes and Textures to help you begin working on Terrain. 
+Terrain Tools adds fourteen new tools to the Paint Terrain drop-down menu, which include several [Sculpting](sculpt.md), [Erosion](erosion.md), and [Transform](transform.md) tools, [Mesh Stamping](mesh-stamp.md), and upgraded [Texture Painting](paint-texture.md) and [Terrain Stamping](stamp-terrain.md) experiences.
 
-![img](images/TerrainTools_DownloadSamples.png)
+## Brushes
+
+Terrain Tools adds updates to [Brush controls](brush-controls-shortcut-keys.md) and [Brush Mask Filters](brush-mask-filters.md) to enhance Terrain brushes. The new Brush controls rename **Opacity** to **Brush Strength**, and add the ability to set **Brush Rotation**, **Brush Spacing**, and **Brush Scatter**. You can also modify the maximum and minimum values of each Brush.
+
+## Terrain Toolbox
+
+The [Terrain Toolbox](terrain-toolbox.md) is a utility window that contains useful tools to help simplify Terrain workflows. It allows you to create new Terrain from preset settings or imported heightmaps, batch change Terrain settings on multiple Terrain tiles, and import/export splatmaps and heightmaps.
+
+## Noise Editor
+
+The [Noise Editor](noise-editor.md) is a standalone window that lets you author and save noise patterns for the [Noise Height](sculpt-noise.md) tool. This allows you to work on **Noise Setting** assets without the need to have the Brush active and potentially modifying your Terrain.

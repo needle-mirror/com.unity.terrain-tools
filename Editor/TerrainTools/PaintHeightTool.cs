@@ -25,7 +25,12 @@ namespace UnityEditor.TerrainTools
             {
                 if (m_commonUI == null)
                 {
-                    m_commonUI = new DefaultBrushUIGroup("PaintHeight");
+                    m_commonUI = new DefaultBrushUIGroup(
+                        "PaintHeight",
+                        null,
+                        DefaultBrushUIGroup.Feature.All,
+                        new DefaultBrushUIGroup.FeatureDefaults { Strength = 0.26f }
+                        );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -49,7 +54,8 @@ namespace UnityEditor.TerrainTools
 
         public override string GetDescription()
         {
-            return "Left Click to Raise Terrain, Hold Control + Left Click to Lower Terrain";
+            return "Increases or decreases the Terrain height.\n\n" +
+                "Hold Ctrl + Click to decrease the height.";
         }
 
         public override void OnEnterToolMode()
@@ -73,8 +79,8 @@ namespace UnityEditor.TerrainTools
         {
             Material mat = Utility.GetPaintHeightMaterial();
             var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-            Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
-            Vector4 brushParams = new Vector4(0.05f * brushStrength, 0.0f, 0.0f, 0.0f);
+            Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
+            Vector4 brushParams = new Vector4(0.0135f * brushStrength, 0.0f, 0.0f, 0.0f);
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
 
@@ -110,8 +116,11 @@ namespace UnityEditor.TerrainTools
                     if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
                         PaintContext paintContext = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                        Material previewMaterial = Utility.GetDefaultPreviewMaterial();
-
+                        Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
+                        var filterRT = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width,
+                                                             paintContext.sourceRenderTexture.height,
+                                                             0, FilterUtility.defaultFormat);
+                        Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, filterRT, previewMaterial);
                         var texelCtx = Utility.CollectTexelValidity(paintContext.originTerrain, brushXform.GetBrushXYBounds());
                         Utility.SetupMaterialForPaintingWithTexelValidityContext(paintContext, texelCtx, brushXform, previewMaterial);
                         TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.SourceRenderTexture,
@@ -130,6 +139,8 @@ namespace UnityEditor.TerrainTools
                                 editContext.brushTexture, brushXform, previewMaterial, 1);
                             texelCtx.Cleanup();
                         }
+                        
+                        RTUtils.Release(filterRT);
                     }
                 }
             }

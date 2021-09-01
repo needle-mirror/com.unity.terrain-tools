@@ -12,6 +12,8 @@ namespace UnityEditor.TerrainTools
 
         private bool m_UseNewRandomValue;
         private Vector2 m_RandomValues;
+        
+        private float m_defaultBrushScatter;
 
         public Vector2 ScatterBrushStamp(Vector2 uv, float brushSize)
         {
@@ -28,8 +30,9 @@ namespace UnityEditor.TerrainTools
 
         static readonly Styles styles = new Styles();
 
-        public BrushScatterVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache) : base(toolName, eventHandler, terrainCache)
+        public BrushScatterVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache, float defaultValue = 0.0f) : base(toolName, eventHandler, terrainCache)
         {
+            m_defaultBrushScatter = defaultValue;
         }
 
         public void RequestRandomisation()
@@ -40,7 +43,7 @@ namespace UnityEditor.TerrainTools
         public override void OnEnterToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler)
         {
             base.OnEnterToolMode(shortcutHandler);
-            m_BrushScatter = GetEditorPrefs("TerrainBrushScatter", 0.0f);
+            m_BrushScatter = GetEditorPrefs("TerrainBrushScatter", m_defaultBrushScatter);
         }
 
         public override void OnExitToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler)

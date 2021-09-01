@@ -4,6 +4,9 @@ using System;
 
 namespace UnityEditor.TerrainTools
 {
+    /// <summary>
+    /// Provides methods for rendering the <see cref="FilterStack"/> within the inspector.
+    /// </summary>
     public class FilterStackView
     {
         private static class Styles
@@ -27,6 +30,9 @@ namespace UnityEditor.TerrainTools
             }
         }
 
+        /// <summary>
+        /// Gets the Serialized Filter Stack object. 
+        /// </summary>
         public SerializedObject serializedFilterStack {
             get { return m_SerializedObject; }
         }
@@ -40,12 +46,19 @@ namespace UnityEditor.TerrainTools
         private FilterContext       m_FilterContext;
         private bool                m_Dragging;
 
+        /// <summary>
+        /// Gets and sets the <see cref="FilterContext"/>.
+        /// </summary>
         public FilterContext FilterContext {
             get => m_FilterContext;
             set => m_FilterContext = value;
             }
 
-
+        /// <summary>
+        /// Initializes and returns an instance of <see cref="FilterStackView"/>.
+        /// </summary>
+        /// <param name="label">The label used for displaying the FilterStaack</param>
+        /// <param name="serializedFilterStackObject">The filter stack object to referenc.</param>
         public FilterStackView(GUIContent label, SerializedObject serializedFilterStackObject)
         {
             m_Label = label;
@@ -85,6 +98,9 @@ namespace UnityEditor.TerrainTools
 #endif
         }
 
+        /// <summary>
+        /// Renders the FilterStack inspector GUI.
+        /// </summary>
         public void OnGUI()
         {
             Init();
@@ -98,6 +114,10 @@ namespace UnityEditor.TerrainTools
             m_SerializedObject.Update();
         }
 
+        /// <summary>
+        /// Renders the FilterStack SceneView GUI.
+        /// </summary>
+        /// <param name="sceneView">The SceneView used for rendering.</param>
         public void OnSceneGUI(SceneView sceneView)
         {
             foreach (var filter in m_FilterStack.filters)
@@ -408,6 +428,9 @@ namespace UnityEditor.TerrainTools
 
         }
 
+        /// <summary>
+        /// Calls the methods in its invocation list when the FilterStackView is changed.
+        /// </summary>
         public event Action< FilterStack > onChanged;
     }
 }

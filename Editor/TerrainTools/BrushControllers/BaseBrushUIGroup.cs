@@ -9,9 +9,12 @@ using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor.TerrainTools
 {
+    /// <summary>
+    /// Provides methods for altering brush data.
+    /// </summary>
     public abstract class BaseBrushUIGroup : IBrushUIGroup, IBrushEventHandler, IBrushTerrainCache
     {
-        private bool m_ShowBrushTextures = true;
+        private bool m_ShowBrushMaskFilters = true;
         private bool m_ShowModifierControls = true;
 
         private static readonly BrushShortcutHandler<BrushShortcutType> s_ShortcutHandler = new BrushShortcutHandler<BrushShortcutType>();
@@ -30,6 +33,10 @@ namespace UnityEditor.TerrainTools
 
         [ SerializeField ]
         private FilterStack m_BrushMaskFilterStack = null;
+
+        /// <summary>
+        /// Gets the brush mask's <see cref="FilterStack"/>. 
+        /// </summary>
         public FilterStack brushMaskFilterStack
         {
             get
@@ -53,6 +60,10 @@ namespace UnityEditor.TerrainTools
         }
 
         private FilterStackView m_BrushMaskFilterStackView = null;
+
+        /// <summary>
+        /// Gets the brush mask's <see cref="FilterStackView"/>.
+        /// </summary>
         public FilterStackView brushMaskFilterStackView
         {
             get
@@ -82,7 +93,21 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public void GetBrushMask(Terrain terrain, RenderTexture sourceRenderTexture,
+        /// <summary>
+        /// Checks if Filters are enabled.
+        /// </summary>
+        public bool hasEnabledFilters => brushMaskFilterStack.hasEnabledFilters;
+
+        /// <summary>
+        /// Generates the brush mask.
+        /// </summary>
+        /// <param name="terrain">The terrain in focus.</param>
+        /// <param name="sourceRenderTexture">The source render texture to blit from.</param>
+        /// <param name="destinationRenderTexture">The destination render texture for bliting to.</param>
+        /// <param name="position">The brush's position.</param>
+        /// <param name="scale">The brush's scale.</param>
+        /// <param name="rotation">The brush's rotation.</param>
+        public void GenerateBrushMask(Terrain terrain, RenderTexture sourceRenderTexture,
             RenderTexture destinationRenderTexture,
             Vector3 position, float scale, float rotation)
         {
@@ -110,35 +135,74 @@ namespace UnityEditor.TerrainTools
             filterContext.ReleaseRTHandles();
         }
 
-        public void GetBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
+        /// <summary>
+        /// Generates the brush mask.
+        /// </summary>
+        /// <param name="terrain">The terrain in focus.</param>
+        /// <param name="sourceRenderTexture">The source render texture to blit from.</param>
+        /// <param name="destinationRenderTexture">The destination render texture for bliting to.</param>
+        /// <seealso cref="GenerateBrushMask(Terrain, RenderTexture, RenderTexture, Vector3, float, float)"/>
+        public void GenerateBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
         {
-            GetBrushMask(terrain, sourceRenderTexture, destinationRenderTexture, raycastHitUnderCursor.point, brushSize, brushRotation);
-        }
-        
-        public void GetBrushMask(RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
-        {
-            GetBrushMask(terrainUnderCursor, sourceRenderTexture, destinationRenderTexture);
+            GenerateBrushMask(terrain, sourceRenderTexture, destinationRenderTexture, raycastHitUnderCursor.point, brushSize, brushRotation);
         }
 
+        /// <summary>
+        /// Generates the brush mask.
+        /// </summary>
+        /// <param name="sourceRenderTexture">The source render texture to blit from.</param>
+        /// <param name="destinationRenderTexture">The destination render texture for bliting to.</param>
+        /// <seealso cref="GenerateBrushMask(Terrain, RenderTexture, RenderTexture, Vector3, float, float)"/>
+        public void GenerateBrushMask(RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
+        {
+            GenerateBrushMask(terrainUnderCursor, sourceRenderTexture, destinationRenderTexture);
+        }
+
+        /// <summary>
+        /// Returns the brush name.
+        /// </summary>
         public string brushName => m_Name;
 
+        /// <summary>
+        /// Gets and sets the brush size.
+        /// </summary>
+        /// <remarks>Gets a value of 100 if the brush size controller isn't initialized.</remarks>
         public float brushSize
         {
-            get { return m_BrushSizeController?.brushSize ?? 25.0f; }
+            get { return m_BrushSizeController?.brushSize ?? 100.0f; }
             set { m_BrushSizeController.brushSize = value; }
         }
+
+        /// <summary>
+        /// Gets and sets the brush rotation.
+        /// </summary>
+        /// <remarks>Gets a value of 0 if the brush size controller isn't initialized.</remarks>
         public float brushRotation
         {
             get { return m_BrushRotationController?.brushRotation ?? 0.0f; }
             set { m_BrushRotationController.brushRotation = value; }
         }
+
+        /// <summary>
+        /// Gets and sets the brush strength.
+        /// </summary>
+        /// <remarks>Gets a value of 1 if the brush size controller isn't initialized.</remarks>
         public float brushStrength
         {
             get { return m_BrushStrengthController?.brushStrength ?? 1.0f; }
             set { m_BrushStrengthController.brushStrength = value; }
         }
+
+        /// <summary>
+        /// Returns the brush spacing.
+        /// </summary>
+        /// <remarks>Returns a value of 0 if the brush size controller isn't initialized.</remarks>
         public float brushSpacing => m_BrushSpacingController?.brushSpacing ?? 0.0f;
 
+        /// <summary>
+        /// Returns the brush scatter.
+        /// </summary>
+        /// <remarks>Returns a value of 0 if the brush size controller isn't initialized.</remarks>
         public float brushScatter => m_BrushScatterController?.brushScatter ?? 0.0f;
 
         private bool isSmoothing
@@ -152,9 +216,20 @@ namespace UnityEditor.TerrainTools
                 return false;
             }
         }
+
+        /// <summary>
+        /// Checks if painting is allowed.
+        /// </summary>
         public virtual bool allowPaint => (m_BrushSpacingController?.allowPaint ?? true) && !isSmoothing;
+        
+        /// <summary>
+        /// Inverts the brush strength.
+        /// </summary>
         public bool InvertStrength => m_BrushModifierKeyController?.ModifierActive(BrushModifierKey.BRUSH_MOD_INVERT) ?? false;
         
+        /// <summary>
+        /// Checks if the brush is in use.
+        /// </summary>
         public bool isInUse
         {
             get
@@ -188,6 +263,12 @@ namespace UnityEditor.TerrainTools
         }
 
         Func<TerrainToolsAnalytics.IBrushParameter[]> m_analyticsCallback;
+
+        /// <summary>
+        /// Initializes and returns an instance of BaseBrushUIGroup.
+        /// </summary>
+        /// <param name="name">The name of the brush.</param>
+        /// <param name="analyticsCall">The brush's analytics function.</param>
         protected BaseBrushUIGroup(string name, Func<TerrainToolsAnalytics.IBrushParameter[]> analyticsCall = null)
         {
             m_Name = name;
@@ -210,49 +291,96 @@ namespace UnityEditor.TerrainTools
             s_ShortcutHandler.HandleShortcutChanged(args, BrushShortcutType.Rotation);
         }
 #endif
-
+        /// <summary>
+        /// Adds a generic controller of type <see cref="IBrushController"/> to the brush's controller list.
+        /// </summary>
+        /// <typeparam name="TController">A generic controller type of IBrushController.</typeparam>
+        /// <param name="newController">The new controller to add.</param>
+        /// <returns>Returns the new generic controller.</returns>
         protected TController AddController<TController>(TController newController) where TController: IBrushController
         {
             m_Controllers.Add(newController);
             return newController;
         }
 
+        /// <summary>
+        /// Adds a rotation controller of type <see cref="IBrushRotationController"/> to the brush's controller list.
+        /// </summary>
+        /// <typeparam name="TController">A generic controller type of IBrushRotationController.</typeparam>
+        /// <param name="newController">The new controller to add.</param>
+        /// <returns>Returns the new rotation controller.</returns>
         protected TController AddRotationController<TController>(TController newController) where TController : IBrushRotationController
         {
             m_BrushRotationController = AddController(newController);
             return newController;
         }
-        
+
+        /// <summary>
+        /// Adds a size controller of type <see cref="IBrushSizeController"/> to the brush's controller list.
+        /// </summary>
+        /// <typeparam name="TController">A generic controller type of IBrushSizeController.</typeparam>
+        /// <param name="newController">The new controller to add.</param>
+        /// <returns>Returns the new size controller.</returns>
         protected TController AddSizeController<TController>(TController newController) where TController : IBrushSizeController
         {
             m_BrushSizeController = AddController(newController);
             return newController;
         }
-        
+
+        /// <summary>
+        /// Adds a strength controller of type <see cref="IBrushStrengthController"/> to the brush's controller list.
+        /// </summary>
+        /// <typeparam name="TController">A generic controller type of IBrushStrengthController.</typeparam>
+        /// <param name="newController">The new controller to add.</param>
+        /// <returns>Returns the new strength controller.</returns>
         protected TController AddStrengthController<TController>(TController newController) where TController : IBrushStrengthController
         {
             m_BrushStrengthController = AddController(newController);
             return newController;
         }
-        
+
+        /// <summary>
+        /// Adds a spacing controller of type <see cref="IBrushSpacingController"/> to the brush's controller list.
+        /// </summary>
+        /// <typeparam name="TController">A generic controller type of IBrushSpacingController.</typeparam>
+        /// <param name="newController">The new controller to add.</param>
+        /// <returns>Returns the new spacing controller.</returns>
         protected TController AddSpacingController<TController>(TController newController) where TController : IBrushSpacingController
         {
             m_BrushSpacingController = AddController(newController);
             return newController;
         }
-        
+
+        /// <summary>
+        /// Adds a scatter controller of type <see cref="IBrushScatterController"/> to the brush's controller list.
+        /// </summary>
+        /// <typeparam name="TController">A generic controller type of IBrushScatterController.</typeparam>
+        /// <param name="newController">The new controller to add.</param>
+        /// <returns>Returns the new scatter controller.</returns>
         protected TController AddScatterController<TController>(TController newController) where TController : IBrushScatterController
         {
             m_BrushScatterController = AddController(newController);
             return newController;
         }
-        
+
+        /// <summary>
+        /// Adds a modifier key controller of type <see cref="IBrushModifierKeyController"/> to the brush's controller list.
+        /// </summary>
+        /// <typeparam name="TController">A generic controller type of IBrushModifierKeyController.</typeparam>
+        /// <param name="newController">The new controller to add.</param>
+        /// <returns>Returns the new modifier key controller.</returns>
         protected TController AddModifierKeyController<TController>(TController newController) where TController : IBrushModifierKeyController
         {
             m_BrushModifierKeyController = newController;
             return newController;
         }
-        
+
+        /// <summary>
+        /// Adds a smoothing controller of type <see cref="IBrushSmoothController"/> to the brush's controller list.
+        /// </summary>
+        /// <typeparam name="TController">A generic controller type of IBrushSmoothController.</typeparam>
+        /// <param name="newController">The new controller to add.</param>
+        /// <returns>Returns the new smoothing controller.</returns>
         protected TController AddSmoothingController<TController>(TController newController) where TController : IBrushSmoothController
         {
             m_BrushSmoothController = newController;
@@ -261,11 +389,21 @@ namespace UnityEditor.TerrainTools
 
         private bool m_RepaintRequested;
         
+        /// <summary>
+        /// Registers a new event to be used witin <see cref="OnSceneGUI(Terrain, IOnSceneGUI)"/>.
+        /// </summary>
+        /// <param name="newEvent">The event to add.</param>
         public void RegisterEvent(Event newEvent)
         {
             m_ConsumedEvents.Add(newEvent);
         }
         
+        /// <summary>
+        /// Calls the Use function of the registered events.
+        /// </summary>
+        /// <param name="terrain">The terrain in focus.</param>
+        /// <param name="editContext">The editcontext to repaint.</param>
+        /// <seealso cref="RegisterEvent(Event)"/>
         public void ConsumeEvents(Terrain terrain, IOnSceneGUI editContext)
         {
             // Consume all of the events we've handled...
@@ -287,22 +425,35 @@ namespace UnityEditor.TerrainTools
             }
         }
 
+        /// <summary>
+        /// Sets the repaint request to <c>true</c>.
+        /// </summary>
         public void RequestRepaint()
         {
             m_RepaintRequested = true;
         }
 
-        public virtual void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        /// <summary>
+        /// Renders the brush's GUI within the inspector view.
+        /// </summary>
+        /// <param name="terrain">The terrain in focus.</param>
+        /// <param name="editContext">The editcontext used to show the brush GUI.</param>
+        /// <param name="brushFlags">The brushflags to use when displaying the brush GUI.</param>
+        public virtual void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, BrushGUIEditFlags brushFlags = BrushGUIEditFlags.SelectAndInspect)
         {
-            m_ShowBrushTextures = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.brushMask, m_ShowBrushTextures);
-            if (m_ShowBrushTextures)
+            if (brushFlags != BrushGUIEditFlags.None)
             {
-                editContext.ShowBrushesGUI(0, BrushGUIEditFlags.SelectAndInspect);
+                editContext.ShowBrushesGUI(0, brushFlags);
             }
 
             EditorGUI.BeginChangeCheck();
-            brushMaskFilterStackView.OnGUI();
             
+            m_ShowBrushMaskFilters = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.brushMask, m_ShowBrushMaskFilters);
+            if (m_ShowBrushMaskFilters)
+            {
+                brushMaskFilterStackView.OnGUI();
+            }
+
             m_ShowModifierControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.stroke, m_ShowModifierControls);
             if (m_ShowModifierControls)
             {
@@ -377,6 +528,10 @@ namespace UnityEditor.TerrainTools
             UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(objList.ToArray(), getFilterStackFilePath, true );
         }
 
+        /// <summary>
+        /// Defines data when the brush is selected.
+        /// </summary>
+        /// <seealso cref="OnExitToolMode"/>
         public virtual void OnEnterToolMode()
         {
             m_BrushModifierKeyController?.OnEnterToolMode();
@@ -385,6 +540,10 @@ namespace UnityEditor.TerrainTools
             TerrainToolsAnalytics.m_OriginalParameters = m_analyticsCallback?.Invoke();
         }
 
+        /// <summary>
+        /// Defines data when the brush is deselected.
+        /// </summary>
+        /// <seealso cref="OnEnterToolMode"/>
         public virtual void OnExitToolMode()
         {
             m_Controllers.ForEach((controller) => controller.OnExitToolMode(s_ShortcutHandler));
@@ -393,14 +552,29 @@ namespace UnityEditor.TerrainTools
             SaveFilterStack(brushMaskFilterStack);
         }
 
+        /// <summary>
+        /// Checks if the brush strokes are being recorded.
+        /// </summary>
         public static bool isRecording = false;
-
+        
+        /// <summary>
+        /// Provides methods for the brush's painting.  
+        /// </summary>
         [Serializable]
         public class OnPaintOccurrence
         {
             [NonSerialized] internal static List<OnPaintOccurrence> history = new List<OnPaintOccurrence>();
             [NonSerialized] private static float prevRealTime;
 
+            /// <summary>
+            /// Initializes and returns an instance of OnPaintOccurrence.
+            /// </summary>
+            /// <param name="brushTexture">The brush's texture.</param>
+            /// <param name="brushSize">The brush's size.</param>
+            /// <param name="brushStrength">The brush's strength.</param>
+            /// <param name="brushRotation">The brush's rotation.</param>
+            /// <param name="uvX">The cursor's X position within UV space.</param>
+            /// <param name="uvY">The cursor's Y position within UV space.</param>
             public OnPaintOccurrence(Texture brushTexture, float brushSize,
                                     float brushStrength, float brushRotation,
                                     float uvX, float uvY)
@@ -423,15 +597,47 @@ namespace UnityEditor.TerrainTools
                 prevRealTime = Time.realtimeSinceStartup;
             }
 
+            /// <summary>
+            /// The cursor's X position within UV space.
+            /// </summary>
             [SerializeField] public float xPos;
+
+            /// <summary>
+            /// The cursor's Y position within UV space.
+            /// </summary>
             [SerializeField] public float yPos;
+
+            /// <summary>
+            /// The asset file path of the brush texture in use.
+            /// </summary>
             [SerializeField] public string brushTextureAssetPath;
+
+            /// <summary>
+            /// The brush strength.
+            /// </summary>
             [SerializeField] public float brushStrength;
+
+            /// <summary>
+            /// The brush rotation.
+            /// </summary>
             [SerializeField] public float brushRotation;
+
+            /// <summary>
+            /// The brush size.
+            /// </summary>
             [SerializeField] public float brushSize;
+
+            /// <summary>
+            /// The total duration of painting.
+            /// </summary>
             [SerializeField] public float duration;
         }
 
+        /// <summary>
+        /// Triggers events when painting on a terrain.
+        /// </summary>
+        /// <param name="terrain">The terrain in focus.</param>
+        /// <param name="editContext">The editcontext to reference.</param>
         public virtual void OnPaint(Terrain terrain, IOnPaint editContext)
         {
             filterContext.ReleaseRTHandles();
@@ -463,6 +669,12 @@ namespace UnityEditor.TerrainTools
             filterContext.ReleaseRTHandles();
         }
 
+        /// <summary>
+        /// Triggers events to render a 2D GUI within the Scene view.
+        /// </summary>
+        /// <param name="terrain">The terrain in focus.</param>
+        /// <param name="editContext">The editcontext to reference.</param>
+        /// <seealso cref="OnSceneGUI(Terrain, IOnSceneGUI)"/>
         public virtual void OnSceneGUI2D(Terrain terrain, IOnSceneGUI editContext)
         {
             StringBuilder builder = new StringBuilder();
@@ -477,6 +689,12 @@ namespace UnityEditor.TerrainTools
             }
         }
 
+        /// <summary>
+        /// Triggers events to render objects and displays within Scene view.
+        /// </summary>
+        /// <param name="terrain">The terrain in focus.</param>
+        /// <param name="editContext">The editcontext to reference.</param>
+        /// <seealso cref="OnSceneGUI(Terrain, IOnSceneGUI)"/>
         public virtual void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
         {
             filterContext.ReleaseRTHandles();
@@ -529,6 +747,12 @@ namespace UnityEditor.TerrainTools
             file.Close();
         }
 
+        /// <summary>
+        /// Adds basic information to the selected brush.
+        /// </summary>
+        /// <param name="terrain">The Terrain in focus.</param>
+        /// <param name="editContext">The IOnSceneGUI to reference.</param>
+        /// <param name="builder">The StringBuilder containing the brush information.</param>
         public virtual void AppendBrushInfo(Terrain terrain, IOnSceneGUI editContext, StringBuilder builder)
         {
 
@@ -540,6 +764,12 @@ namespace UnityEditor.TerrainTools
             builder.AppendLine(validationMessage);
         }
 
+        /// <summary>
+        /// Scatters the location of the brush's stamp operation.
+        /// </summary>
+        /// <param name="terrain">The terrain in reference.</param>
+        /// <param name="uv">The UV location to scatter at.</param>
+        /// <returns>Returns false if there aren't any terrains to scatter the stamp on.</returns>
         public bool ScatterBrushStamp(ref Terrain terrain, ref Vector2 uv)
         {
             if(m_BrushScatterController == null) {
@@ -581,6 +811,11 @@ namespace UnityEditor.TerrainTools
             }
         }
 
+        /// <summary>
+        /// Activates a modifier key controller.
+        /// </summary>
+        /// <param name="k">The modifier key to activate.</param>
+        /// <returns>Returns false when the modifier key controller is null.</returns>
         public bool ModifierActive(BrushModifierKey k)
         {
             return m_BrushModifierKeyController?.ModifierActive(k) ?? false;
@@ -588,6 +823,12 @@ namespace UnityEditor.TerrainTools
 
         private int m_TerrainUnderCursorLockCount = 0;
         
+        /// <summary>
+        /// Handles the locking of the terrain cursor in it's current position.
+        /// </summary>
+        /// <remarks>This method is commonly used when utilizing shortcuts.</remarks>
+        /// <param name="cursorVisible">Whether the cursor is visible within the scene. When the value is <c>true</c> the cursor is visible.</param>
+        /// <seealso cref="UnlockTerrainUnderCursor"/>
         public void LockTerrainUnderCursor(bool cursorVisible)
         {
             if (m_TerrainUnderCursorLockCount == 0)
@@ -598,6 +839,10 @@ namespace UnityEditor.TerrainTools
             m_TerrainUnderCursorLockCount++;
         }
 
+        /// <summary>
+        /// Handles unlocking of the terrain cursor.
+        /// </summary>
+        /// <seealso cref="LockTerrainUnderCursor(bool)"/>
         public void UnlockTerrainUnderCursor()
         {
             if (m_TerrainUnderCursorLockCount > 0)
@@ -616,11 +861,29 @@ namespace UnityEditor.TerrainTools
             }
         }
 
+        /// <summary>
+        /// Checks if the cursor is currently locked and can not be updated.
+        /// </summary>
         public bool canUpdateTerrainUnderCursor => m_TerrainUnderCursorLockCount == 0;
         
+        /// <summary>
+        /// Gets and sets the terrain in focus.
+        /// </summary>
         public Terrain terrainUnderCursor { get; protected set; }
+
+        /// <summary>
+        /// Gets and sets the value associated to whether there is a raycast hit detecting a terrain under the cursor.
+        /// </summary>
         public bool isRaycastHitUnderCursorValid { get; private set; }
+
+        /// <summary>
+        /// Gets and sets the raycast hit that was under the cursor's position.
+        /// </summary>
         public RaycastHit raycastHitUnderCursor { get; protected set; }
+
+        /// <summary>
+        /// Gets and sets the message for validating terrain parameters.
+        /// </summary>
         public virtual string validationMessage { get; set; }
     }
 }

@@ -1,8 +1,8 @@
-## Export Heightmaps
+# Export Heightmaps
 
-The **Export Heightmaps** tool lets you export height data from multiple Terrain into textures, and provides some additional settings. 
+The **Export Heightmaps** tool lets you export height data from multiple Terrain into textures, and provides some additional settings.
 
-![](images/Toolbox_ExportHeightmaps.png)
+![](images/4-35-toolbox-export-heightmaps.png)
 
 | **Property**             | **Description**                                              |
 | ------------------------ | ------------------------------------------------------------ |
@@ -11,5 +11,5 @@ The **Export Heightmaps** tool lets you export height data from multiple Terrain
 | **Heightmap Depth**      | Select 16 bit or 8 bit.                                      |
 | **Heightmap Byte Order** | Select Windows or Mac.                                       |
 | **Levels Correction**    | Remaps the height range prior to export. Similar to Input Levels in Photoshop, this makes bright areas brighter, and dark areas darker. |
-| **Flip Vertically**      | Flips Terrain heights vertically, which is useful when you need to import heightmaps into other programs such as World Machine. |
-| **Export Heightmaps**    | Click this button to export heightmaps from selected Terrain in the Scene or hierarchy. |
+| **Flip Vertically**      | Flips Terrain heights vertically, which is useful when you need to import heightmaps into external software. |
+| **Export Heightmaps**    | Click this button to export heightmaps from selected Terrain in the Scene or Hierarchy. |

@@ -30,7 +30,6 @@ namespace UnityEditor.TerrainTools
         internal TerrainToolboxUtilities m_TerrainUtilitiesMode;
         internal TerrainToolboxVisualization m_TerrainVisualizationMode;
 
-
         const string PrefName = "TerrainToolbox.Window.Mode";
 
         static class Styles
@@ -82,11 +81,9 @@ namespace UnityEditor.TerrainTools
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
 
-            this.autoRepaintOnSceneChange = false;
             switch (m_SelectedMode)
             {
                 case TerrainManagerMode.CreateTerrain:
-                    this.autoRepaintOnSceneChange = true;
                     m_CreateTerrainMode.OnGUI();
                     break;
 

@@ -1,22 +1,20 @@
-## Import Splatmaps
+# Import Splatmaps
 
-The **Terrain Splatmaps** tool allows you to import, preview, and adjust splatmaps on multiple Terrain tiles. 
+The **Terrain Splatmaps** tool lets you import, preview, and adjust splatmaps on multiple Terrain tiles.
 
-![img](images/Toolbox_SplatmapImport.png)
+![](images/4-33-toolbox-import-splatmap-01.png)
 
-### Splatmap List
+## Splatmap list
 
 The reorderable **Splatmaps** list lets you view the splatmaps you are working with. You can import splatmaps from Terrain selected in Scene view, or add new splatmap Textures.
 
-Use the **Import From Terrain** button to import splatmaps from a selected Terrain. Use the Add (**+**) and Remove (**-**) buttons on the bottom right to add or remove a splatmap. Drag a splatmap row, and move it up or down to change its position in the list.
+Use the **Import from Selected Terrain** button to import splatmaps from a selected Terrain. Use the Add (**+**) and Remove (**-**) buttons on the bottom right to add or remove a splatmap. Drag a splatmap row, and move it up or down to change its position in the list.
 
-![img](images/Toolbox_SplatmapImport_List.png)
-
-### Splatmap Preview
+## Splatmap preview
 
 **Preview Splatmap** lets you view splatmaps on Terrain tiles.
 
-![img](images/Toolbox_SplatmapImport_Preview.png)
+![](images/4-33-toolbox-import-splatmap-02.png)
 
 | **Property**             | **Description**                                              |
 | ------------------------ | ------------------------------------------------------------ |

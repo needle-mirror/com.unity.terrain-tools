@@ -9,15 +9,18 @@ In the Scene view, use the following hotkeys while moving the mouse horizontally
 | **A**        | Controls Brush strength (opacity).                           |
 | **S**        | Controls Brush size.                                         |
 | **D**        | Controls Brush rotation.                                     |
+| **F**        | If you press F while the cursor is over a Terrain tile, the Scene view focuses on the area where you position the cursor.                               |
 | **Control**  | Inverts the Brush effect for most Brushes; acts as a modifier for others. |
 | **Shift**    | Temporarily enables the smoothing Brush.                     |
 | **Shift + A**    | Enables the Terrain Layer Eyedropper tool.               |
+
+For information about other built-in Terrain keyboard shortcuts, see [Creating and editing Terrains](https://docs.unity3d.com/Manual/terrain-UsingTerrains.html).
 
 ## Common Brush controls
 
 All Brushes share some common settings, which are outlined below.
 
-![](images/CommonBrushControls.png)
+![](images/3-1-brush-controls-01.png)
 
 | **Property**       | **Function**             |                                                              |
 | ------------------ | ------------------------ | ------------------------------------------------------------ |

@@ -591,12 +591,55 @@ internal static class TerrainToolGUIHelper
         return state;
     }
 
+    /// <summary>
+    /// Handles drawing a foldout in which the label can be disabled while still being selectable and separte from the foldout state.
+    /// </summary>
+    /// <param name="label">The <see cref="GUIContent"/> to display./param>
+    /// <param name="state">The state of the foldout.</param>
+    /// <param name="labelState">The state of the label.</param>
+    /// <returns>Returns <c>true</c> when the foldout is in a enabled state. Otherwise, returns <c>false</c>.</returns>
+    internal static bool DrawDisableableLabelFoldout(GUIContent label, bool state, bool labelState = true)
+    {
+        var backgroundRect = GUILayoutUtility.GetRect(1f, 17f);
+
+        var labelRect = backgroundRect;
+        labelRect.xMin += 16f;
+        labelRect.xMax -= 20f;
+
+        var foldoutRect = backgroundRect;
+        foldoutRect.y += 1f;
+        foldoutRect.width = 13f;
+        foldoutRect.height = 13f;
+
+
+        // Background rect should be full-width
+        backgroundRect.xMin = 0;
+        backgroundRect.width += 4f;
+
+        // Title
+        GUI.enabled = labelState;
+        EditorGUI.LabelField(labelRect, label);
+        GUI.enabled = true;
+
+        // Active checkbox
+        state = GUI.Toggle(foldoutRect, state, GUIContent.none, EditorStyles.foldout);
+
+        var e = Event.current;
+
+        if (e.type == EventType.MouseDown && backgroundRect.Contains(e.mousePosition) && e.button == 0)
+        {
+            state = !state;
+            e.Use();
+        }
+
+        return state;
+    }
+
     public static bool DrawSimpleFoldout(GUIContent label, bool state, int indentLevel = 0, float width = 10f)
     {
         EditorGUILayout.BeginHorizontal();
         GUILayout.Space(indentLevel * 15);
-        state = GUILayout.Toggle(state, GUIContent.none, EditorStyles.foldout, GUILayout.Width(width));
-        GUILayout.Label(label);
+        state = GUILayout.Toggle(state, label, EditorStyles.foldout, GUILayout.Width(width));
         EditorGUILayout.EndHorizontal();
 
         return state;
@@ -623,8 +666,8 @@ internal static class TerrainToolGUIHelper
         var gearIconRect = new Rect();
         gearIconRect.y = backgroundRect.y;
         gearIconRect.x = backgroundRect.width - 30f;
-        gearIconRect.width = 16f;
-        gearIconRect.height = 16f;
+        gearIconRect.width = 18f;
+        gearIconRect.height = 18f;
 
         // Background
         float backgroundTint = EditorGUIUtility.isProSkin ? 0.1f : 1f;
@@ -687,8 +730,8 @@ internal static class TerrainToolGUIHelper
         var gearIconRect = new Rect();
         gearIconRect.y = backgroundRect.y;
         gearIconRect.x = backgroundRect.width - 30f;
-        gearIconRect.width = 16f;
-        gearIconRect.height = 16f;
+        gearIconRect.width = 18f;
+        gearIconRect.height = 18f;
 
         // Background
         float backgroundTint = EditorGUIUtility.isProSkin ? 0.1f : 1f;

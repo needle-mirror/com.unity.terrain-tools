@@ -24,7 +24,12 @@ namespace UnityEditor.TerrainTools
                 if (m_commonUI == null)
                 {
                     LoadSettings();
-                    m_commonUI = new DefaultBrushUIGroup("SmoothTool", UpdateAnalyticParameters);
+                    m_commonUI = new DefaultBrushUIGroup(
+                        "SmoothTool",
+                        UpdateAnalyticParameters,
+                        DefaultBrushUIGroup.Feature.All,
+                        new DefaultBrushUIGroup.FeatureDefaults { Strength = 0.98f }
+                    );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -115,7 +120,7 @@ namespace UnityEditor.TerrainTools
 
             Material mat = GetMaterial();
             var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-            Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
+            Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
             Vector4 brushParams = new Vector4(Mathf.Clamp(brushStrength, 0.0f, 1.0f), 0.0f, 0.0f, 0.0f);
 
             mat.SetTexture("_BrushTex", brushTexture);
@@ -175,11 +180,14 @@ namespace UnityEditor.TerrainTools
                 if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
+                    Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
                     previewMaterial.SetVector("_JitterOffset", Vector3.zero);
 
                     var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
                     Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                    var filterRT = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height,
+                        0, FilterUtility.defaultFormat);
+                    Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filterRT, previewMaterial);
                     TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
                         editContext.brushTexture, brushXform, previewMaterial, 0);
 
@@ -196,6 +204,7 @@ namespace UnityEditor.TerrainTools
                     }
 
                     texelCtx.Cleanup();
+                    RTUtils.Release(filterRT);
                 }
             }
         }
@@ -222,7 +231,7 @@ namespace UnityEditor.TerrainTools
         private static class Styles
         {
             public static readonly GUIContent controls = EditorGUIUtility.TrTextContent("Smooth Controls");
-            public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Click to smooth the terrain height.");
+            public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Soften terrain features.");
             public static readonly GUIContent direction = EditorGUIUtility.TrTextContent("Verticality", "Blur only up (1.0), only down (-1.0) or both (0.0)");
             public static readonly GUIContent kernelSize = EditorGUIUtility.TrTextContent("Blur Radius", "Specifies the size of the blurring operation in texture space. This is used to determine the number of texels to include in the blur sample average");
         }

@@ -331,10 +331,10 @@ namespace UnityEditor.TerrainTools
             Vector2 sampleUV;
             BrushTransform sampleXform;
             PaintContext sampleContext = null;
-            Material previewMat = Utility.GetDefaultPreviewMaterial();
             // draw sample location brush and create context data to be used when drawing target brush previews
             if (m_SampleLocation.terrain != null)
             {
+                Material previewMat = Utility.GetDefaultPreviewMaterial();
                 sampleUV = TerrainUVFromBrushLocation(m_SampleLocation.terrain, m_SampleLocation.pos);
                 sampleXform = TerrainPaintUtility.CalculateBrushTransform(m_SampleLocation.terrain, sampleUV, commonUI.brushSize, commonUI.brushRotation);
                 sampleContext = TerrainPaintUtility.BeginPaintHeightmap(m_SampleLocation.terrain, sampleXform.GetBrushXYBounds());
@@ -348,10 +348,15 @@ namespace UnityEditor.TerrainTools
             // draw brush preview and mesh preview for current mouse position
             if (commonUI.isRaycastHitUnderCursorValid)
             {
+                Material previewMat = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
                 BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, commonUI.raycastHitUnderCursor.textureCoord, commonUI.brushSize, commonUI.brushRotation);
                 PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
                 var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
                 Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMat);
+
+                var filterRT = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0,
+                    FilterUtility.defaultFormat);
+                Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filterRT, previewMat);
 
                 TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
                     editContext.brushTexture, brushXform, previewMat, 0);
@@ -368,6 +373,7 @@ namespace UnityEditor.TerrainTools
                 // Restores RenderTexture.active
                 ctx.Cleanup();
                 texelCtx.Cleanup();
+                RTUtils.Release(filterRT);
             }
 
             // Restores RenderTexture.active
@@ -395,7 +401,7 @@ namespace UnityEditor.TerrainTools
             paintMat.SetVector("_SampleUVScaleOffset", ComputeSampleUVScaleOffset(sampleContext, targetContext));
 
             var brushMask = RTUtils.GetTempHandle(sampleContext.sourceRenderTexture.width, sampleContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-            Utility.SetFilterRT(commonUI, sampleContext.sourceRenderTexture, brushMask, paintMat);
+            Utility.GenerateAndSetFilterRT(commonUI, sampleContext.sourceRenderTexture, brushMask, paintMat);
             TerrainPaintUtility.SetupTerrainToolMaterialProperties(targetContext, targetXform, paintMat);
             Graphics.Blit(targetContext.sourceRenderTexture, targetContext.destinationRenderTexture, paintMat, (int)ShaderPasses.CloneHeightmap);
             RTUtils.Release(brushMask);
@@ -454,7 +460,7 @@ namespace UnityEditor.TerrainTools
                 mat.SetVector("_SampleUVScaleOffset", ComputeSampleUVScaleOffset(sampleContext, targetContext));
 
                 var brushMask = RTUtils.GetTempHandle(targetContext.sourceRenderTexture.width, targetContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                Utility.SetFilterRT(commonUI, targetContext.sourceRenderTexture, brushMask, mat);
+                Utility.GenerateAndSetFilterRT(commonUI, targetContext.sourceRenderTexture, brushMask, mat);
                 TerrainPaintUtility.SetupTerrainToolMaterialProperties(targetContext, targetXform, mat);
                 Graphics.Blit(targetContext.sourceRenderTexture, targetContext.destinationRenderTexture, mat, (int)ShaderPasses.CloneAlphamap);
                 // apply texture modifications and perform cleanup. same thing as calling TerrainPaintUtility.EndPaintTexture
@@ -469,9 +475,8 @@ namespace UnityEditor.TerrainTools
         private static class Styles
         {
             public static readonly string descriptionString =
-                                            "Clones terrain from another area of the terrain map to the selected location.\n\n" +
-                                            "Hold Ctrl and Left Click to assign the clone sample area.\n\n" +
-                                            "Left Click to apply the cloned stamp.";
+                                            "Duplicates Terrain features from one region to another.\n\n" +
+                                            "Hold Ctrl + Click to set the area to sample from. Then Click to apply the cloned area.";
             public static readonly GUIContent cloneSourceContent = EditorGUIUtility.TrTextContent("Terrain sources to clone:",
                                             "Textures:\nBrush will gather and clone TerrainLayer data at Sample location\n\n" +
                                             "Heightmap:\nBrush will gather and clone Heightmap data at Sample location");

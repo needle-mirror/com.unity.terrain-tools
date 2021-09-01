@@ -51,7 +51,7 @@ namespace UnityEditor.TerrainTools
             var height = EditorGUIUtility.singleLineHeight;
             var width = Mathf.Max(GUI.skin.label.CalcSize(s_BlurAmount).x, GUI.skin.label.CalcSize(s_BlurDirection).x) + 4;
             var amountRect = new Rect(rect.x, rect.y, rect.width, height);
-            var directionRect = new Rect(rect.x, amountRect.yMax, rect.width, height);
+            var directionRect = new Rect(rect.x, amountRect.yMax + EditorGUIUtility.standardVerticalSpacing, rect.width, height);
 
             var prevWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = width;

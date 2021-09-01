@@ -110,13 +110,13 @@ namespace UnityEditor.TerrainTools
             m_FilterStrength = EditorGUI.Slider(strengthSliderRect, m_FilterStrength, 0.0f, 1.0f);
 
             //Epsilon (kernel size) Slider
-            Rect epsilonLabelRect = new Rect(rect.x, strengthSliderRect.yMax, labelWidth, EditorGUIUtility.singleLineHeight);
+            Rect epsilonLabelRect = new Rect(rect.x, strengthSliderRect.yMax + EditorGUIUtility.standardVerticalSpacing, labelWidth, EditorGUIUtility.singleLineHeight);
             EditorGUI.LabelField(epsilonLabelRect, epsilonLabel);
             Rect epsilonSliderRect = new Rect(epsilonLabelRect.xMax, epsilonLabelRect.y, rect.width - labelWidth, epsilonLabelRect.height);
             m_Epsilon = EditorGUI.Slider(epsilonSliderRect, m_Epsilon, 1.0f, 20.0f);
 
             //Value Remap Curve
-            Rect curveLabelRect = new Rect(rect.x, epsilonSliderRect.yMax, labelWidth, EditorGUIUtility.singleLineHeight);
+            Rect curveLabelRect = new Rect(rect.x, epsilonSliderRect.yMax + EditorGUIUtility.standardVerticalSpacing, labelWidth, EditorGUIUtility.singleLineHeight);
             EditorGUI.LabelField(curveLabelRect, curveLabel);
             Rect curveRect = new Rect(curveLabelRect.xMax, curveLabelRect.y, rect.width - labelWidth, curveLabelRect.height);
 

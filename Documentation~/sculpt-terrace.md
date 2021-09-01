@@ -1,12 +1,16 @@
 # Terrace Tool
 
-The Terrace tool transforms Terrain into a series of flat areas resembling steps. To access the Terrace tool, select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** (brush) icon, and select **Sculpt > Terrace** from the list of Terrain tools.
+The Terrace tool transforms Terrain into a series of flat areas resembling steps.
 
-![](images/Tools_HowToSelection.png)
+![](images/2-14-terrace-03.png)
+
+To access the Terrace tool, select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Sculpt > Terrace** from the list of Terrain tools.
+
+![](images/2-14-terrace-01.png)
 
 ## Parameters
 
-![](images/Tool_Terrace_Parameters.png)
+![](images/2-14-terrace-02.png)
 
 | **Property**               | **Description**                                              |
 | -------------------------- | ------------------------------------------------------------ |

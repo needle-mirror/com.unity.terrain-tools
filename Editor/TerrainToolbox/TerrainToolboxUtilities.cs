@@ -14,10 +14,8 @@ namespace UnityEditor.TerrainTools
     internal class UtilitySettings : ScriptableObject
     {
         // Terrain Split
-        public int TileXAxis = 2;
-        public int TileZAxis = 2;
+        public int TileSplit = 2;
         public bool AutoUpdateSettings = true;
-        public bool KeepOldTerrains = true;
         public string TerrainAssetDir = "Assets/Terrain";
 
         // Layers
@@ -166,8 +164,7 @@ namespace UnityEditor.TerrainTools
             public static readonly GUIContent ExportSplatmapsBtn = EditorGUIUtility.TrTextContent("Export Splatmaps", "Start exporting splatmaps into textures as selected format from selected terrain(s).");
 
             public static readonly GUIContent OriginalTerrain = EditorGUIUtility.TrTextContent("Original Terrain", "Select a terrain to split into smaller tiles.");
-            public static readonly GUIContent TilesX = EditorGUIUtility.TrTextContent("Tiles X Axis", "Number of tiles along X axis.");
-            public static readonly GUIContent TilesZ = EditorGUIUtility.TrTextContent("Tiles Z Axis", "Number of tiles along Z axis.");
+            public static readonly GUIContent TileSplit = EditorGUIUtility.TrTextContent("Split Tiles", "The number of tiles along the X and Z axes after splitting.");
             public static readonly GUIContent AutoUpdateSetting = EditorGUIUtility.TrTextContent("Auto Update Terrain Settings", "Automatically copy terrain settings to new tiles from original tiles upon create.");
             public static readonly GUIContent KeepOldTerrains = EditorGUIUtility.TrTextContent("Keep Original Terrain", "Keep original terrain while splitting.");
             public static readonly GUIContent SplitTerrainBtn = EditorGUIUtility.TrTextContent("Split", "Start splitting original terrain into small tiles.");
@@ -281,7 +278,7 @@ namespace UnityEditor.TerrainTools
             EditorGUILayout.LabelField(Styles.RemoveTerrain, EditorStyles.boldLabel);
             ++EditorGUI.indentLevel;
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Select terrain(s) to remove and delete associated terrain data assets: ");
+            EditorGUILayout.LabelField("Select terrain components to remove and delete associated terrain data assets: ");
             if (GUILayout.Button(Styles.RemoveTerrainBtn, GUILayout.Height(30), GUILayout.Width(200)))
             {
                 RemoveTerrains();
@@ -293,10 +290,8 @@ namespace UnityEditor.TerrainTools
             EditorGUILayout.LabelField(Styles.SplitTerrain, EditorStyles.boldLabel);
             ++EditorGUI.indentLevel;
             EditorGUILayout.LabelField("Select terrain(s) to split: ");
-            m_Settings.TileXAxis = EditorGUILayout.IntField(Styles.TilesX, m_Settings.TileXAxis);
-            m_Settings.TileZAxis = EditorGUILayout.IntField(Styles.TilesZ, m_Settings.TileZAxis);
+            m_Settings.TileSplit = EditorGUILayout.IntField(Styles.TileSplit, m_Settings.TileSplit);
             m_Settings.AutoUpdateSettings = EditorGUILayout.Toggle(Styles.AutoUpdateSetting, m_Settings.AutoUpdateSettings);
-            m_Settings.KeepOldTerrains = EditorGUILayout.Toggle(Styles.KeepOldTerrains, m_Settings.KeepOldTerrains);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.Space();
             if (GUILayout.Button(Styles.SplitTerrainBtn, GUILayout.Height(30), GUILayout.Width(200)))
@@ -477,7 +472,7 @@ namespace UnityEditor.TerrainTools
                     var splatmap = m_Splatmaps[i];
                     if (splatmap != null && !m_SplatmapHasCopy.Contains(splatmap))
                     {
-                        var textureCopy = GetTextureCopy(splatmap);
+                        var textureCopy = ToolboxHelper.GetTextureCopy(splatmap);
                         m_Splatmaps[i] = textureCopy;
                         m_SplatmapHasCopy.Add(textureCopy);
                     }
@@ -666,6 +661,9 @@ namespace UnityEditor.TerrainTools
             m_Settings.SplatFolderPath = EditorGUILayout.TextField(Styles.ExportSplatmapFolderPath, m_Settings.SplatFolderPath);
             if (GUILayout.Button("...", GUILayout.Width(25)))
             {
+                // clear the keyboard focus so we can update the value
+                GUIUtility.keyboardControl = -1;
+
                 var newSplatmapPath = EditorUtility.OpenFolderPanel("Select a folder...", m_Settings.SplatFolderPath, "");
                 // confirm that the user didn't cancel
                 if (newSplatmapPath != "")
@@ -674,6 +672,12 @@ namespace UnityEditor.TerrainTools
                 }
             }
             EditorGUILayout.EndHorizontal();
+
+            if (m_Settings.SplatFolderPath == "")
+            {
+                EditorGUILayout.HelpBox("Empty folder path. Be sure to assign a folder path before exporting.", MessageType.Warning);
+            }
+
             m_Settings.SelectedFormat = (UtilitySettings.ImageFormat)EditorGUILayout.EnumPopup(Styles.ExportSplatmapFormat, m_Settings.SelectedFormat);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.Space();
@@ -691,6 +695,9 @@ namespace UnityEditor.TerrainTools
             m_Settings.HeightmapFolderPath = EditorGUILayout.TextField(Styles.ExportHeightmapFolderPath, m_Settings.HeightmapFolderPath);
             if (GUILayout.Button("...", GUILayout.Width(25)))
             {
+                // clear the keyboard focus so we can update the value
+                GUIUtility.keyboardControl = -1;
+
                 var newHeightmapPath = EditorUtility.OpenFolderPanel("Select a folder...", m_Settings.HeightmapFolderPath, "");
                 // handle if the user pressed cancel
                 if (newHeightmapPath != "")
@@ -700,6 +707,12 @@ namespace UnityEditor.TerrainTools
 
             }
             EditorGUILayout.EndHorizontal();
+
+            if (m_Settings.HeightmapFolderPath == "")
+            {
+                EditorGUILayout.HelpBox("Empty folder path. Be sure to assign a folder path before exporting.", MessageType.Warning);
+            }
+
             //EditorGUILayout.LabelField("Heightmap Format: .raw");
             //EditorGUILayout.BeginHorizontal();
             //m_SelectedDepth = EditorGUILayout.Popup(Styles.HeightmapBitDepth, m_SelectedDepth, m_DepthOptions.Keys.ToArray());
@@ -943,24 +956,13 @@ namespace UnityEditor.TerrainTools
                 m_Splatmaps.Clear();
                 foreach (Texture2D alphamap in terrain.terrainData.alphamapTextures)
                 {
-                    var textureCopy = GetTextureCopy(alphamap);
+                    var textureCopy = ToolboxHelper.GetTextureCopy(alphamap);
                     m_SplatmapHasCopy.Add(textureCopy);
                     m_Splatmaps.Add(textureCopy);
                 }
 
                 UpdateCachedTerrainMaterials();
             }
-        }
-
-        Texture2D GetTextureCopy(Texture2D texture)
-        {
-            var creationFlags = texture.mipmapCount > 0
-                ? TextureCreationFlags.MipChain
-                : TextureCreationFlags.None;
-            var textureCopy = new Texture2D(texture.width, texture.height, texture.graphicsFormat,
-                creationFlags);
-            Graphics.CopyTexture(texture, textureCopy);
-            return textureCopy;
         }
 
         void DuplicateTerrains()
@@ -1000,27 +1002,43 @@ namespace UnityEditor.TerrainTools
             AssetDatabase.Refresh();
         }
 
-        void RemoveTerrains()
+        internal void RemoveTerrains(bool isTest = false)
         {
             m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene();
 
-            if (m_Terrains == null || m_Terrains.Length == 0)
+            if (!isTest && m_Terrains == null || m_Terrains.Length == 0)
             {
-                EditorUtility.DisplayDialog("Error", "No terrain(s) selected. Please select and try again.", "OK");
+                EditorUtility.DisplayDialog("Error", "No terrain components selected. Please select and try again.", "OK");
                 return;
             }
 
-            if (EditorUtility.DisplayDialog("Confirm", "Are you sure you want to delete selected terrain(s) And their data assets? This process is not undoable.", "Continue", "Cancel"))
+            if (isTest || EditorUtility.DisplayDialog("Confirm", $"Are you sure you want to delete the selected terrain components and their data assets? This process cannot be undone.", "Continue", "Cancel"))
             {
                 foreach (var terrain in m_Terrains)
                 {
                     if (terrain.terrainData)
                     {
                         var path = AssetDatabase.GetAssetPath(terrain.terrainData);
-                        AssetDatabase.DeleteAsset(path);
+                        AssetDatabase.MoveAssetToTrash(path);
                     }
 
-                    UnityEngine.Object.DestroyImmediate(terrain.gameObject);
+                    // If the gameobject only has terrain components and no children, delete the whole thing.
+                    // Otherwise, only delete the terrain components.
+                    int numComponents = terrain.gameObject.GetComponents<Component>().Select(x => x.GetType())
+                        .Count(x => x != typeof(Terrain) && x != typeof(TerrainCollider) && x != typeof(Transform));
+                    if (numComponents == 0 && terrain.transform.childCount == 0)
+                    {
+                        UnityEngine.Object.DestroyImmediate(terrain.gameObject);
+                    }
+                    else
+                    {
+                        var collider = terrain.GetComponent<TerrainCollider>();
+                        UnityEngine.Object.DestroyImmediate(terrain);
+                        if (collider != null)
+                        {
+                            UnityEngine.Object.DestroyImmediate(collider);
+                        }
+                    }
                 }
 
                 AssetDatabase.Refresh();
@@ -1050,14 +1068,6 @@ namespace UnityEditor.TerrainTools
                 return;
             }
 
-            if (!m_Settings.KeepOldTerrains)
-            {
-                if (!EditorUtility.DisplayDialog("Warning", "About to split selected terrain(s), and this process is not undoable! You can enable Keep Original Terrain option to keep a copy of selected terrain(s). Are you sure to continue without a copy?", "Continue", "Cancel"))
-                {
-                    return;
-                }
-            }
-
             // check if multiple grouping ids selected
             if (MultipleIDExist(terrainsFrom.ToList()))
             {
@@ -1079,45 +1089,46 @@ namespace UnityEditor.TerrainTools
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
                 EditorUtility.ClearProgressBar();
-
-                if (!m_Settings.KeepOldTerrains)
-                {
-                    foreach (var t in terrainsFrom)
-                    {
-                        GameObject.DestroyImmediate(t.gameObject);
-                    }
-                }
             }
         }
 
         internal void SplitTerrain(Terrain terrain, int new_id, bool isTest = false)
         {
+            if (m_Settings.TileSplit <= 1)
+            {
+                m_Settings.TileSplit = 2;
+                if (!isTest)
+                {
+                    EditorUtility.DisplayDialog("Warning", "Invalid split value. Resetting to 2.", "OK");
+                    return;
+                }
+            }
+
             TerrainData terrainData = terrain.terrainData;
             Vector3 startPosition = terrain.transform.position;
-            float tileWidth = terrainData.size.x / m_Settings.TileXAxis;
-            float tileLength = terrainData.size.z / m_Settings.TileZAxis;
+            float tileWidth = terrainData.size.x / m_Settings.TileSplit;
+            float tileLength = terrainData.size.z / m_Settings.TileSplit;
             float tileHeight = terrainData.size.y;
-            Vector2Int tileResolution = new Vector2Int((int)(terrainData.size.x / m_Settings.TileXAxis), (int)(terrainData.size.z / m_Settings.TileZAxis));
             Vector2Int heightOffset = Vector2Int.zero;
             Vector2Int detailOffset = Vector2Int.zero;
             Vector2Int controlOffset = Vector2Int.zero;
             Vector3 tilePosition = terrain.transform.position;
 
-            // get terrain group
-            GameObject groupGO = null;
+            // get parent gameobject (the original terrain if it's not under a terrain group, otherwise the terrain group)
+            GameObject parentGO = terrain.gameObject;
             if (terrain.transform.parent != null && terrain.transform.parent.gameObject != null)
             {
                 var parent = terrain.transform.parent.gameObject;
                 var groupComp = parent.GetComponent<TerrainGroup>();
                 if (parent != null && groupComp != null)
                 {
-                    groupGO = parent;
+                    parentGO = parent;
                 }
             }
 
             int originalHeightmapRes = terrainData.heightmapResolution;
-            int newHeightmapRes = (originalHeightmapRes - 1) / m_Settings.TileXAxis;
-            int newDetailmapRes = terrainData.detailResolution / m_Settings.TileXAxis;
+            int newHeightmapRes = (originalHeightmapRes - 1) / m_Settings.TileSplit;
+            int newDetailmapRes = terrainData.detailResolution / m_Settings.TileSplit;
 
             if (!ToolboxHelper.IsPowerOfTwo(newHeightmapRes))
             {
@@ -1130,7 +1141,7 @@ namespace UnityEditor.TerrainTools
                 if (!isTest && !EditorUtility.DisplayDialog("Warning",
                     $"The heightmap resolution of the newly split tiles is {newHeightmapRes + 1}; " +
                     $"this is smaller than the minimum supported value of {kMinHeightmapRes + 1}.\n\n" +
-                    $"Would you like to split terrain into {m_Settings.TileXAxis}x{m_Settings.TileZAxis} " +
+                    $"Would you like to split terrain into {m_Settings.TileSplit}x{m_Settings.TileSplit} " +
                     $"tiles of heightmap resolution {kMinHeightmapRes + 1}?",
                     "OK",
                     "Cancel"))
@@ -1138,12 +1149,12 @@ namespace UnityEditor.TerrainTools
                     return;
                 }
 
-                ToolboxHelper.ResizeHeightmap(terrainData, kMinHeightmapRes * Math.Max(m_Settings.TileXAxis, m_Settings.TileZAxis));
+                ToolboxHelper.ResizeHeightmap(terrainData, kMinHeightmapRes * m_Settings.TileSplit);
                 newHeightmapRes = kMinHeightmapRes;
             }
 
             // control map resolution
-            int newControlRes = terrainData.alphamapResolution / m_Settings.TileXAxis;
+            int newControlRes = terrainData.alphamapResolution / m_Settings.TileSplit;
             if (!ToolboxHelper.IsPowerOfTwo(newControlRes))
             {
                 EditorUtility.DisplayDialog("Error", "Splat control map resolution of new tiles is not power of 2 with current settings.", "OK");
@@ -1151,7 +1162,7 @@ namespace UnityEditor.TerrainTools
             }
 
             int tileIndex = 0;
-            int tileCount = m_Settings.TileXAxis * m_Settings.TileZAxis;
+            int tileCount = m_Settings.TileSplit * m_Settings.TileSplit;
             Terrain[] terrainsNew = new Terrain[tileCount];
 #if UNITY_2019_3_OR_NEWER
 
@@ -1161,14 +1172,14 @@ namespace UnityEditor.TerrainTools
             rt.filterMode = FilterMode.Point;
 #endif
 
-            for (int x = 0; x < m_Settings.TileXAxis; x++, heightOffset.x += newHeightmapRes, detailOffset.x += newDetailmapRes, controlOffset.x += newControlRes, tilePosition.x += tileWidth)
+            for (int x = 0; x < m_Settings.TileSplit; x++, heightOffset.x += newHeightmapRes, detailOffset.x += newDetailmapRes, controlOffset.x += newControlRes, tilePosition.x += tileWidth)
             {
                 heightOffset.y = 0;
                 detailOffset.y = 0;
                 controlOffset.y = 0;
                 tilePosition.z = startPosition.z;
 
-                for (int y = 0; y < m_Settings.TileZAxis; y++, heightOffset.y += newHeightmapRes, detailOffset.y += newDetailmapRes, controlOffset.y += newControlRes, tilePosition.z += tileLength)
+                for (int y = 0; y < m_Settings.TileSplit; y++, heightOffset.y += newHeightmapRes, detailOffset.y += newDetailmapRes, controlOffset.y += newControlRes, tilePosition.z += tileLength)
                 {
                     EditorUtility.DisplayProgressBar("Creating terrains", string.Format("Updating terrain tile ({0}, {1})", x, y), ((float)tileIndex / tileCount));
 
@@ -1183,10 +1194,7 @@ namespace UnityEditor.TerrainTools
                     newTerrain.groupingID = new_id;
                     newTerrain.allowAutoConnect = true;
                     newTerrain.drawInstanced = terrain.drawInstanced;
-                    if (groupGO != null)
-                    {
-                        newTerrain.transform.SetParent(groupGO.transform);
-                    }
+                    newTerrain.transform.SetParent(parentGO.transform);
 
                     // get and set heights
                     terrainDataNew.heightmapResolution = newHeightmapRes + 1;
@@ -1212,7 +1220,7 @@ namespace UnityEditor.TerrainTools
                     terrainDataNew.SetAlphamaps(0, 0, alphamap);
 
                     // get and set detailmap
-                    int newDetailPatch = terrainData.detailResolutionPerPatch / m_Settings.TileXAxis;
+                    int newDetailPatch = terrainData.detailResolutionPerPatch / m_Settings.TileSplit;
                     terrainDataNew.SetDetailResolution(newDetailmapRes, newDetailPatch);
                     terrainDataNew.detailPrototypes = terrainData.detailPrototypes;
 
@@ -1223,20 +1231,21 @@ namespace UnityEditor.TerrainTools
                     }
 
                     // get and set treemap
-                    float treeOffsetXMin = x / (float)m_Settings.TileXAxis;
-                    float treeOffsetZMin = y / (float)m_Settings.TileZAxis;
-                    float treeOffsetXMAX = treeOffsetXMin + (1 / (float)m_Settings.TileXAxis);
-                    float treeOffsetZMAX = treeOffsetZMin + (1 / (float)m_Settings.TileZAxis);
+                    float treeOffsetXMin = x / (float)m_Settings.TileSplit;
+                    float treeOffsetZMin = y / (float)m_Settings.TileSplit;
+                    float treeOffsetXMAX = treeOffsetXMin + (1 / (float)m_Settings.TileSplit);
+                    float treeOffsetZMAX = treeOffsetZMin + (1 / (float)m_Settings.TileSplit);
                     terrainDataNew.treePrototypes = terrainData.treePrototypes;
                     List<TreeInstance> treeInstances = new List<TreeInstance>();
-                    for (int i = 0; i < terrainData.treeInstances.Length; i++)
+                    TreeInstance[] treeData = terrainData.treeInstances;
+                    for (int i = 0; i < treeData.Length; i++)
                     {
-                        TreeInstance tree = terrainData.treeInstances[i];
+                        TreeInstance tree = treeData[i];
                         if (treeOffsetXMin <= tree.position.x && tree.position.x <= treeOffsetXMAX &&
                           treeOffsetZMin <= tree.position.z && tree.position.z <= treeOffsetZMAX)
                         {
-                            tree.position.x = (tree.position.x - treeOffsetXMin) * m_Settings.TileXAxis;
-                            tree.position.z = (tree.position.z - treeOffsetZMin) * m_Settings.TileZAxis;
+                            tree.position.x = (tree.position.x - treeOffsetXMin) * m_Settings.TileSplit;
+                            tree.position.z = (tree.position.z - treeOffsetZMin) * m_Settings.TileSplit;
                             treeInstances.Add(tree);
                         }
                     }
@@ -1246,8 +1255,8 @@ namespace UnityEditor.TerrainTools
                     // get and set holes, however there's currently a bug in GetHoles() so using render texture blit instead
                     //var holes = terrainData.GetHoles(heightOffset.x, heightOffset.y, newHeightmapRes, newHeightmapRes);
                     //terrainDataNew.SetHoles(0, 0, holes);							
-                    float divX = 1f / m_Settings.TileXAxis;
-                    float divZ = 1f / m_Settings.TileZAxis;
+                    float divX = 1f / m_Settings.TileSplit;
+                    float divZ = 1f / m_Settings.TileSplit;
                     Vector2 scale = new Vector2(divX, divZ);
                     Vector2 offset = new Vector2(divX * x, divZ * y);
                     Graphics.Blit(rt, (RenderTexture)terrainDataNew.holesTexture, scale, offset);
@@ -1267,7 +1276,7 @@ namespace UnityEditor.TerrainTools
             }
 
             m_SplitTerrains = terrainsNew;
-            ToolboxHelper.CalculateAdjacencies(m_SplitTerrains, m_Settings.TileXAxis, m_Settings.TileZAxis);
+            ToolboxHelper.CalculateAdjacencies(m_SplitTerrains, m_Settings.TileSplit, m_Settings.TileSplit);
 #if UNITY_2019_3_OR_NEWER
             RenderTexture.ReleaseTemporary(rt);
 #endif
@@ -1275,6 +1284,14 @@ namespace UnityEditor.TerrainTools
             {
                 ToolboxHelper.ResizeHeightmap(terrainData, originalHeightmapRes);
             }
+            
+            // Remove terrain components from the root gameobject.
+            var terrainCollider = terrain.GetComponent<TerrainCollider>();
+            if (terrainCollider != null)
+            {
+                Undo.DestroyObjectImmediate(terrainCollider);
+            }
+            Undo.DestroyObjectImmediate(terrain);
         }
 
         int GetGroupIDForSplittedNewTerrain(Terrain[] exclude_terrains)
@@ -1627,6 +1644,12 @@ namespace UnityEditor.TerrainTools
                 return;
             }
 
+            if (m_Settings.SplatFolderPath == "")
+            {
+                EditorUtility.DisplayDialog("Error", "Empty export folder path. Please assign a path and try again.", "OK");
+                return;
+            }
+
             if (!Directory.Exists(m_Settings.SplatFolderPath))
             {
                 Directory.CreateDirectory(m_Settings.SplatFolderPath);
@@ -1664,16 +1687,17 @@ namespace UnityEditor.TerrainTools
             EditorUtility.ClearProgressBar();
         }
 
-        void ImportHeightmap()
-        {
-
-        }
-
         internal void ExportHeightmaps(UnityEngine.Object[] terrains)
         {
             if (terrains == null || terrains.Length == 0)
             {
                 EditorUtility.DisplayDialog("Error", "No terrain(s) selected. Please select terrain tile(s) to continue.", "OK");
+                return;
+            }
+
+            if (m_Settings.HeightmapFolderPath == "")
+            {
+                EditorUtility.DisplayDialog("Error", "Empty export folder path. Please assign a path and try again.", "OK");
                 return;
             }
 

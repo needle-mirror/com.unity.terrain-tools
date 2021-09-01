@@ -1,0 +1,13 @@
+The domain settings alter the controls for each noise type.
+
+| **Property**      | **Description**                                              |
+| ----------------- | ------------------------------------------------------------ |
+| **Noise Type**    | There are five noise patterns that you can select.<br/>&#8226; **Billow** is similar to **Perlin** noise, but with more rounded features that resemble natural phenomena, such as treetops and hills.<br/>&#8226; **Perlin** is a noise where the visual details are the same size. This is good for close-up mountain details.<br/>&#8226; **Ridge** is billow noise filtered through an absolute function that is then inverted. This is good for ridges and deep valleys. <br/>&#8226; **Value** is a noise that creates a lattice of points, which are assigned random values. The noise function then returns an interpolated number based on the values of the surrounding lattice points. This is good for close up mountain details.<br/>&#8226; **Voronoi** is a Worley derivative noise that comes close to simulating textures of stone, water, or biological cells. |
+| **Fractal Type**  | There are three options that you can select.<br/>&#8226; **Fbm**, which stands for fractal Brownian motion. This is good for mountainous shapes.<br/>&#8226; **Strata** is an n-dimensional noise fed into one-dimensional Gradient noise. This is good for natural banding like in marble, tree rings, and terraces.<br/>&#8226; **None** turns off all the noise modifier options, resulting in the raw output of the **Noise Type** function you select. |
+| **Strata Offset** | This property only appears if you set the **Fractal Type** to **Strata**. Unity applies this vertical offset value to the strata. |
+| **Strata Scale**  | This property only appears if you set the **Fractal Type** to **Strata**. Unity applies this multiplier to the strata. Higher **Strata Scale** values produce more banding. |
+| **Octaves**       | The number of iterations of noise to layer together. Each octave is a layer of noise applied on top of the current accumulation of octaves, and each layer has different **Amplitude** and **Frequency** factors.<br/><br/>Generally, each subsequent octave is smaller in scale and magnitude than the previous octave. This adds finer and finer details to the combined noise signal at each octave. |
+| **Amplitude**     | The unmodified multiplier of the output of each octave of noise. |
+| **Persistence**   | The scaling factor to apply to the **Amplitude** at each octave. |
+| **Frequency**     | The feature size of the noise domain space at the first octave. |
+| **Lacunarity**    | The scaling factor to apply to the **Frequency** at each octave. |

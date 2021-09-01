@@ -1,9 +1,74 @@
 ﻿using UnityEngine;
-using System.IO;
-using UnityEditor;
+using System;
 
 namespace UnityEditor.TerrainTools.Erosion
 {
+    internal class ErosionBrushUIGroup : DefaultBrushUIGroup
+    {
+        public ErosionBrushUIGroup(string name, Func<TerrainToolsAnalytics.IBrushParameter[]> analyticsCall = null, Feature feature = Feature.All, FeatureDefaults defaults = null) : base(name, analyticsCall, feature)
+        {
+            //Scatter must be first.
+            if ((feature & Feature.Scatter) != 0)
+            {
+                AddScatterController(new BrushScatterVariator(name, this, this));
+            }
+
+            if ((feature & Feature.Size) != 0)
+            {
+                AddSizeController(new ErosionBrushSizeVariator(name, this, this));
+            }
+            if ((feature & Feature.Rotation) != 0)
+            {
+                AddRotationController(new BrushRotationVariator(name, this, this, name.Equals("WindErosion")));
+            }
+            if ((feature & Feature.Strength) != 0)
+            {
+                AddStrengthController(new BrushStrengthVariator(name, this, this, defaults?.Strength?? brushStrength));
+            }
+            if ((feature & Feature.Spacing) != 0)
+            {
+                AddSpacingController(new BrushSpacingVariator(name, this, this));
+            }
+
+            if ((feature & Feature.Smoothing) != 0)
+            {
+                AddSmoothingController(new DefaultBrushSmoother(name));
+            }
+
+            AddModifierKeyController(new DefaultBrushModifierKeys());
+        }
+    }
+    internal class ErosionBrushSizeVariator : BrushSizeVariator
+    {
+        public ErosionBrushSizeVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache) : base(toolName, eventHandler, terrainCache)
+        {
+        }
+
+        private static bool ErosionBrushTooLarge(int heightmapResolution, float brushSize)
+        {
+            // This is just a heuristic that seems to work reasonably well
+            float kThresholdPercentage = 0.5f;
+            return (heightmapResolution + brushSize > SystemInfo.graphicsMemorySize * kThresholdPercentage);
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            base.OnInspectorGUI(terrain, editContext);
+            bool isUsingModernGfxApi = (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Direct3D12
+                || SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Vulkan);
+            if (ErosionBrushTooLarge(terrain.terrainData.heightmapResolution, m_BrushSize.value) && isUsingModernGfxApi)
+            {
+                var msgContent = EditorGUIUtility.TrTextContentWithIcon(
+                    "Using large brushes on large heightmaps with erosion can cause crashes in DX12 and Vulkan. Reduce the brush size or heightmap resolution, or else switch to a different graphics API for erosion editing.",
+                    MessageType.Warning);
+                GUILayout.BeginVertical(EditorStyles.helpBox);
+                GUILayout.Label(msgContent, EditorStyles.wordWrappedLabel);
+                GUILayout.Space(3);
+                GUILayout.EndVertical();
+            }
+        }
+    }
+
     internal static class Styles
     {
         //Common

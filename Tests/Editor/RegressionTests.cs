@@ -252,14 +252,19 @@ namespace UnityEditor.TerrainTools
         }
 
         [Test]
-        [TestCase(2, 2, 33)]
-        [TestCase(2, 2, 65)]
-        [TestCase(4, 4, 65)]
-        [TestCase(2, 2, 129)]
-        [TestCase(8, 8, 129)]
-        [TestCase(2, 2, 513)]
-        public void TerrainToolboxUtilities_WhenSplitTerrain_HeightmapResolutionIsCorrect(int xSplit, int zSplit, int originalHeightmapRes)
+        [TestCase(2, 33)]
+        [TestCase(2, 65)]
+        [TestCase(4, 65)]
+        [TestCase(2, 129)]
+        [TestCase(8, 129)]
+        [TestCase(2, 513)]
+        [TestCase(0, 65)]
+        [TestCase(-2, 65)]
+        [TestCase(-1, 65)]
+        public void TerrainToolboxUtilities_WhenSplitTerrain_HeightmapResolutionIsCorrect(int split, int originalHeightmapRes)
         {
+            UnityEditor.Undo.IncrementCurrentGroup();
+
             TerrainToolboxWindow toolboxWindow = EditorWindow.GetWindow(typeof(TerrainToolboxWindow)) as TerrainToolboxWindow;
             Texture2D gradientTexture = CreateGradientTexture();
             int baseLevel = 0;
@@ -275,14 +280,21 @@ namespace UnityEditor.TerrainTools
             RenderTexture.active = m_TerrainComponent.terrainData.heightmapTexture;
 
             // Run the test
-            TestSplitTerrainHeightmapResolution(toolboxWindow, originalHeightmapRes, xSplit, zSplit);
+            TestSplitTerrainHeightmapResolution(toolboxWindow, originalHeightmapRes, split);
 
             AssetDatabase.Refresh();
             RenderTexture.active = oldRT;
+
+            // Undo the split
+            UnityEditor.Undo.PerformUndo();
+            
+            // Check that the original terrain heightmap resolution is unchanged
+            Assert.AreEqual(originalHeightmapRes, m_TerrainComponent.terrainData.heightmapResolution);
+            
             toolboxWindow.Close();
         }
 
-        void TestSplitTerrainHeightmapResolution(TerrainToolboxWindow toolboxWindow, int heightmapRes, int xSplit, int zSplit)
+        void TestSplitTerrainHeightmapResolution(TerrainToolboxWindow toolboxWindow, int heightmapRes, int split)
         {
             // Set up parent object so we can locate the split tiles for cleanup after testing
             int groupingId = 12345;
@@ -290,42 +302,39 @@ namespace UnityEditor.TerrainTools
             parent.GroupID = groupingId;
             m_TerrainComponent.transform.SetParent(parent.transform);
 
+            int actualSplit = split <= 1 ? 2 : split;
             toolboxWindow.m_TerrainUtilitiesMode.m_Settings.HeightmapResolution = heightmapRes;
-            toolboxWindow.m_TerrainUtilitiesMode.m_Settings.TileXAxis = xSplit;
-            toolboxWindow.m_TerrainUtilitiesMode.m_Settings.TileZAxis = zSplit;
+            toolboxWindow.m_TerrainUtilitiesMode.m_Settings.TileSplit = actualSplit;
             toolboxWindow.m_TerrainUtilitiesMode.SplitTerrain(m_TerrainComponent, groupingId, true);
 
-            // The children should include the original terrain object + the newly created tiles
+            // The children should include the original terrain gameobject + the newly created tiles
             int childCount = parent.transform.childCount;
-            Assert.AreEqual(xSplit*zSplit + 1, childCount);
-
-            // Check that the original terrain heightmap resolution is unchanged
-            Assert.AreEqual(heightmapRes, m_TerrainComponent.terrainData.heightmapResolution);
+            Assert.AreEqual(actualSplit * actualSplit + 1, childCount);
 
             // Test and clean up the split tiles (skip the first child as it is the original terrain object)
             for (int i = 1; i < childCount; i++)
             {
                 var child = parent.transform.GetChild(i).GetComponent<Terrain>();
                 Assert.AreEqual(child.terrainData.heightmapResolution - 1,
-                    GetExpectedTileHeightmapResolution(heightmapRes, xSplit));
+                    GetExpectedTileHeightmapResolution(heightmapRes, actualSplit));
                 string path = Path.Combine("Assets/Terrain", child.transform.name + ".asset");
                 FileUtil.DeleteFileOrDirectory(path);
                 FileUtil.DeleteFileOrDirectory(path + ".meta");
             }
         }
 
-        int GetExpectedTileHeightmapResolution(int heightmapRes, int xSplit)
+        int GetExpectedTileHeightmapResolution(int heightmapRes, int split)
         {
             int minHeightmapRes = 32;
-            int newHeightmapRes = (heightmapRes - 1) / xSplit;
+            int newHeightmapRes = (heightmapRes - 1) / split;
             return Math.Max(newHeightmapRes, minHeightmapRes);
         }
 
         [Test]
-        [TestCase(1, 1, 2, 2)]
-        [TestCase(3, 3, 4, 4)]
-        [TestCase(5, 5, 2, 2)]
-        public void TerrainToolboxUtilites_WhenSplitTerrain_MissingTrees(int amountOfTreesX, int amountOfTreesZ, int tileXAxis, int tileZAxis)
+        [TestCase(1, 1, 2)]
+        [TestCase(3, 3, 4)]
+        [TestCase(5, 5, 2)]
+        public void TerrainToolboxUtilites_WhenSplitTerrain_MissingTrees(int amountOfTreesX, int amountOfTreesZ, int tileSplit)
         {
             //Setup tree prefab (Needs to be persistent)
             GameObject treePrefab = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -368,9 +377,7 @@ namespace UnityEditor.TerrainTools
             //Execute the repro steps checking to make sure split terrains have trees
             Selection.activeGameObject = m_TerrainGO;
             TerrainToolboxWindow toolboxWindow = EditorWindow.GetWindow(typeof(TerrainToolboxWindow)) as TerrainToolboxWindow;
-            toolboxWindow.m_TerrainUtilitiesMode.m_Settings.KeepOldTerrains = true;
-            toolboxWindow.m_TerrainUtilitiesMode.m_Settings.TileXAxis = tileXAxis;
-            toolboxWindow.m_TerrainUtilitiesMode.m_Settings.TileZAxis = tileZAxis;
+            toolboxWindow.m_TerrainUtilitiesMode.m_Settings.TileSplit = tileSplit;
             toolboxWindow.m_TerrainUtilitiesMode.SplitTerrains(true);
             
             Terrain[] objs = GameObject.FindObjectsOfType<Terrain>();
@@ -408,6 +415,70 @@ namespace UnityEditor.TerrainTools
             utilities.ExportSplatmapsToTerrain(true);
 
             Assert.AreEqual(texData, layer.diffuseTexture.GetRawTextureData());
+        }
+
+        int CountTerrainComponents(GameObject go)
+        {
+            return go.GetComponents<Component>().Select(x => x.GetType())
+                .Count(x => x == typeof(Terrain) || x == typeof(TerrainCollider));
+        }
+
+        [Test]
+        public void TerrainToolboxUtilities_WhenTerrainsRemoved_AreChildrenRemoved()
+        {
+            // Set up some terrain data
+            var terrainDatas = new TerrainData[3];
+            for (int i = 0; i < 3; ++i)
+            {
+                terrainDatas[i] = new TerrainData();
+                terrainDatas[i].heightmapResolution = 256;
+                AssetDatabase.CreateAsset(terrainDatas[i], $"Assets/Test Terrain Data{i}.asset");
+            }
+
+            // Set up terrains
+            Texture2D gradientTexture = CreateGradientTexture();
+            var terrainAlone = Terrain.CreateTerrainGameObject(terrainDatas[0]);
+
+            var terrainWithOtherComponents = Terrain.CreateTerrainGameObject(terrainDatas[1]);
+            terrainWithOtherComponents.AddComponent<AudioSource>();
+
+            var terrainWithChild = Terrain.CreateTerrainGameObject(terrainDatas[2]);
+            var child = new GameObject();
+            child.transform.SetParent(terrainWithChild.transform);
+
+            AssetDatabase.Refresh();
+
+            // Set up the selection with all the terrain objects
+            Selection.objects = new GameObject[] {
+                terrainAlone.gameObject,
+                terrainWithOtherComponents.gameObject,
+                terrainWithChild.gameObject
+            };
+
+            //Execute the repro steps checking to make sure split terrains have trees
+            TerrainToolboxWindow toolboxWindow = EditorWindow.GetWindow(typeof(TerrainToolboxWindow)) as TerrainToolboxWindow;
+            toolboxWindow.m_TerrainUtilitiesMode.RemoveTerrains(true);
+
+            AssetDatabase.Refresh();
+
+            // Check the correct gameobjects have been destroyed
+            Assert.IsTrue(terrainAlone == null);
+            Assert.IsFalse(terrainWithOtherComponents == null);
+            Assert.IsFalse(terrainWithChild == null);
+            Assert.IsFalse(child == null);
+
+            // Check number of terrain components
+            Assert.AreEqual(CountTerrainComponents(terrainWithOtherComponents), 0);
+            Assert.AreEqual(terrainWithOtherComponents.GetComponents<Component>().Length - CountTerrainComponents(terrainWithOtherComponents), 2);
+            Assert.AreEqual(CountTerrainComponents(terrainWithChild), 0);
+
+            // Check children are not destroyed
+            Assert.AreEqual(terrainWithChild.transform.childCount, 1);
+
+            // clean up
+            GameObject.DestroyImmediate(terrainWithOtherComponents);
+            GameObject.DestroyImmediate(terrainWithChild);
+            toolboxWindow.Close();
         }
 
         [SetUp]

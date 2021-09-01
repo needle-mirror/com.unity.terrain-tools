@@ -21,6 +21,8 @@ namespace UnityEditor.TerrainTools
 
         private readonly BrushJitterHandler m_JitterHandler;
 
+        private float m_defaultBrushRotation;
+
         // Values below are not modifiable directly -- they are means of caching the current state of the brush and/or used in calculations
         private float m_PreviousRotation;
         private RaycastHit m_PreviousRaycastHit;
@@ -47,10 +49,11 @@ namespace UnityEditor.TerrainTools
         public float currentRotation => CalculateRotation(m_BrushRotation.value);
 
         public BrushRotationVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache,
-            bool smoothJitter = false) : base(toolName, eventHandler, terrainCache)
+            bool smoothJitter = false, float defaultValue = kDefaultBrushRotation) : base(toolName, eventHandler, terrainCache)
         {
             m_JitterHandler = new BrushJitterHandler(0.0f, kMinBrushRotation, kMaxBrushRotation, smoothJitter);
             m_BrushRotation.wrapValue = true;
+            m_defaultBrushRotation = defaultValue;
         }
 
         private float CalculateRotation(float initialRotation)
@@ -120,7 +123,7 @@ namespace UnityEditor.TerrainTools
         {
             base.OnEnterToolMode(shortcutHandler);
 
-            m_BrushRotation.value = GetEditorPrefs("TerrainBrushRotation", kDefaultBrushRotation);
+            m_BrushRotation.value = GetEditorPrefs("TerrainBrushRotation", m_defaultBrushRotation);
             m_BrushRotation.mouseSensitivity =
                 GetEditorPrefs("TerrainBrushRotMouseSensitivity", kDefaultMouseSensitivity);
             m_JitterHandler.jitter = GetEditorPrefs("TerrainBrushRotJitter", 0.0f);

@@ -54,7 +54,7 @@ namespace UnityEditor.TerrainTools
             public static readonly string applyTooltip = "Apply the current settings to the source NoiseSettings Asset";
             public static readonly string exportTooltip = "Toggle the view for settings that allow you to export the generated Noise to a 2D or 3D Texture and save that to disk";
             public static readonly string previewLabel = "Noise Field Preview:";
-            public static readonly string previewLabelTooltip = "Noise Field Preview:";
+            public static readonly string previewLabelTooltip = "Preview of the generated noise texture";
 
             public static readonly string reset = "Reset";
             public static readonly string revert = "Revert";
@@ -121,6 +121,7 @@ namespace UnityEditor.TerrainTools
             // create temp noisesettings asset and the IMGUI view for this window
             m_noiseUpdateTarget = _noiseUpdateTarget_ == null ? ScriptableObject.CreateInstance<NoiseSettings>() : _noiseUpdateTarget_;
             m_serializedNoiseProfile = new SerializedObject(m_noiseUpdateTarget);
+            m_serializedNoiseProfile.targetObject.hideFlags = HideFlags.DontSave;
             m_noiseGUI = new NoiseSettingsGUI();
             m_noiseGUI.Init(m_noiseUpdateTarget);
 

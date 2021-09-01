@@ -93,7 +93,7 @@
             #define STAMP_TOOL_MODE     (_BrushParams[0]) // Min=0 | Set=1 | Max=2  
             #define HEIGHT_UNDER_CURSOR (_BrushParams[1])   
             #define BRUSH_STAMPHEIGHT   (_BrushParams[2])
-            #define BRUSHFLATTEN        (_BrushParams[3])
+            #define BLEND_AMOUNT        (_BrushParams[3])
 
             float SmoothMax(float a, float b, float p)
             {
@@ -124,7 +124,7 @@
                 float flatHeight = lerp(height, HEIGHT_UNDER_CURSOR + BRUSH_STAMPHEIGHT, brushShape);
                 
                 // composite results
-                float outheight = lerp(flatHeight, targetHeight, BRUSHFLATTEN);	
+                float outheight = lerp(flatHeight, targetHeight, BLEND_AMOUNT);	
                 if (STAMP_TOOL_MODE != 2)
                 {
                     outheight = lerp(min(height, outheight), max(height, outheight), STAMP_TOOL_MODE);
@@ -251,28 +251,32 @@
             ENDCG
         }
 
-		Pass    // 5 paint holes
-		{
-			Name "Paint Holes"
-			CGPROGRAM
-			#pragma vertex vert
-			#pragma fragment PaintHoles
-			float4 PaintHoles(v2f i) : SV_Target
-			{
-				float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
-				
-				// out of bounds multiplier
-				float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;				
-				float filter = UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
-				float brushStrength = BRUSH_STRENGTH * oob;
-				brushStrength = ((UnpackHeightmap(tex2D(_BrushTex, brushUV)) > (1.0f - abs(brushStrength))) && (filter > 0.5f)) ? sign(brushStrength) : 0.0f;
-				
-				float holes = tex2D(_MainTex, i.pcUV).r;
-				holes += brushStrength;
-				return holes;
-			}
-			ENDCG
-		}
+        Pass    // 5 paint holes
+        {
+            Name "Paint Holes"
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment PaintHoles
+            float4 PaintHoles(v2f i) : SV_Target
+            {
+                float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
+                float holes = tex2D(_MainTex, i.pcUV).r;
+                float brush = UnpackHeightmap(tex2D(_BrushTex, brushUV));
+                float filter = UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                
+                // out of bounds multiplier
+                float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
+                float brushStrength = BRUSH_STRENGTH * oob;
+
+                float val = brush * filter;
+                // filter could be negative. need to account for this
+                val = abs(val) > (1 - abs(brushStrength)) && abs(val) > .0001f ? sign(brushStrength) * sign(val) : 0.0f;
+
+                holes += val;
+                return holes;
+            }
+            ENDCG
+        }
     }
     Fallback Off
 }

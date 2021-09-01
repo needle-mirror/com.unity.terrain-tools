@@ -59,7 +59,11 @@ namespace UnityEditor.TerrainTools
                 if (m_commonUI == null)
                 {
                     LoadSettings();
-                    m_commonUI = new DefaultBrushUIGroup("NoiseHeightTool", UpdateAnalyticParameters);
+                    m_commonUI = new DefaultBrushUIGroup("NoiseHeightTool",
+                        UpdateAnalyticParameters,
+                        DefaultBrushUIGroup.Feature.All,
+                        new DefaultBrushUIGroup.FeatureDefaults { Strength = 0.37f }
+                        );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -172,8 +176,11 @@ namespace UnityEditor.TerrainTools
 
         public override string GetDescription()
         {
-            return "Tool for painting height based on noise";
+            return "Increases or decreases the Terrain height using Noise and Fractal Types.";
         }
+
+        private bool m_IsScrolling;
+        private double m_ScrollTime;
 
         // GUI
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
@@ -191,27 +198,18 @@ namespace UnityEditor.TerrainTools
                 {
                     GUILayout.Space(12);
 
-                    noiseSettingsGUI.DrawPreviewTexture(256f, true);
+                    noiseSettingsGUI.DrawPreviewTexture(256f, true, m_IsScrolling);
 
-                    // GUILayout.Space(12);
-
-                    // // fill controls
-                    // EditorGUILayout.BeginHorizontal();
-                    // {
-                    //     EditorGUILayout.PrefixLabel( Styles.fillOptions );
-
-                    //     if (GUILayout.Button(Styles.fillSelected))
-                    //     {
-                    //         FillTile(terrain);
-                    //     }
-
-                    //     if(GUILayout.Button(Styles.fillGroup))
-                    //     {
-                    //         FillAllTiles(terrain);
-                    //     }
-                    // }
-                    // EditorGUILayout.EndHorizontal();
-                    // // end fill controls
+                    if (Event.current.type == EventType.ScrollWheel && !noiseSettingsGUI.isScrollingPreview)
+                    {
+                        m_IsScrolling = true;
+                        m_ScrollTime = Time.realtimeSinceStartupAsDouble;
+                    }
+                    
+                    if (m_IsScrolling && (Time.realtimeSinceStartupAsDouble - m_ScrollTime) > .2)
+                    {
+                        m_IsScrolling = false;
+                    }
 
                     GUILayout.Space(12);
 
@@ -496,7 +494,7 @@ namespace UnityEditor.TerrainTools
             // then add the result to the heightmap using the noise height tool shader
             Material matFinal = paintMaterial;
             var brushMask = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-            Utility.SetFilterRT(commonUI, ctx.sourceRenderTexture, brushMask, matFinal);
+            Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, brushMask, matFinal);
             TerrainPaintUtility.SetupTerrainToolMaterialProperties(ctx, brushXform, matFinal);
             // set brush params
             Vector4 brushParams = new Vector4(0.01f * brushStrength, 0.0f, brushSize, 1 / brushSize);
@@ -535,18 +533,21 @@ namespace UnityEditor.TerrainTools
             using (IBrushRenderPreviewUnderCursor brushPreview =
                     new BrushRenderPreviewUIGroupUnderCursor(commonUI, "NoiseHeightTool", editContext.brushTexture))
             {
-
                 float brushSize = commonUI.brushSize;
                 float brushStrength = Event.current.control ? -commonUI.brushStrength : commonUI.brushStrength;
                 Vector3 brushPosWS = commonUI.raycastHitUnderCursor.point;
-
                 brushPreview.CalculateBrushTransform(out var brushXform);
-
                 PaintContext ctx = brushPreview.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
 
-                Material previewMaterial = Utility.GetDefaultPreviewMaterial();
+                Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
+
+                var filter = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filter, previewMaterial);
+               
                 var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
                 Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                
+                previewMaterial.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
                 TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
                     editContext.brushTexture, brushXform, previewMaterial, 0);
 
@@ -558,12 +559,12 @@ namespace UnityEditor.TerrainTools
                 // restore old render target
                 RenderTexture.active = ctx.oldRenderTexture;
 
-                previewMaterial.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
                 TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.DestinationRenderTexture,
                     editContext.brushTexture, brushXform, previewMaterial, 1);
                 texelCtx.Cleanup();
 
                 TerrainPaintUtility.ReleaseContextResources(ctx);
+                RTUtils.Release(filter);
             }
         }
 

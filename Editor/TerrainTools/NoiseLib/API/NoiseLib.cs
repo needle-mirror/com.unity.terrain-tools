@@ -262,99 +262,71 @@ namespace UnityEditor.TerrainTools
 
         private static void GatherNoiseTypes()
         {
-            List<INoiseType> instances = new List<INoiseType>();
-            List<string> names = new List< string >();
-
-            List<Type> types = new List< Type >();
-
-            foreach( Assembly asm in AppDomain.CurrentDomain.GetAssemblies() )
+            TypeCache.TypeCollection types = TypeCache.GetTypesDerivedFrom(typeof(NoiseType<>));
+            if (types.Count > 0)
             {
-                Type[] assemblyTypes = null;
+                List<INoiseType> instances = new List<INoiseType>(types.Count);
+                List<string> names = new List<string>(types.Count);
+                foreach (Type t in types)
+                {
+                    PropertyInfo propertyInfo = t.GetProperty("instance", s_bindingFlags);
+                    MethodInfo methodInfo = propertyInfo.GetGetMethod();
+                    INoiseType instance = (INoiseType)methodInfo.Invoke(null, null);
 
-                try
-                {
-                    assemblyTypes = asm.GetTypes();
-                }
-                catch( Exception )
-                {
-                    Debug.Log( "NoiseLib::GatherNoiseTypes: Failed to get types from assembly: " + asm );
-                    assemblyTypes = null;
+                    NoiseTypeDescriptor desc = instance.GetDescription();
+
+                    if(string.IsNullOrEmpty(desc.name))
+                    {
+                        Debug.LogError("NoiseType name cannot be null or empty! Skipping noise type: " + t);
+                        continue;
+                    }
+
+                    instances.Add(instance);
+                    names.Add(desc.name);
                 }
 
-                if( assemblyTypes != null )
-                {
-                    types.AddRange( GetSubclassesOfGenericType( assemblyTypes, typeof( NoiseType<> ) ) );
-                }
+                s_noiseTypes = instances.ToArray();
+                s_noiseNames = names.ToArray();
             }
-
-            foreach (Type t in types)
+            else
             {
-                PropertyInfo propertyInfo = t.GetProperty("instance", s_bindingFlags);
-                MethodInfo methodInfo = propertyInfo.GetGetMethod();
-                INoiseType instance = (INoiseType)methodInfo.Invoke(null, null);
-                
-                NoiseTypeDescriptor desc = instance.GetDescription();
-
-                if(string.IsNullOrEmpty(desc.name))
-                {
-                    Debug.LogError("NoiseType name cannot be null or empty! Skipping noise type: " + t);
-                    continue;
-                }
-
-                instances.Add(instance);
-                names.Add(desc.name);
+                s_noiseTypes = new INoiseType[0];
+                s_noiseNames = new string[0];
             }
-
-            s_noiseTypes = instances.ToArray();
-            s_noiseNames = names.ToArray();
         }
 
         private static void GatherFractalTypes()
         {
-            List<IFractalType> instances = new List<IFractalType>();
-            List<string> names = new List<string>();
-
-            List<Type> types = new List< Type >();
-
-            foreach( Assembly asm in AppDomain.CurrentDomain.GetAssemblies() )
+            TypeCache.TypeCollection types = TypeCache.GetTypesDerivedFrom(typeof(FractalType<>));
+            if (types.Count > 0)
             {
-                Type[] assemblyTypes = null;
+                List<IFractalType> instances = new List<IFractalType>(types.Count);
+                List<string> names = new List<string>(types.Count);
+                foreach (Type t in types)
+                {
+                    PropertyInfo propertyInfo = t.GetProperty("instance", s_bindingFlags);
+                    MethodInfo methodInfo = propertyInfo.GetGetMethod();
+                    IFractalType instance = (IFractalType)methodInfo.Invoke(null, null);
+                    FractalTypeDescriptor desc = instance.GetDescription();
 
-                try
-                {
-                    assemblyTypes = asm.GetTypes();
-                }
-                catch( Exception )
-                {
-                    Debug.Log( "NoiseLib::GatherFractalTypes: Failed to get types from assembly: " + asm );
-                    assemblyTypes = null;
+                    if(string.IsNullOrEmpty(desc.name))
+                    {
+                        Debug.LogError("FractalType name cannot be null or empty! Skipping fractal type: " + desc.name);
+                        continue;
+                    }
+
+                    instances.Add(instance);
+                    names.Add(desc.name);
                 }
 
-                if( assemblyTypes != null )
-                {
-                    types.AddRange( GetSubclassesOfGenericType( assemblyTypes, typeof( FractalType<> ) ) );
-                }
+                s_fractalTypes = instances.ToArray();
+                s_fractalNames = names.ToArray();
             }
-
-            foreach (Type t in types)
+            else
             {
-                PropertyInfo propertyInfo = t.GetProperty("instance", s_bindingFlags);
-                MethodInfo methodInfo = propertyInfo.GetGetMethod();
-                IFractalType instance = (IFractalType)methodInfo.Invoke(null, null);
-                FractalTypeDescriptor desc = instance.GetDescription();
-                
-                if(string.IsNullOrEmpty(desc.name))
-                {
-                    Debug.LogError("FractalType name cannot be null or empty! Skipping fractal type: " + desc.name);
-                    continue;
-                }
-                
-                instances.Add(instance);
-                names.Add(desc.name);
+                s_fractalTypes = new IFractalType[0];
+                s_fractalNames = new string[0];
             }
-
-            s_fractalTypes = instances.ToArray();
-            s_fractalNames = names.ToArray();
         }
 
         private static string[] LoadNoiseSource(INoiseType[] noiseTypes)
@@ -666,37 +638,9 @@ namespace UnityEditor.TerrainTools
 
         private static void GatherGenerators()
         {
-            var gatheredAsmTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(
-                asm =>
-                {
-                    Type[] asmTypes = null;
-                    List< Type > types = null;
+            TypeCache.TypeCollection generatorTypes = TypeCache.GetTypesDerivedFrom(typeof(NoiseShaderGenerator<>));
 
-                    try
-                    {
-                        asmTypes = asm.GetTypes();
-                        if( asmTypes != null )
-                        {
-                            types = new List< Type >( GetSubclassesOfGenericType( asmTypes, typeof( NoiseShaderGenerator<> ) ) );
-                        }
-                    }
-                    catch( Exception )
-                    {
-                        asmTypes = null;
-                        types = null;
-                    }
-
-                    return types == null ? new List< Type >() : types;
-                }
-            );
-            // List<Type> generatorTypes = new List<Type>(
-            //     AppDomain.CurrentDomain.GetAssemblies().SelectMany(
-            //         asm => GetSubclassesOfGenericType( asm.GetTypes(), typeof(NoiseShaderGenerator<>) )
-            //     )
-            // );
-            List<Type> generatorTypes = new List<Type>( gatheredAsmTypes );
-
-            s_generators = new Dictionary<Type, INoiseShaderGenerator>();
+            s_generators = new Dictionary<Type, INoiseShaderGenerator>(generatorTypes.Count);
             
             foreach(Type t in generatorTypes)
             {

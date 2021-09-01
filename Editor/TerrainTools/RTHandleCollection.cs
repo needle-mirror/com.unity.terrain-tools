@@ -5,7 +5,7 @@ using UnityEngine.Experimental.Rendering;
 namespace UnityEditor.TerrainTools
 {
     /// <summary>
-    /// Collection class for mapping string and integer values to RTHandles
+    /// Provides a collection class for mapping string and integer values to <see cref="RTHandle"/>s.
     /// </summary>
     public class RTHandleCollection : System.IDisposable
     {
@@ -17,7 +17,7 @@ namespace UnityEditor.TerrainTools
         private List< int > m_Hashes;
 
         /// <summary>
-        /// Access a RTHandle using an integer hash
+        /// Access an RTHandle using an <c>int</c> hash.
         /// </summary>
         public RTHandle this[int hash] {
             get
@@ -37,7 +37,7 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Access a RTHandle using a string value
+        /// Access an RTHandle using a <c>string</c>.
         /// </summary>
         public RTHandle this[string name] {
             get
@@ -57,7 +57,7 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// RTHandleCollection constructor
+        /// Initializes and returns an instance of RTHandleCollection.
         /// </summary>
         public RTHandleCollection()
         {
@@ -69,11 +69,11 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Add a RTHandle description to the RTHandleCollection for later use when calling GatherRTHandles
-        /// <param name="hash">The hash or integer value used to identify the RTHandle</param>
-        /// <param name="name">The name used to identify the RTHandle</param>
-        /// <param name="format">The GraphicsFormat to use for the RTHandle description</param>
+        /// Adds an <see cref="RTHandle"/> description to the RTHandleCollection for later use when you call <see cref="GatherRTHandles"/>.
         /// </summary>
+        /// <param name="hash">The hash or integer value used to identify the RTHandle.</param>
+        /// <param name="name">The name used to identify the RTHandle.</param>
+        /// <param name="format">The <see cref="GraphicsFormat"/> to use for the RTHandle description.</param>
         public void AddRTHandle(int hash, string name, GraphicsFormat format)
         {
             if (!m_Handles.ContainsKey(hash))
@@ -94,19 +94,20 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Check to see if a RTHandle with the provided name exists already
-        /// <param name="name">The name used to identify a RTHandle in this RTHandleCollection</param>
+        /// Checks to see if an <see cref="RTHandle"/> with the provided name already exists.
         /// </summary>
+        /// <param name="name">The name used to identify an RTHandle in this RTHandleCollection.</param>
+        /// <returns>Returns <c>true</c> if the RTHandle exists.</returns>
         public bool ContainsRTHandle(string name)
         {
             return m_NameToHash.ContainsKey(name);
         }
 
         /// <summary>
-        /// Check to see if a RTHandle with the provided hash value exists already
-        /// <param name="hash">The hash or integer value used to identify a RTHandle in this RTHandleCollection</param>
-        /// <returns>The RTHandle reference associated with the provided hash or integer value. NULL if the key is not found</returns>
+        /// Checks to see if an <see cref="RTHandle"/> with the provided hash value already exists.
         /// </summary>
+        /// <param name="hash">The hash or integer value used to identify an RTHandle in this RTHandleCollection.</param>
+        /// <returns>Returns the RTHandle reference associated with the provided hash or integer value. Returns <c>NULL</c> if the key isn't found.</returns>
         public RTHandle GetRTHandle(int hash)
         {
             if (m_Handles.ContainsKey(hash))
@@ -118,12 +119,11 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Gather/Create all added RTHandles using the provided width, height, and depth value, if provided
-        /// <param name="width">The width of the RTHandles to gather</param>
-        /// <param name="height">The height of the RTHandles to gather</param>
-        /// <param name="depth">The optional depth of the RTHandles to gather</param>
-        /// <returns></returns>
+        /// Gathers all added <see cref="RTHandle"/>s using the <c>width</c>, <c>height</c>, and <c>depth</c> values, if provided.
         /// </summary>
+        /// <param name="width">The width of the RTHandle to gather.</param>
+        /// <param name="height">The height of the RTHandle to gather.</param>
+        /// <param name="depth">The optional depth of the RTHandle to gather.</param>
         public void GatherRTHandles(int width, int height, int depth = 0)
         {
             foreach (int key in m_Hashes)
@@ -135,7 +135,7 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Release the RTHandle resources that have been gathered
+        /// Releases the gathered <see cref="RTHandle"/> resources.
         /// </summary>
         public void ReleaseRTHandles()
         {
@@ -151,9 +151,9 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Render debug GUI in the SceneView that displays all the RTHandles in this RTHandleCollection
-        /// <param name="size">The size that is used to draw the textures</param>
+        /// Renders a debug GUI in the SceneView that displays all the <see cref="RTHandle"/>s in this RTHandleCollection.
         /// </summary>
+        /// <param name="size">The size used to draw the Textures.</param>
         public void OnSceneGUI(float size)
         {
             const float padding = 10;
@@ -198,7 +198,7 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Dispose method for this class
+        /// Calls the overridden <see cref="Dispose(bool)"/> method.
         /// </summary>
         public void Dispose()
         {
@@ -206,9 +206,12 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Overridable Dispose method for this class. Override this if you create a class that derives from RTHandleCollection
-        /// <param name="dispose">Whether or not resources should be disposed</param>
+        /// Releases the gathered <see cref="RTHandle"/> resources, and clears the RTHandleCollection <c>Dictionary</c>.
         /// </summary>
+        /// <remarks>Override this method if you create a class that derives from RTHandleCollection.</remarks>
+        /// <param name="dispose">Whether to dispose resources when clearing releasing the RTHandleCollection. 
+        /// When the value is <c>true</c>, Unity disposes of resources. Otherwise, Unity does not dispose of resources.</param>
+        /// <seealso cref="ReleaseRTHandles"/>
         public virtual void Dispose(bool dispose)
         {
             if (m_Disposed)

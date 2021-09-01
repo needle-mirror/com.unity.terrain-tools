@@ -7,6 +7,9 @@ using UnityEngine.Rendering;
 
 namespace UnityEditor.TerrainTools
 {
+    /// <summary>
+    /// Provides methods for utility purposes.
+    /// </summary>
     public static class FilterUtility
     {
         /// <summary>
@@ -14,23 +17,63 @@ namespace UnityEditor.TerrainTools
         /// </summary>
         public enum BuiltinPasses
         {
+            /// <summary>
+            /// Uses the Abs shader pass.
+            /// </summary>
             Abs = 0,
+
+            /// <summary>
+            /// Uses the Add shader pass.
+            /// </summary>
             Add = 1,
+
+            /// <summary>
+            /// Uses the Clamp shader pass.
+            /// </summary>
             Clamp = 2,
+
+            /// <summary>
+            /// Uses the Complement shader pass.
+            /// </summary>
             Complement = 3,
+
+            /// <summary>
+            /// Uses the Max shader pass.
+            /// </summary>
             Max = 4,
+
+            /// <summary>
+            /// Uses the Min shader pass.
+            /// </summary>
             Min = 5,
+
+            /// <summary>
+            /// Uses the Negate shader pass.
+            /// </summary>
             Negate = 6,
+
+            /// <summary>
+            /// Uses the Power shader pass.
+            /// </summary>
             Power = 7,
+
+            /// <summary>
+            /// Uses the Remap shader pass.
+            /// </summary>
             Remap = 8,
+
+            /// <summary>
+            /// Uses the Multiply shader pass.
+            /// </summary>
             Multiply = 9,
         }
 
         /// <summary>
-        /// The default GraphicsFormat used to evaluate Filters and FilterStacks. This is GraphicsFormat.R16_SFloat when
-        /// supported by the active Graphics API. If it is not supported, ie on Vulkan, OpenGLES3, and OpenGLES2, this
-        /// is GraphicsFormat.R8G8_UNorm.
+        /// Gets the default <see cref="GraphicsFormat"/> used to evaluate Filters and FilterStacks.
         /// </summary>
+        /// <remarks>Returns GraphicsFormat.R16_SFloat when the GraphicsFormat is
+        /// supported by the active Graphics API. If it is not supported, for example on Vulkan, OpenGLES3, and OpenGLES2,
+        /// GraphicsFormat.R8G8_UNorm is returned instead.</remarks>
         public static GraphicsFormat defaultFormat =>
             SystemInfo.IsFormatSupported(GraphicsFormat.R16_SFloat, FormatUsage.Render) &&
             SystemInfo.graphicsDeviceType != GraphicsDeviceType.Vulkan &&
@@ -41,7 +84,7 @@ namespace UnityEditor.TerrainTools
 
         private static Material m_builtinMaterial;
         /// <summary>
-        /// The Material used for built-in Filters like Add and Multiply.
+        /// Gets the Material used for built-in Filters like Add and Multiply.
         /// </summary>
         public static Material builtinMaterial {
             get
@@ -55,10 +98,12 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        /// <summary>
-        /// Material for blend mode passes.
-        /// </summary>
+        
         private static Material m_blendModesMaterial;
+
+        /// <summary>
+        /// Gets the Material for blend mode passes.
+        /// </summary>
         public static Material blendModesMaterial {
             get
             {
@@ -70,6 +115,11 @@ namespace UnityEditor.TerrainTools
                 return m_blendModesMaterial;
             }
         }
+
+        /// <summary>
+        /// The shader keyword for enabling the filter preview.
+        /// </summary>
+        public static readonly string filterPreviewKeyword = "TERRAINTOOLS_FILTERS_ENABLED";
 
         private static Type[] s_filterTypes;
         private static GUIContent[] s_displayNames;
@@ -147,7 +197,7 @@ namespace UnityEditor.TerrainTools
         /// Creates an instance of generic type T where T inherits from Filter
         /// </summary>
         /// <typeparam name="T">The type of Filter to create</typeparam>
-        /// <returns></returns>
+        /// <returns>Returns the Filter instance.</returns>
         public static T CreateInstance<T>() where T : Filter
         {
             return (T)CreateInstance(typeof(T));
@@ -157,7 +207,7 @@ namespace UnityEditor.TerrainTools
         /// Creates an instance of the provided Filter type
         /// </summary>
         /// <param name="t">The type of Filter to create</param>
-        /// <returns></returns>
+        /// <returns>Returns the Filter instance.</returns>
         public static Filter CreateInstance(Type t)
         {
             return ScriptableObject.CreateInstance(t) as Filter;

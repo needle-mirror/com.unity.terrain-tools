@@ -112,7 +112,7 @@ namespace UnityEditor.TerrainTools
             m_ConcavityStrength = EditorGUI.Slider(strengthSliderRect, m_ConcavityStrength, 0.0f, 1.0f);
 
             // Height Range Slider
-            Rect rangeLabelRect = new Rect(rect.x, strengthSliderRect.yMax, labelWidth, EditorGUIUtility.singleLineHeight);
+            Rect rangeLabelRect = new Rect(rect.x, strengthSliderRect.yMax + EditorGUIUtility.standardVerticalSpacing, labelWidth, EditorGUIUtility.singleLineHeight);
             EditorGUI.LabelField(rangeLabelRect, rangeLabel);
             Rect rangeLeftRect = new Rect(rangeLabelRect.xMax, rangeLabelRect.y, (rect.width - labelWidth) / 2, rangeLabelRect.height);
             Rect rangeRightRect = new Rect(rangeLeftRect.xMax, rangeLabelRect.y, (rect.width - labelWidth) / 2, rangeLabelRect.height);
@@ -120,7 +120,7 @@ namespace UnityEditor.TerrainTools
             m_Height.y = EditorGUI.FloatField(rangeRightRect, m_Height.y);
 
             //Value Remap Curve
-            Rect curveLabelRect = new Rect(rect.x, rangeLeftRect.yMax, labelWidth, EditorGUIUtility.singleLineHeight);
+            Rect curveLabelRect = new Rect(rect.x, rangeLeftRect.yMax + EditorGUIUtility.standardVerticalSpacing, labelWidth, EditorGUIUtility.singleLineHeight);
             EditorGUI.LabelField(curveLabelRect, curveLabel);
             Rect curveRect = new Rect(curveLabelRect.xMax, curveLabelRect.y, rect.width - labelWidth, curveLabelRect.height);
 

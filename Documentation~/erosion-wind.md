@@ -1,8 +1,8 @@
 # Wind Erosion
 
-Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** (brush) icon, and select **Erosion > Wind** from the list of Terrain tools.
+Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Erosion** > **Wind** from the list of Terrain tools.
 
-![img](images/Tools_HowToSelection.png)
+![img](images/2-33-Wind-Erosion-01.png)
 
 The Wind Erosion Tool simulates the effect of wind transporting and redistributing sediment. 
 
@@ -12,9 +12,9 @@ The erosion effect depends on the Terrain size and heightmap resolution. For hig
 
 ## Parameters
 
-![img](images/wind_erosion_parameters.png)
+![img](images/2-33-Wind-Erosion-02.png)
 
-| **Property** |      | **Function** |
+| **Property** |      | **Description** |
 | ---- | ---- | ---- |
 | **Simulation Scale**        | | The scale of the simulation, which controls the size of features that erosion produces. Increasing this value results in smoother features, and decreasing it produces higher frequency details. |
 | **Wind Speed**              | | The wind speed at the start of the simulation. Higher wind speeds result in a greater visual effect, but might lead to simulation instabilities. |

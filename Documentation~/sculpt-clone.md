@@ -1,14 +1,18 @@
 # Clone Tool
 
-The Clone Tool duplicates Terrain from one region to another. To access the Clone Tool, select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** (brush) icon, and select **Sculpt > Clone** from the list of Terrain tools.
+The Clone Tool duplicates Terrain from one region to another. 
 
-![](images/Tools_HowToSelection.png)
+![](images/2-12-Clone-03.png)
+
+To access the Clone Tool, select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Sculpt > Clone** from the list of Terrain tools.
+
+![](images/2-12-Clone-01.png)
 
 Hold Ctrl (Option on macOS) and click to set the Terrain area to sample from. Click to apply the cloned area anywhere else on the Terrain. The region to clone from remains the same until you hold Ctrl (Option on macOS) and click to select a new area.
 
 ## Parameters
 
-![](images/Tool_Clone_Parameters.png)
+![](images/2-12-Clone-02.png)
 
 | **Property**                 | **Description**                                              |
 | ---------------------------- | ------------------------------------------------------------ |

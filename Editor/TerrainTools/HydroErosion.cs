@@ -24,7 +24,12 @@ namespace UnityEditor.TerrainTools
             {
                 if (m_commonUI == null)
                 {
-                    m_commonUI = new DefaultBrushUIGroup("HydroErosion", UpdateAnalyticParameters);
+                    m_commonUI = new ErosionBrushUIGroup(
+                        "HydroErosion",
+                        UpdateAnalyticParameters,
+                        DefaultBrushUIGroup.Feature.All,
+                        new DefaultBrushUIGroup.FeatureDefaults { Strength = 0.52f }
+                        );
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -58,7 +63,7 @@ namespace UnityEditor.TerrainTools
 
         public override string GetDescription()
         {
-            return "Hydraulic Erosion\nErodes the terrain according to a fluid simulation.";
+            return "Simulates the effect of water transporting and redistributing sediment.";
         }
 
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
@@ -85,13 +90,17 @@ namespace UnityEditor.TerrainTools
             {
                 if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
+                    Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
                     var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
                     Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                    var filterRT = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height,
+                        0, FilterUtility.defaultFormat);
+                    Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filterRT, previewMaterial);
                     TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
                         editContext.brushTexture, brushXform, previewMaterial, 0);
                     texelCtx.Cleanup();
+                    RTUtils.Release(filterRT);
                 }
             }
         }
@@ -159,7 +168,7 @@ namespace UnityEditor.TerrainTools
 
                     Material mat = GetPaintMaterial();
                     var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                    Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
+                    Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                     Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, 0.0f, 0.0f);
                     mat.SetTexture("_BrushTex", editContext.brushTexture);
                     mat.SetTexture("_NewHeightTex", heightRT);

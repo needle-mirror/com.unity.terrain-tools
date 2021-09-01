@@ -5,7 +5,7 @@ using UnityEngine.TerrainTools;
 namespace UnityEditor.TerrainTools
 {
     /// <summary>
-    /// Implement this to handle rendering of terrain-brushes for both preview purposes and to modify the terrain.
+    /// An interface that allows rendering of terrain-brushes for both preview purposes and to modify the terrain.
     /// NOTE: This uses the GPU so material properties will also need to be dealt with prior to rendering.
     /// </summary>
     public interface IPaintContextRender : IDisposable
@@ -27,6 +27,9 @@ namespace UnityEditor.TerrainTools
         void RenderBrush(PaintContext paintContext, Material material, int pass);
     }
 
+    /// <summary>
+    /// An interface that represents the method for rendering the terrain-brush preview.
+    /// </summary>
     public interface IPaintContextRenderPreview : IPaintContextRender
     {
         /// <summary>

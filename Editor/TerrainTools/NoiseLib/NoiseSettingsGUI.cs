@@ -5,6 +5,7 @@ namespace UnityEditor.TerrainTools
     /// <summary>
     /// Flags passed to NoiseSettingsGUI.OnGUI. Used to specify which portions of the Noise Settings GUI to draw.
     /// </summary>
+    [System.Flags]
     internal enum NoiseSettingsGUIFlags
     {
         Preview = (1 << 0),
@@ -21,6 +22,7 @@ namespace UnityEditor.TerrainTools
         /// The SerializedObject for the NoiseSettings that this NoiseSettingsGUI instance is currently rendering the GUI for.
         /// </summary>
         public SerializedObject serializedNoise;
+        public bool isScrollingPreview { get; private set; }
         
         // noise settings properties
         // noise settings properties
@@ -121,12 +123,21 @@ namespace UnityEditor.TerrainTools
             serializedNoise.ApplyModifiedProperties();
         }
 
+        bool CheckVector3(System.Func<float, bool> validator, Vector3 value)
+        {
+            return validator(value.x) || validator(value.y) || validator(value.z);
+        }
+
         private void TransformSettingsGUI()
         {
-            EditorGUILayout.PropertyField(translation);
-            EditorGUILayout.PropertyField(rotation);
-            EditorGUILayout.PropertyField(scale);
-
+            Vector3 tv3 = translation.vector3Value;
+            Vector3 rv3 = rotation.vector3Value;
+            Vector3 sv3 = scale.vector3Value;
+            
+            tv3 = EditorGUILayout.Vector3Field(translation.displayName, tv3);
+            rv3 = EditorGUILayout.Vector3Field(rotation.displayName, rv3);
+            sv3 = EditorGUILayout.Vector3Field(scale.displayName, sv3);
+            
             EditorGUILayout.BeginHorizontal();
             {
                 EditorGUILayout.PrefixLabel(Styles.flipScale);
@@ -135,6 +146,45 @@ namespace UnityEditor.TerrainTools
                 flipScaleZ.boolValue = GUILayout.Toggle(flipScaleZ.boolValue, Styles.flipScaleZ, GUI.skin.button);
             }
             EditorGUILayout.EndHorizontal();
+            
+            // fix up transform values
+            
+            // translation
+
+            if (!CheckVector3(float.IsNaN, tv3) && !CheckVector3(float.IsInfinity, tv3))
+            {
+                translation.vector3Value = tv3;
+                GUI.changed = true;
+            }
+            
+            // rotation
+            
+            if (!CheckVector3(float.IsNaN, rv3) && !CheckVector3(float.IsInfinity, rv3))
+            {
+                rotation.vector3Value = rv3;
+                GUI.changed = true;
+            }
+
+            // wrap rotation values
+            if (rotation.vector3Value.x < 0 || rotation.vector3Value.x > 360 ||
+                rotation.vector3Value.y < 0 || rotation.vector3Value.y > 360 ||
+                rotation.vector3Value.z < 0 || rotation.vector3Value.z > 360)
+            {
+                Vector3 value = rotation.vector3Value;
+                value.x = (360f + (value.x % 360f)) % 360f;
+                value.y = (360f + (value.y % 360f)) % 360f;
+                value.z = (360f + (value.z % 360f)) % 360f;
+                rotation.vector3Value = value;
+                GUI.changed = true;
+            }
+
+            // scale
+            
+            if (!CheckVector3(float.IsNaN, sv3) && !CheckVector3(float.IsInfinity, sv3))
+            {
+                scale.vector3Value = sv3;
+                GUI.changed = true;
+            }
         }
 
         private void DomainSettingsGUI()
@@ -169,7 +219,7 @@ namespace UnityEditor.TerrainTools
         //     m_filterStackView.OnGUI();
         // }
 
-        private void HandlePreviewTextureInput(Rect previewRect)
+        private void HandlePreviewTextureInput(Rect previewRect, bool scrollLocked)
         {
             if(GUIUtility.hotControl != 0)
             {
@@ -189,7 +239,9 @@ namespace UnityEditor.TerrainTools
             Vector2 previewDims = new Vector2(previewRect.width, previewRect.height);
             Vector2 abs = new Vector2(Mathf.Abs(s.x), Mathf.Abs(s.z));
 
-            if (Event.current.type == EventType.ScrollWheel)
+            isScrollingPreview = false;
+            
+            if (!scrollLocked && Event.current.type == EventType.ScrollWheel)
             {
                 abs += Vector2.one * .001f;
                 
@@ -201,6 +253,7 @@ namespace UnityEditor.TerrainTools
                 scale.vector3Value = s;
 
                 Event.current.Use();
+                isScrollingPreview = true;
             }
             else if (draggingPreview)
             {
@@ -225,7 +278,7 @@ namespace UnityEditor.TerrainTools
         /// </summary>
         /// <param name = "minSize"> Minimum size for the Preview </param>
         /// <param name = "showExportButton"> Whether or not to render the Export button </param>
-        public void DrawPreviewTexture(float minSize, bool showExportButton = true)
+        public void DrawPreviewTexture(float minSize, bool showExportButton = true, bool scrollLocked = false)
         {
             // Draw label with tooltip
             GUILayout.Label( Styles.noisePreview );
@@ -270,7 +323,7 @@ namespace UnityEditor.TerrainTools
             {
                 serializedNoise.Update();
 
-                HandlePreviewTextureInput(previewRect);
+                HandlePreviewTextureInput(previewRect, scrollLocked);
 
                 serializedNoise.ApplyModifiedProperties();
             }

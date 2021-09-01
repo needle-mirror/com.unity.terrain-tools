@@ -2,13 +2,15 @@
 
 If you set the **Pinch Amount** to a positive value, the tool pulls Terrain features inward towards the center of the Brush. If you set the **Pinch Amount** to a negative value, the tools does the opposite, and bulges Terrain features outwards away from the center of the Brush.
 
-Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** (brush) icon, and select **Transform > Pinch** from the list of Terrain tools.
+![](images/2-41-Pinch-03.png)
 
-![](images/Tools_HowToSelection.png)
+Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Transform** > **Pinch** from the list of Terrain tools.
+
+![](images/Transform.png)
 
 ## Parameters
 
-![](images/Tool_Pinch_Parameter.png)
+![](images/2-41-Pinch-02.png)
 
 | **Property**     | **Description**                                              |
 | ---------------- | ------------------------------------------------------------ |

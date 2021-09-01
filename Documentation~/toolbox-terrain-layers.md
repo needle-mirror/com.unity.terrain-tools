@@ -1,34 +1,40 @@
-## Terrain Layers
+# Terrain Layers
 
 The **Terrain Layers** section contains a few tools to help manage Terrain Layers on Terrain.
 
-![](images/Toolbox_Utilities_Layers.png)
+![](images/4-32-toolbox-terrain-layers-01.png)
 
-### Terrain Palette
+## Terrain Palette
 
-A **Terrain Palette** is a preset Asset file that stores a collection of Terrain Layers. This preset file is similar to other Toolbox presets, which you can save or share.
+A **Terrain Palette** is a preset asset file that stores a collection of Terrain Layers. This preset file is similar to other Toolbox presets, which you can save or share.
 
-![](images/Toolbox_Utilities_LayerPalette.png)
+![](images/4-32-toolbox-terrain-layers-02.png)
 
-### Material Layer Palette
+## Material Layer Palette
 
 The **Material Layer Palette** is a reorderable list that contains imported layers. Use the **Import From Terrain** button to import layers from a selected Terrain. Use the Add (**+**) and Remove (**-**) buttons on the bottom right to add or remove a layer. Alternatively, drag a layer row, and move it up or down to change its position in the list.
 
-*Material Layer Palette*
+![](images/4-32-toolbox-terrain-layers-03.png)
 
-![](images/Toolbox_Layer_ListView.png)
-
-When using the High Definition Render Pipeline, you cannot use more than eight layers. When using the Lightweight Render Pipeline or the built-in Terrain system, there's no limit to the number of layers, but increasing the number of splatmaps uses more memory, which might impact performance.
+When using the High Definition Render Pipeline, you cannot use more than eight layers. When using the Universal Render Pipeline or the built-in Terrain system, there's no limit to the number of layers, but increasing the number of splatmaps uses more memory, which might impact performance.
 
 The list order affects which channel and splatmap a layer uses. For example, the image below shows the respective splatmap and channel each layer uses when you assign them to a Terrain.
 
-![](images/Toolbox_Layer_ChannelInfo.png)
+![](images/4-32-toolbox-terrain-layers-04.png)
 
-### Edit Layers
+| Position   | Splatmap    | Channel |
+| ---------- | ----------- | ------- |
+| Position 1 | SplatAlpha0 | Red     |
+| Position 2 | SplatAlpha0 | Green   |
+| Position 3 | SplatAlpha0 | Blue    |
+| Position 4 | SplatAlpha0 | Alpha   |
+| Position 5 | SplatAlpha1 | Red     |
+
+## Edit Layers
 
 When you are done configuring the Layer Palette, click **Add to Terrain(s)** to add the layers to Terrain in the Scene.
 
-![](images/Toolbox_Layer_Edit.png)
+![](images/4-32-toolbox-terrain-layers-05.png)
 
 | **Property**              | **Description**                                              |
 | ------------------------- | ------------------------------------------------------------ |

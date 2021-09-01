@@ -71,7 +71,8 @@ namespace UnityEditor.TerrainTools
         private static class Styles
         {
             public static readonly GUIContent controlHeader = EditorGUIUtility.TrTextContent("Set Height Controls");
-            public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to set the height.\n\nHold Ctrl and left click to sample the target height.");
+            public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Adjusts the height of the Terrain to a specific value.\n\n" +
+                "Hold Ctrl + Click to sample the Terrain height at the cursor position.");
             public static readonly GUIContent space = EditorGUIUtility.TrTextContent("Space", "The heightmap space in which the painting operates.");
             public static readonly GUIContent flattenAll = EditorGUIUtility.TrTextContent("Flatten all", "If selected, it will traverse all neighbors and flatten them too");
             public static readonly GUIContent height = EditorGUIUtility.TrTextContent("Height", "You can set the Height property manually or you can Ctrl-click on the terrain to sample the height at the mouse position (rather like the 'eyedropper' tool in an image editor).");
@@ -128,10 +129,13 @@ namespace UnityEditor.TerrainTools
                 {
                     Rect brushBounds = brushTransform.GetBrushXYBounds();
                     PaintContext paintContext = brushRender.AcquireHeightmap(false, brushBounds, 1);
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
+                    Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
 
                     var texelCtx = Utility.CollectTexelValidity(paintContext.originTerrain, brushTransform.GetBrushXYBounds());
                     Utility.SetupMaterialForPaintingWithTexelValidityContext(paintContext, texelCtx, brushTransform, previewMaterial);
+                    var filterRT = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width,
+                        paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                    Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, filterRT, previewMaterial);
                     TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.SourceRenderTexture,
                         editContext.brushTexture, brushTransform, previewMaterial, 0);
 
@@ -148,6 +152,7 @@ namespace UnityEditor.TerrainTools
                     }
 
                     texelCtx.Cleanup();
+                    RTUtils.Release(filterRT);
                 }
             }
         }
@@ -164,7 +169,7 @@ namespace UnityEditor.TerrainTools
 #endif
 
             var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-            commonUI.GetBrushMask(paintContext.sourceRenderTexture, brushMask);
+            commonUI.GenerateBrushMask(paintContext.sourceRenderTexture, brushMask);
             mat.SetTexture("_FilterTex", brushMask);
 
             mat.SetTexture("_BrushTex", brushTexture);
@@ -225,7 +230,7 @@ namespace UnityEditor.TerrainTools
             var size = terrain.terrainData.size;
             size.y = 0;
             var brushMask = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-            commonUI.GetBrushMask(terrain, ctx.sourceRenderTexture, brushMask, terrain.transform.position, Mathf.Min(size.x, size.z), 0f); // TODO(wyatt): need to handle seams
+            commonUI.GenerateBrushMask(terrain, ctx.sourceRenderTexture, brushMask, terrain.transform.position, Mathf.Min(size.x, size.z), 0f); // TODO(wyatt): need to handle seams
             mat.SetTexture("_FilterTex", brushMask);
             mat.SetTexture("_MainTex", ctx.sourceRenderTexture);
             Graphics.Blit(ctx.sourceRenderTexture, ctx.destinationRenderTexture, mat, 1);

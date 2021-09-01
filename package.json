@@ -1,9 +1,9 @@
 {
   "name": "com.unity.terrain-tools",
   "displayName": "Terrain Tools",
-  "version": "4.0.0-pre.2",
+  "version": "4.0.0",
   "unity": "2021.2",
-  "description": "The Terrain Tools package adds additonal terrain sculpting brushes and tools to your project to help create stunning terrain assets and ease the workflows.",
+  "description": "The Terrain Tools package adds additional Terrain sculpting brushes and tools to Unity. This add-on toolset is suitable if you require more control over the appearance of your Terrain, and want to streamline Terrain workflows. It’s also useful when you want to make more complex-looking Terrain, or author Terrain Texture data in external digital content creation tools.",
   "dependencies": {
     "com.unity.modules.terrain": "1.0.0",
     "com.unity.modules.terrainphysics": "1.0.0"
@@ -17,11 +17,11 @@
     "Noise"
   ],
   "upmCi": {
-    "footprint": "c5ffae0e623de3b9b3bb18b9fdb58ba713ff4c68"
+    "footprint": "ef90ca0b30a9fa83501b3cf5e106e71417b9a5b2"
   },
   "repository": {
     "url": "https://github.com/Unity-Technologies/TerrainTools.git",
     "type": "git",
-    "revision": "f037e6005937d149eb54229238712a45edc3b0b1"
+    "revision": "429f020e7650a51ba08a3ac1d3200121b55396b1"
   }
 }
