@@ -1881,7 +1881,6 @@ namespace UnityEditor.TerrainTools
 
         void GetAndSetActiveRenderPipelineSettings()
         {
-            m_PreviewMaterial = AssetDatabase.LoadAssetAtPath<Material>("Packages/com.unity.terrain-tools/editor/terraintoolbox/materials/terrainvisualization.mat");
             m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene();
             UpdateCachedTerrainMaterials();
 
@@ -1890,12 +1889,13 @@ namespace UnityEditor.TerrainTools
                 return;
 
             m_ActiveRenderPipeline = currentPipeline;
+            Shader vizShader = Shader.Find("Hidden/Builtin_TerrainVisualization");
             switch (m_ActiveRenderPipeline)
             {
                 case ToolboxHelper.RenderPipeline.HD:
                     m_MaxLayerCount = kMaxLayerHD;
                     m_MaxSplatmapCount = kMaxSplatmapHD;
-                    m_PreviewMaterial.shader = Shader.Find("Hidden/HDRP_TerrainVisualization");
+                    vizShader = Shader.Find("Hidden/HDRP_TerrainVisualization");
                     break;
                 case ToolboxHelper.RenderPipeline.LW:
                     // this is a temp setting, in LW if height based blending or opacity as density enabled, 
@@ -1904,12 +1904,12 @@ namespace UnityEditor.TerrainTools
                     // To-do: update max allowance check once LW terrain checked in
                     m_MaxLayerCount = kMaxNoLimit;
                     m_MaxSplatmapCount = kMaxNoLimit;
-                    m_PreviewMaterial.shader = Shader.Find("Hidden/LWRP_TerrainVisualization");
+                    vizShader = Shader.Find("Hidden/LWRP_TerrainVisualization");
                     break;
                 case ToolboxHelper.RenderPipeline.Universal:
                     m_MaxLayerCount = kMaxNoLimit;
                     m_MaxSplatmapCount = kMaxNoLimit;
-                    m_PreviewMaterial.shader = Shader.Find("Hidden/Universal_TerrainVisualization");
+                    vizShader = Shader.Find("Hidden/Universal_TerrainVisualization");
                     break;
                 default:
                     m_MaxLayerCount = kMaxNoLimit;
@@ -1927,9 +1927,9 @@ namespace UnityEditor.TerrainTools
                         m_TerrainLegacySpecular = m_Terrains[0].legacySpecular;
                     }
 #endif
-                    m_PreviewMaterial.shader = Shader.Find("Hidden/Builtin_TerrainVisualization");
                     break;
             }
+            m_PreviewMaterial = TerrainToolboxVisualization.GetVizMaterial(vizShader);
         }
 
         /// <summary>

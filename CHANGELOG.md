@@ -3,6 +3,21 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [4.0.3] - 2021-09-29
+### Fixed:
+- Fixed different line endings in NoiseLib.cs.
+
+### Changed:
+- No longer creating a material asset for Terrain visualization.
+
+## [4.0.2] - 2021-09-29
+### Changed:
+- Moved visualization material into user assets directory, since packagecache expects only immutable assets to exist in the package.
+
+## [4.0.1] - 2021-09-27
+### Changed:
+- Modified include path in builtin visualization shader.
+
 ## [4.0.0] - 2021-09-01
 ### Added:
 - Added Brush Mask Filter previews to all Paint Terrain tools.

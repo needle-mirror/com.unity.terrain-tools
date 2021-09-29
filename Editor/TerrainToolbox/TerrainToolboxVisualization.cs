@@ -17,7 +17,7 @@ namespace UnityEditor.TerrainTools
 
         List<Terrain> m_Terrains = new List<Terrain>();
         List<Material> m_TerrainMaterials = new List<Material>();
-        Material m_VisualizationMaterial;
+        static Material m_VisualizationMaterial;
 
 #if UNITY_2019_2_OR_NEWER
 #else
@@ -428,18 +428,24 @@ namespace UnityEditor.TerrainTools
             m_ModeWarning = false;
         }
 
-        void GetAndSetActiveRenderPipelineSettings()
+        public static Material GetVizMaterial(Shader vizShader)
+        {
+            if(m_VisualizationMaterial != null) return m_VisualizationMaterial;
+
+            return (m_VisualizationMaterial = new Material(vizShader));
+        }
+
+        private void VisualizationSetup()
         {
             ToolboxHelper.RenderPipeline m_ActiveRenderPipeline = ToolboxHelper.GetRenderPipeline();
-            m_VisualizationMaterial = AssetDatabase.LoadAssetAtPath<Material>("Packages/com.unity.terrain-tools/editor/terraintoolbox/materials/terrainvisualization.mat");
-
+            Shader vizShader = Shader.Find("Hidden/Builtin_TerrainVisualization");
             switch (m_ActiveRenderPipeline)
             {
                 case ToolboxHelper.RenderPipeline.HD:
-                    m_VisualizationMaterial.shader = AssetDatabase.LoadAssetAtPath<Shader>(k_HDRPShaderPath);
+                    vizShader = AssetDatabase.LoadAssetAtPath<Shader>(k_HDRPShaderPath);
                     break;
                 case ToolboxHelper.RenderPipeline.Universal:
-                    m_VisualizationMaterial.shader = AssetDatabase.LoadAssetAtPath<Shader>(k_URPShaderPath);
+                    vizShader = AssetDatabase.LoadAssetAtPath<Shader>(k_URPShaderPath);
                     break;
                 default:
                     if (m_Terrains == null || m_Terrains.Count == 0)
@@ -455,9 +461,15 @@ namespace UnityEditor.TerrainTools
                         m_TerrainLegacySpecular = m_Terrains[0].legacySpecular;
                     }
 #endif
-                    m_VisualizationMaterial.shader = Shader.Find("Hidden/Builtin_TerrainVisualization");
                     break;
             }
+
+            m_VisualizationMaterial = GetVizMaterial(vizShader);
+        }
+
+        void GetAndSetActiveRenderPipelineSettings()
+        {
+            VisualizationSetup();
         }
 
         void CreateNewPreset()

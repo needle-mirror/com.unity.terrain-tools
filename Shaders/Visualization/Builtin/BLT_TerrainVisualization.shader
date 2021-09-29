@@ -27,7 +27,7 @@ Shader "Hidden/Builtin_TerrainVisualization" {
 		#pragma multi_compile_local LOCAL_SPACE WORLD_SPACE //Local space or world space heatmap
 		#pragma multi_compile _ _SPLATMAP_PREVIEW
 		#define TERRAIN_BASE_PASS
-		#include "BLT_TerrainVisualizationCommon.cginc"
+		#include "Packages/com.unity.terrain-tools/Shaders/Visualization/Builtin/BLT_TerrainVisualizationCommon.cginc"
 			
 		sampler2D _MainTex;
 		sampler2D _SplatmapTex;
