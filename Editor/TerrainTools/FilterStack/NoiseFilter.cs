@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.TerrainTools;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     [System.Serializable]
-    public class NoiseFilter : Filter
+    internal class NoiseFilter : Filter
     {
         private static readonly GUIContent coordinateLabel = EditorGUIUtility.TrTextContent( "Coordinate Space:", "Edit the Noise associated with this Filter" );
         private static readonly GUIContent worldLabel = EditorGUIUtility.TrTextContent( "World", "Sets the coordinate space for the noise field to world space. World space positions will be used to generate the noise" );
@@ -26,7 +27,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         private bool m_useHeightmap;
 
         private NoiseWindow m_window = null;
-
+        private Vector3     m_lastBrushPosition;
+        private float       m_lastRotation;
+        private Matrix4x4   m_noiseToWorld;
         public override string GetDisplayName()
         {
             return "Noise";
@@ -51,10 +54,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                 m_noiseSettings.positionTexture = fc.rtHandleCollection[ FilterContext.Keywords.Heightmap ];
             }
 
-            Vector3 brushPosWS = fc.brushPos;
+            Vector3 brushPosWS = fc.brushPos-m_lastBrushPosition;
+            brushPosWS.y = 0;
+            m_lastBrushPosition = fc.brushPos;
             float brushSize = fc.brushSize;
-            float brushRotation = fc.brushRotation;
-
+            float brushRotation = fc.brushRotation - m_lastRotation;
+            m_lastRotation = fc.brushRotation;
             // TODO(wyatt): remove magic number and tie it into NoiseSettingsGUI preview size somehow
             float previewSize = 1 / 512f;
 
@@ -65,22 +70,22 @@ namespace UnityEditor.Experimental.TerrainAPI
             // setup the noise material with values in noise settings
             noiseSettings.SetupMaterial( mat );
 
-            // convert brushRotation to radians
-            brushRotation *= Mathf.PI / 180;
-
             // change pos and scale so they match the noiseSettings preview
             bool isWorldSpace = false == m_isLocalSpace;
             brushSize = isWorldSpace ? brushSize * previewSize : 1;
             brushPosWS = isWorldSpace ? brushPosWS * previewSize : Vector3.zero;
-
-            // // override noise transform
-            Quaternion rotQ             = Quaternion.AngleAxis( -brushRotation, Vector3.up );
-            Matrix4x4 translation       = Matrix4x4.Translate( brushPosWS );
-            Matrix4x4 rotation          = Matrix4x4.Rotate( rotQ );
-            Matrix4x4 scale             = Matrix4x4.Scale( Vector3.one * brushSize );
-            Matrix4x4 noiseToWorld      = translation * scale;
-
-            mat.SetMatrix( NoiseSettings.ShaderStrings.transform, noiseSettings.trs * noiseToWorld );
+            
+            // compensate for the difference between the size of the rotated brush and the square noise RT
+            var brushTransform = GetBrushTransform(fc);
+            var scaleMultiplier = new Vector2(
+                1.0f / (fc.brushSize/brushTransform.GetBrushXYBounds().width), 
+                1.0f / (fc.brushSize/brushTransform.GetBrushXYBounds().height));
+            
+            Quaternion rotQ = Quaternion.AngleAxis( -brushRotation, Vector3.up );
+            // accumulate transformation delta
+            m_noiseToWorld *= Matrix4x4.TRS(brushPosWS, rotQ, Vector3.one);
+            
+            mat.SetMatrix( NoiseSettings.ShaderStrings.transform, noiseSettings.trs * m_noiseToWorld * Matrix4x4.Scale(new Vector3(scaleMultiplier.x, 1.0f, scaleMultiplier.y) * brushSize));
 
             int pass = NoiseUtils.kNumBlitPasses * NoiseLib.GetNoiseIndex( noiseSettings.domainSettings.noiseTypeName );
 
@@ -91,11 +96,30 @@ namespace UnityEditor.Experimental.TerrainAPI
             Graphics.Blit( sourceRenderTexture, rt, mat, pass );
 
             Material blendMat = FilterUtility.blendModesMaterial;
-            blendMat.SetTexture("_MainTex", sourceRenderTexture);
             blendMat.SetTexture("_BlendTex", rt);
             Graphics.Blit( sourceRenderTexture, destinationRenderTexture, blendMat, 1 );
-
             RTUtils.Release( rt );
+
+        }
+        /// <summary>
+        /// Returns a brush transform that can only be used for its size.
+        /// </summary>
+        /// <param name="fc">filter context for brush size & rotation</param>
+        /// <returns></returns>
+        internal static BrushTransform GetBrushTransform(FilterContext fc)
+        {
+            return GetBrushTransform(fc.brushRotation, fc.brushSize);
+        }
+
+        internal static BrushTransform GetBrushTransform(float rotation, float brushSize)
+        {
+            float f = rotation * Mathf.Deg2Rad;
+            float num = Mathf.Cos(f);
+            float x = Mathf.Sin(f);
+            Vector2 brushU = new Vector2(num, -x) * brushSize;
+            Vector2 brushV = new Vector2(x, num) * brushSize;
+            var brushTransform = new BrushTransform(Vector2.zero - 0.5f * brushU - 0.5f * brushV, brushU, brushV);
+            return brushTransform;
         }
 
         protected override void OnDrawGUI(Rect rect, FilterContext filterContext)
@@ -196,18 +220,33 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
 
+        public override void OnEnable()
+        {
+            m_noiseToWorld = Matrix4x4.identity;
+        }
+
         public override void OnDisable()
         {
-            if( m_window != null )
+            if (m_window != null)
             {
                 m_window.Close();
                 m_window = null;
             }
         }
 
-        public override List< UnityEngine.Object > GetObjectsToSerialize()
+        public override List<UnityEngine.Object> GetObjectsToSerialize()
         {
-            return new List< UnityEngine.Object >() { m_noiseSettings };
+            return new List<UnityEngine.Object>() {m_noiseSettings};
+        }
+
+        internal void SetNoiseSettings(NoiseSettings settings)
+        {
+            m_noiseSettings = settings;
+        }
+
+        internal void SetLocalSpace(bool localSpace)
+        {
+            m_isLocalSpace = localSpace;
         }
     }
 }

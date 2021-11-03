@@ -12,8 +12,11 @@
             #include "UnityCG.cginc"
             #include "TerrainPreview.cginc"
             #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
+            
+            #define CLIP_PREVIEW   clip( IsPcUvPartOfValidTerrainTileTexelSobel( (i.pcPixels + (.5).xx) / _PcPixelRect.zw, _BrushTex_TexelSize.xy * .5 ) - 1 );
 
             sampler2D _BrushTex;
+            float4 _BrushTex_TexelSize;
 
         ENDCG
 
@@ -63,19 +66,18 @@
             {
                 float brushSample = UnpackHeightmap(tex2D(_BrushTex, i.brushUV));
 
-                float iib = IsPcUvPartOfValidTerrainTileTexel(i.pcPixels / _PcPixelRect.zw);
-                clip(iib - .01);
+                CLIP_PREVIEW
 
                 // out of bounds multiplier
                 float oob = all(saturate(i.brushUV) == i.brushUV) ? 1.0f : 0.0f;
 
                 // brush outline stripe
-                float stripeWidth = 2.0f;       // pixels
-                float stripeLocation = 0.2f;    // at 20% alpha
+                float stripeWidth = 1.0f;       // pixels
+                float stripeLocation = 0.0025f;
                 float brushStripe = Stripe(brushSample, stripeLocation, stripeWidth);
 
-                float4 color = float4(0.5f, 0.5f, 1.0f, 1.0f) * saturate(brushStripe + 0.5f * brushSample);
-                color.a = 0.6f * saturate(brushSample * 5.0f);
+                float4 color = float4(0.5f, 0.5f, 1.0f, 1.0f);
+                color.a = lerp(.75f * brushSample, 1, saturate(brushStripe));
                 return color * oob;
             }
             ENDCG
@@ -131,6 +133,8 @@
             float4 frag(v2f i) : SV_Target
             {
                 float brushSample = UnpackHeightmap(tex2D(_BrushTex, i.brushUV));
+
+                CLIP_PREVIEW
 
                 // out of bounds multiplier
                 float oob = all(saturate(i.brushUV) == i.brushUV) ? 1.0f : 0.0f;
@@ -224,6 +228,8 @@
             float4 frag(v2f i) : SV_Target
             {
                 float brushSample = UnpackHeightmap(tex2D(_BrushTex, i.brushUV));
+
+                CLIP_PREVIEW
 
                 // out of bounds multiplier
                 float oob = all(saturate(i.brushUV) == i.brushUV) ? 1.0f : 0.0f;

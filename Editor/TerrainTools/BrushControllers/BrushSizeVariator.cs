@@ -1,13 +1,12 @@
-
 using System.Text;
-using UnityEditor.ShortcutManagement;
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    public class BrushSizeVariator : BaseBrushVariator, IBrushSizeController {
-        
+    internal class BrushSizeVariator : BaseBrushVariator, IBrushSizeController
+    {
+
         private const float kMinBrushSize = 0.01f;
         private const float kMaxBrushSize = 500.0f;
         private const float kDefaultBrushSize = 100.0f;
@@ -15,23 +14,24 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         private readonly TerrainFloatMinMaxValue m_BrushSize = new TerrainFloatMinMaxValue(styles.brushSize, kDefaultBrushSize, kMinBrushSize, kMaxBrushSize, true);
         private readonly BrushJitterHandler m_JitterHandler = new BrushJitterHandler(0.0f, kMinBrushSize, kMaxBrushSize);
-        
+
         private bool m_AdjustingSize;
         public override bool isInUse => m_AdjustingSize;
 
-        class Styles {
+        class Styles
+        {
             public readonly GUIContent brushSize = EditorGUIUtility.TrTextContent("Brush Size", "Size of the brush used to paint.");
         }
 
         static readonly Styles styles = new Styles();
 
-        public float brushSize
-        {
+        public float brushSize {
             get { return m_JitterHandler.CalculateValue(m_BrushSize.value); }
             set { m_BrushSize.value = Mathf.Clamp(value, kMinBrushSize, kMaxBrushSize); }
         }
 
-        public BrushSizeVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache) : base(toolName, eventHandler, terrainCache) {
+        public BrushSizeVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache) : base(toolName, eventHandler, terrainCache)
+        {
         }
 
         private void BeginAdjustingSize()
@@ -46,12 +46,17 @@ namespace UnityEditor.Experimental.TerrainAPI
             m_AdjustingSize = false;
         }
 
-        #region IBrushController
-        public override void OnEnterToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler) {
+        public override void OnEnterToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler)
+        {
             base.OnEnterToolMode(shortcutHandler);
-            
+
+            if (!canUpdateTerrainUnderCursor)
+            {
+                UnlockTerrainUnderCursor();
+            }
+
             shortcutHandler.AddActions(BrushShortcutType.Size, BeginAdjustingSize, EndAdjustingSize);
-           
+
             float minBrushWorldSize, maxBrushWorldSize;
             float mininumTerrainSize = float.MaxValue;
             int maxTextureResolution = 0;
@@ -69,15 +74,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             m_BrushSize.minClamp = minBrushWorldSize;
             m_BrushSize.shouldClampMax = true;
             m_BrushSize.shouldClampMin = true;
-            
+
             m_BrushSize.value = GetEditorPrefs("TerrainBrushSize", kDefaultBrushSize);
             m_BrushSize.minValue = GetEditorPrefs("TerrainBrushSizeMin", 0.0f);
             m_BrushSize.maxValue = GetEditorPrefs("TerrainBrushSizeMax", 500.0f);
             //m_BrushSize.mouseSensitivity = GetEditorPrefs("TerrainBrushSizeMouseSensitivity", kDefaultMouseSensitivity);
             m_JitterHandler.jitter = GetEditorPrefs("TerrainBrushSizeJitter", 0.0f);
         }
-        
-        public override void OnExitToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler) {
+
+        public override void OnExitToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler)
+        {
             SetEditorPrefs("TerrainBrushSize", m_BrushSize.value);
             SetEditorPrefs("TerrainBrushSizeMouseSensitivity", m_BrushSize.mouseSensitivity);
             SetEditorPrefs("TerrainBrushSizeJitter", m_JitterHandler.jitter);
@@ -85,27 +91,34 @@ namespace UnityEditor.Experimental.TerrainAPI
             SetEditorPrefs("TerrainBrushSizeMax", m_BrushSize.maxValue);
             shortcutHandler.RemoveActions(BrushShortcutType.Size);
 
+            EndAdjustingSize();
+
             base.OnExitToolMode(shortcutHandler);
-            
+
         }
 
-        public override void OnSceneGUI(Event currentEvent, int controlId, Terrain terrain, IOnSceneGUI editContext) {
+        public override void OnSceneGUI(Event currentEvent, int controlId, Terrain terrain, IOnSceneGUI editContext)
+        {
             base.OnSceneGUI(currentEvent, controlId, terrain, editContext);
-            
+
             m_JitterHandler.Update();
 
-            if(m_AdjustingSize)
+            if (m_AdjustingSize)
             {
                 float size = m_BrushSize.value;
 
                 size += 0.002f * Mathf.Clamp(size, 1.0f, 100.0f) * currentEvent.delta.x;
                 m_BrushSize.value = size;
 
-                GUIStyle style = new GUIStyle();
-                style.normal.background = Texture2D.whiteTexture;
-                style.fontSize = 12;
-                Handles.Label(raycastHitUnderCursor.point, $"Size: {size:F1}", style);
-
+                float pixelPointMultiplier = 1.0f / EditorGUIUtility.pixelsPerPoint;
+                var pos = editContext.sceneView.camera.WorldToScreenPoint(raycastHitUnderCursor.point) * pixelPointMultiplier;
+                Handles.BeginGUI();
+                {
+                    GUI.matrix = Matrix4x4.identity;
+                    var temp = TerrainToolGUIHelper.TempContent($"Size: {Mathf.RoundToInt(size)}");
+                    GUI.Label(new Rect(pos.x + 10 * pixelPointMultiplier, (Screen.height * pixelPointMultiplier - pos.y - 60 * pixelPointMultiplier), s_SceneLabelStyle.CalcSize(temp).x, EditorGUIUtility.singleLineHeight), temp, s_SceneLabelStyle);
+                }
+                Handles.EndGUI();
                 RequestRepaint();
             }
         }
@@ -116,12 +129,19 @@ namespace UnityEditor.Experimental.TerrainAPI
             return base.OnPaint(terrain, editContext);
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext) {
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
             base.OnInspectorGUI(terrain, editContext);
-            
+
             // If size randomization is on, we use the min-max slider, otherwise, just a normal one.
             m_BrushSize.DrawInspectorGUI();
-            m_JitterHandler.OnGuiLayout("Allow random variation of brush size");
+            if (m_BrushSize.expanded)
+            {
+                EditorGUI.indentLevel++;
+                m_JitterHandler.OnGuiLayout("Allow random variation of brush size");
+                EditorGUI.indentLevel--;
+            }
+
         }
 
         public override void AppendBrushInfo(Terrain terrain, IOnSceneGUI editContext, StringBuilder builder)
@@ -129,10 +149,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             base.AppendBrushInfo(terrain, editContext, builder);
             builder.AppendLine($"Size = {m_BrushSize.value:F3}");
         }
-        
-        #endregion
 
-        #region Mouse Handling
         protected override bool OnBeginModifier()
         {
             base.OnBeginModifier();
@@ -160,6 +177,5 @@ namespace UnityEditor.Experimental.TerrainAPI
             UnlockTerrainUnderCursor();
             return true;
         }
-        #endregion
     }
 }

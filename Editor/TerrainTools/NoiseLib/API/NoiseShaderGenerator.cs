@@ -9,12 +9,12 @@ using System.Linq;
 using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     /// <summary>
     /// Struct defining the description for a NoiseShaderGenerator
     /// </summary>
-    public struct ShaderGeneratorDescriptor
+    internal struct ShaderGeneratorDescriptor
     {
         /// <summary>
         /// The name of the NoiseShaderGenerator
@@ -40,7 +40,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     /// Interface for NoiseShaderGenerator. Do not implement this directly. Inherit from the
     /// NoiseShaderGenerator< T > generic abstract class, instead.
     /// </summary>
-    public interface INoiseShaderGenerator
+    internal interface INoiseShaderGenerator
     {
         /// <summary>
         /// Returns a description for the NoiseShaderGenerator implementation
@@ -52,7 +52,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     /// Singleton base class for a NoiseShaderGenerator implementation. Inherit from this if you want
     /// your shaders to get generated
     /// </summary>
-    public abstract class NoiseShaderGenerator<T> : ScriptableSingleton<T>, INoiseShaderGenerator where T : NoiseShaderGenerator<T>
+    internal abstract class NoiseShaderGenerator<T> : ScriptableSingleton<T>, INoiseShaderGenerator where T : NoiseShaderGenerator<T>
     {
         /// <summary>
         /// Returns a description for the NoiseShaderGenerator implementation

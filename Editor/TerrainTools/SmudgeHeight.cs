@@ -1,14 +1,15 @@
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    public class SmudgeHeightTool : TerrainPaintTool<SmudgeHeightTool>
+    internal class SmudgeHeightTool : TerrainPaintTool<SmudgeHeightTool>
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Smudge Tool", typeof(TerrainToolShortcutContext))]
-        static void SelectShortcut(ShortcutArguments args) {
+        static void SelectShortcut(ShortcutArguments args)
+        {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             context.SelectPaintTool<SmudgeHeightTool>();
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Smudge Tool");
@@ -17,11 +18,10 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI
-        {
+        private IBrushUIGroup commonUI {
             get
             {
-                if( m_commonUI == null )
+                if (m_commonUI == null)
                 {
                     LoadSettings();
                     m_commonUI = new DefaultBrushUIGroup("SmudgeTool", UpdateAnalyticParameters);
@@ -53,17 +53,19 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Transform/Smudge";
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return "Click to Smudge the terrain height in the direction of the brush stroke.";
         }
 
-        public override void OnEnterToolMode() {
+        public override void OnEnterToolMode()
+        {
             base.OnEnterToolMode();
             commonUI.OnEnterToolMode();
         }
 
-        public override void OnExitToolMode() {
+        public override void OnExitToolMode()
+        {
             base.OnExitToolMode();
             commonUI.OnExitToolMode();
         }
@@ -88,13 +90,18 @@ namespace UnityEditor.Experimental.TerrainAPI
                 return;
             }
 
-            using(IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SmudgeHeight", editContext.brushTexture))
+            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SmudgeHeight", editContext.brushTexture))
             {
-                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                
-                    brushRender.RenderBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
+                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
+
+                    var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
+                    Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
+                        editContext.brushTexture, brushXform, previewMaterial, 0);
+                    texelCtx.Cleanup();
                 }
             }
         }
@@ -130,25 +137,26 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             m_AffectMaterials = true;
             m_AffectHeight = true;
-         }
+        }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
             commonUI.OnPaint(terrain, editContext);
-            
-            if(!commonUI.allowPaint) { return true; }
 
-            if(Event.current.type == EventType.MouseDown)
+            if (!commonUI.allowPaint)
+            { return true; }
+
+            if (Event.current.type == EventType.MouseDown)
             {
                 m_PrevBrushPos = editContext.uv;
                 return false;
             }
-            
+
             if (Event.current.type == EventType.MouseDrag && m_PreviousEvent == EventType.MouseDrag)
             {
                 Vector2 uv = editContext.uv;
 
-                if(commonUI.ScatterBrushStamp(ref terrain, ref uv))
+                if (commonUI.ScatterBrushStamp(ref terrain, ref uv))
                 {
                     Material mat = GetPaintMaterial();
                     Vector2 smudgeDir = uv - m_PrevBrushPos;
@@ -166,7 +174,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                         {
                             TerrainLayer layer = terrain.terrainData.terrainLayers[i];
 
-                            if (layer == null) continue; // nothing to paint if the layer is NULL
+                            if (layer == null)
+                                continue; // nothing to paint if the layer is NULL
 
                             PaintContext sampleContext = TerrainPaintUtility.BeginPaintTexture(terrain, brushXform.GetBrushXYBounds(), layer);
                             var brushMask = RTUtils.GetTempHandle(sampleContext.sourceRenderTexture.width, sampleContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
@@ -217,11 +226,10 @@ namespace UnityEditor.Experimental.TerrainAPI
             m_AffectMaterials = EditorPrefs.GetBool("Unity.TerrainTools.Smudge.Materials", true);
         }
 
-        #region Analytics
+        // Analytics Setup
         private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
             new TerrainToolsAnalytics.BrushParameter<bool>{Name = Styles.heightmap.text, Value = m_AffectHeight},
             new TerrainToolsAnalytics.BrushParameter<bool>{Name = Styles.alphamap.text, Value = m_AffectMaterials},
         };
-        #endregion
     }
 }

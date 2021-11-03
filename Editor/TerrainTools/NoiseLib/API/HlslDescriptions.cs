@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     /// <summary>
     /// Enum for determining the type of a given HLSL value during shader generation
     /// </summary>
-    public enum HlslValueType
+    internal enum HlslValueType
     {
         Float = 0,
         Float2,
@@ -17,7 +17,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     /// <summary>
     /// Representation for an HLSL float
     /// </summary>
-    public struct HlslFloat
+    internal struct HlslFloat
     {
         /// <summary>
         /// The value for the HLSL float
@@ -37,7 +37,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     /// <summary>
     // Representation for an HLSL float2
     /// </summary>
-    public struct HlslFloat2
+    internal struct HlslFloat2
     {
         /// <summary>
         /// The x-compenent for the HLSL float2
@@ -64,7 +64,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     /// <summary>
     /// Representation for an HLSL float3
     /// </summary>
-    public struct HlslFloat3
+    internal struct HlslFloat3
     {
         /// <summary>
         /// The x-compenent for the HLSL float3
@@ -98,7 +98,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     /// <summary>
     /// Representation for an HLSL float4
     /// </summary>
-    public struct HlslFloat4
+    internal struct HlslFloat4
     {
         /// <summary>
         /// The x-compenent for the HLSL float4
@@ -139,7 +139,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     /// <summary>
     /// Representation for an HLSL function input parameter
     /// </summary>
-    public struct HlslInput
+    internal struct HlslInput
     {
         /// <summary>
         /// The name of this HLSL function input parameter
@@ -277,27 +277,4 @@ namespace UnityEditor.Experimental.TerrainAPI
             return constructedValueString;
         }
     }
-
-    // public struct HlslOutput
-    // {
-    //     public string name;
-    //     public HlslValueType valueType;
-
-    //     public HlslOutput(string name, HlslValueType valueType)
-    //     {
-    //         this.name = name;
-    //         this.valueType = valueType;
-    //     }
-    // }
-
-    // public struct HlslStructDescriptor
-    // {
-    //     public List<HlslInput> members;
-    // }
-
-    // public struct HlslFunctionDescriptor
-    // {
-    //     public List<HlslInput> inputs;
-    //     public List<HlslOutput> outputs;
-    // }
 }

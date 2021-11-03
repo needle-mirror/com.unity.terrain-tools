@@ -1,0 +1,25 @@
+﻿Texture2D<float> In_HeightTex;
+Texture2D<float> In_BaseMaskTex;
+Texture2D<float> RemapTex;
+RWTexture2D<float> OutputTex;
+
+float EffectStrength;
+int RemapTexRes;
+float4 HeightRange;
+
+float GetHeightScale(float height)
+{
+	return saturate((height - HeightRange.x) / (HeightRange.y - HeightRange.x));
+}
+
+#pragma kernel HeightRemap
+[numthreads(1, 1, 1)]
+void HeightRemap(uint3 id : SV_DispatchThreadID)
+{
+	float heightMask = GetHeightScale(In_HeightTex[id.xy]);
+
+	uint remapIdx = (uint)(heightMask * (float)(RemapTexRes - 1));
+	float remappedGradient = RemapTex[uint2(remapIdx, 0)];
+
+	OutputTex[id.xy] = lerp(1.0f, remappedGradient, EffectStrength) * In_BaseMaskTex[id.xy];
+}

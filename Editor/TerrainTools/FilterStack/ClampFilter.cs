@@ -1,13 +1,13 @@
 using UnityEngine;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     [System.Serializable]
-    public class ClampFilter : Filter
+    internal class ClampFilter : Filter
     {
         [SerializeField]
         public Vector2 range = new Vector2(0, 1);
-        
+
         public override string GetDisplayName()
         {
             return "Clamp";
@@ -22,7 +22,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             FilterUtility.builtinMaterial.SetVector("_ClampRange", range);
 
-            Graphics.Blit( sourceRenderTexture, destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Clamp );
+            Graphics.Blit(sourceRenderTexture, destinationRenderTexture, FilterUtility.builtinMaterial, (int)FilterUtility.BuiltinPasses.Clamp);
         }
 
         protected override void OnDrawGUI(Rect rect, FilterContext filterContext)

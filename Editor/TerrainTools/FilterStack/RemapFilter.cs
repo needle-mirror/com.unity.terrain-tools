@@ -1,16 +1,18 @@
 using System;
 using UnityEngine;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     [Serializable]
-    public class RemapFilter : Filter
+    internal class RemapFilter : Filter
     {
         private static GUIContent s_FromLabel = EditorGUIUtility.TrTextContent("From:");
         private static GUIContent s_ToLabel = EditorGUIUtility.TrTextContent("To:");
 
-        [SerializeField] private Vector2 m_FromRange = new Vector2(0, 1);
-        [SerializeField] private Vector2 m_ToRange = new Vector2(0, 1);
+        [SerializeField]
+        private Vector2 m_FromRange = new Vector2(0, 1);
+        [SerializeField]
+        private Vector2 m_ToRange = new Vector2(0, 1);
 
         public override string GetDisplayName()
         {
@@ -38,7 +40,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             var fromRangeRect = new Rect(fromLabelRect.xMax, fromLabelRect.y, rect.width - width, fromLabelRect.height);
             var toLabelRect = new Rect(rect.x, fromLabelRect.yMax, width, EditorGUIUtility.singleLineHeight);
             var toRangeRect = new Rect(toLabelRect.xMax, toLabelRect.y, rect.width - width, toLabelRect.height);
-            
+
             EditorGUI.LabelField(fromLabelRect, s_FromLabel);
             m_FromRange = EditorGUI.Vector2Field(fromRangeRect, string.Empty, m_FromRange);
             EditorGUI.LabelField(toLabelRect, s_ToLabel);

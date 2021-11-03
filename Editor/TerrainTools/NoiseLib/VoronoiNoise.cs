@@ -1,12 +1,10 @@
-using System.Collections.Generic;
-
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     /// <summary>
     /// A NoiseType implementation for Voronoi noise
     /// </summary>
     [System.Serializable]
-    public class VoronoiNoise : NoiseType<VoronoiNoise>
+    internal class VoronoiNoise : NoiseType<VoronoiNoise>
     {
         private static NoiseTypeDescriptor desc = new NoiseTypeDescriptor()
         {

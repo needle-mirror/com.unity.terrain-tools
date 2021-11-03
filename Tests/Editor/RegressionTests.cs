@@ -3,12 +3,12 @@ using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using Object = UnityEngine.Object;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    public class RegressionTests
+    class RegressionTests
     {
         GameObject m_TerrainGO;
         Terrain m_TerrainComponent;
@@ -405,7 +405,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             //Manually set splatmap list since the window's OnGUI method isn't called which normally sets the splatmap list
             utilities.m_SplatmapList = new UnityEditorInternal.ReorderableList(utilities.m_Splatmaps, typeof(Texture2D), true, false, true, true);
-            utilities.ExportSplatmapsToTerrain();
+            utilities.ExportSplatmapsToTerrain(true);
 
             Assert.AreEqual(texData, layer.diffuseTexture.GetRawTextureData());
         }

@@ -2,20 +2,20 @@
 using UnityEngine;
 
 [CustomEditor(typeof(TerrainGroup))]
-public class TerrainGroupInspector : Editor
+internal class TerrainGroupInspector : Editor
 {
-	Terrain[] childTerrains;
+    Terrain[] childTerrains;
 
-	public override void OnInspectorGUI()
-	{
-		TerrainGroup groupTarget = (TerrainGroup)target;
+    public override void OnInspectorGUI()
+    {
+        TerrainGroup groupTarget = (TerrainGroup)target;
 
-		EditorGUILayout.Separator();
-		groupTarget.GroupID = EditorGUILayout.IntField("Group ID", groupTarget.GroupID);
-		EditorGUILayout.Separator();
-		if (GUILayout.Button("Update Child Terrains"))
-		{
-			groupTarget.UpdateChildTerrains();
-		}		
-	}
+        EditorGUILayout.Separator();
+        groupTarget.GroupID = EditorGUILayout.IntField("Group ID", groupTarget.GroupID);
+        EditorGUILayout.Separator();
+        if (GUILayout.Button("Update Child Terrains"))
+        {
+            groupTarget.UpdateChildTerrains();
+        }
+    }
 }

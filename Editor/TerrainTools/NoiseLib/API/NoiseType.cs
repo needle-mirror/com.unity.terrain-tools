@@ -1,14 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     /// <summary>
     /// Struct used for defining a NoiseType implementation. Information in this struct
     /// is used in shader generation and for determining compatabilities with
     /// FractalType implementations.
     /// </summary>
-    public struct NoiseTypeDescriptor
+    internal struct NoiseTypeDescriptor
     {
         /// <summary>
         /// The name of the NoiseType implementation
@@ -42,19 +42,19 @@ namespace UnityEditor.Experimental.TerrainAPI
     /// Interface for defining a NoiseType implementation. Don't implement directly from this but
     /// instead make your NoiseType implementation inherit from the NoiseType< T > generic abstract class.
     /// </summary>
-    public interface INoiseType
+    internal interface INoiseType
     {
         /// <summary>
         /// Returns a description of the NoiseType implementation
         /// </summary>
-        NoiseTypeDescriptor     GetDescription();
+        NoiseTypeDescriptor GetDescription();
 
         /// <summary>
         /// Returns a string representing the default state of the data that this NoiseType
         /// implementation uses.
         /// </summary>
-        string                  GetDefaultSerializedString();
-        
+        string GetDefaultSerializedString();
+
         /// <summary>
         /// Renders the GUI for the NoiseType implementation using the data provided by the serialized string.
         /// </summary>
@@ -63,7 +63,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// A string for the NoiseType implementation's serialized data after having gone through possible
         /// changes from user interaction with the GUI
         /// </returns>
-        string                  DoGUI(string serializedString);
+        string DoGUI(string serializedString);
 
         /// <summary>
         /// Sets up a Material to be used with the NoiseType implementation. This function is called
@@ -74,7 +74,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// The serialized string representing the NoiseType data to
         /// be used when setting up the provided Material
         /// </param>
-        void                    SetupMaterial(Material mat, string serializedString);
+        void SetupMaterial(Material mat, string serializedString);
 
         /// <summary>
         /// When overidden, converts an object representing the data for a NoiseType implementation to a string.
@@ -85,7 +85,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// into a string
         /// </param>
         /// <returns> The string representation of the provided target object </returns>
-        string                  ToSerializedString(object target);
+        string ToSerializedString(object target);
 
         /// <summary>
         /// When overidden, converts a string representing the data for the NoiseType implementation into an
@@ -96,7 +96,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// used by the NoiseType implementation
         /// </param>
         /// <returns> An object deserialized from the provided string </returns>
-        object                  FromSerializedString(string serializedString);
+        object FromSerializedString(string serializedString);
     }
 
     /// <summary>
@@ -104,13 +104,13 @@ namespace UnityEditor.Experimental.TerrainAPI
     /// inherit from this in order to be considered a valid NoiseType and included in the noise
     /// shader generation and available for use with the various noise tools.
     /// </summary>
-    public abstract class NoiseType<T> : ScriptableSingleton<T>, INoiseType where T : NoiseType<T>
+    internal abstract class NoiseType<T> : ScriptableSingleton<T>, INoiseType where T : NoiseType<T>
     {
         /// <summary>
         /// Returns a descriptor struct defining the NoiseType
         /// </summary>
         public abstract NoiseTypeDescriptor GetDescription();
-        
+
         /// <summary>
         /// When overidden, returns a string that represents the default data state for the NoiseType implementation
         /// </summary>

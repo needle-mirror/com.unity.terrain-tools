@@ -29,10 +29,22 @@ float2 HeightmapUvToPcUv(float2 heightmapUV)
 =================================================================================================*/
 
 sampler2D _PCValidityTex;
+float4    _PCValidityTex_TexelSize;
 
 float IsPcUvPartOfValidTerrainTileTexel(float2 pcUV)
 {
     return sign(max(0, tex2D(_PCValidityTex, pcUV).r));
+}
+
+float IsPcUvPartOfValidTerrainTileTexelSobel(float2 pcUV, float2 offset)
+{
+    float3 offsets = float3(offset.x, offset.y, 0);
+    float t = tex2D(_PCValidityTex, pcUV).r;
+    t += tex2D(_PCValidityTex, pcUV - offsets.xz).r;
+    t += tex2D(_PCValidityTex, pcUV + offsets.xz).r;
+    t += tex2D(_PCValidityTex, pcUV - offsets.zy).r;
+    t += tex2D(_PCValidityTex, pcUV + offsets.zy).r;
+    return sign(max(0, t - 4));
 }
 
 /*=================================================================================================

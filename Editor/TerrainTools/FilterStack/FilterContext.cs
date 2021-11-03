@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     /// <summary>
     /// Provides information for generating images based on Terrain texture data ie. procedural brush masks
@@ -20,27 +20,27 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// The size of the brush in world space units
         /// </summary>
         public float brushSize { get; internal set; }
-        
+
         /// <summary>
         /// The rotation of the brush in degrees
         /// </summary>
         public float brushRotation { get; internal set; }
-        
+
         /// <summary>
         /// A collection of common RenderTextures that are used during Filter composition
         /// </summary>
         public RTHandleCollection rtHandleCollection { get; private set; }
-        
+
         /// <summary>
         /// A collection of common floating-point values that are used during Filter composition
         /// </summary>
         public Dictionary<string, float> floatProperties { get; private set; }
-        
+
         /// <summary>
         /// A collection of common integer values that are used during Filter composition
         /// </summary>
         public Dictionary<string, int> intProperties { get; private set; }
-        
+
         /// <summary>
         /// A collection of common vector values that are used during Filter composition
         /// </summary>
@@ -51,9 +51,10 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// This is used for some validation without the need for actual RenderTextures
         /// </summary>
         public GraphicsFormat targetFormat { get; internal set; }
-        
+
         /// <summary>
         /// Constructor
+        /// <param name="targetFormat">The target GraphicsFormat that will be used for Filter evaluation</param>
         /// <param name="brushPos">The brush position</param>
         /// <param name="brushSize">The brush size</param>
         /// <param name="brushRotation">The brush rotation</param>
@@ -93,9 +94,11 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// </summary>
         public virtual void Dispose(bool dispose)
         {
-            if(m_Disposed) return;
+            if (m_Disposed)
+                return;
 
-            if(!dispose) return;
+            if (!dispose)
+                return;
 
             rtHandleCollection?.Dispose(dispose);
             rtHandleCollection = null;

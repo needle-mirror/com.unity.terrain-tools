@@ -1,13 +1,13 @@
 using UnityEngine;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     [System.Serializable]
-    public class PowerFilter : Filter
+    internal class PowerFilter : Filter
     {
         [SerializeField]
         public float value = 2;
-        
+
         public override string GetDisplayName()
         {
             return "Power";
@@ -22,7 +22,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             FilterUtility.builtinMaterial.SetFloat("_Pow", value);
 
-            Graphics.Blit( sourceRenderTexture, destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Power );
+            Graphics.Blit(sourceRenderTexture, destinationRenderTexture, FilterUtility.builtinMaterial, (int)FilterUtility.BuiltinPasses.Power);
         }
 
         protected override void OnDrawGUI(Rect rect, FilterContext filterContext)

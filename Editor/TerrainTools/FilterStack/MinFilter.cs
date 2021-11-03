@@ -1,13 +1,13 @@
 using UnityEngine;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     [System.Serializable]
-    public class MinFilter : Filter
+    internal class MinFilter : Filter
     {
         [SerializeField]
         public float value = 1;
-        
+
         public override string GetDisplayName()
         {
             return "Min";
@@ -22,7 +22,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             FilterUtility.builtinMaterial.SetFloat("_Min", value);
 
-            Graphics.Blit( sourceRenderTexture, destinationRenderTexture, FilterUtility.builtinMaterial, ( int )FilterUtility.BuiltinPasses.Min );
+            Graphics.Blit(sourceRenderTexture, destinationRenderTexture, FilterUtility.builtinMaterial, (int)FilterUtility.BuiltinPasses.Min);
         }
 
         protected override void OnDrawGUI(Rect rect, FilterContext filterContext)

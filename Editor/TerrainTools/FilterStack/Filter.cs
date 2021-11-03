@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     /// <summary>
     /// Base class for implementing Filters that operate on Textures. Used as elements in a FilterStack but can also be
@@ -16,18 +16,18 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// </summary>
         [ SerializeField ]
         public bool              enabled = true;
-        
+
         /// <summary>
         /// Get the display name for the Filter. This is used when drawing the Filter's user interface.
         /// </summary>
         /// <returns></returns>
-        public virtual string    GetDisplayName() => "EMPTY_FILTER_NAME";
-        
+        public virtual string GetDisplayName() => "EMPTY_FILTER_NAME";
+
         /// <summary>
         /// Get the tooltip for the Filter.
         /// </summary>
         /// <returns></returns>
-        public virtual string    GetToolTip() => "EMPTY_TOOLTIP";
+        public virtual string GetToolTip() => "EMPTY_TOOLTIP";
 
         /// <summary>
         /// Called before OnEval. Use this to set up anything needed before Filter evaluation and to also tell the system
@@ -42,7 +42,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             message = string.Empty;
             return true;
         }
-        
+
         /// <summary>
         /// Evaluates the Filter. Calls ValidateFilter and if that returns false, a default blit is performed instead of
         /// calling OnEval
@@ -58,21 +58,21 @@ namespace UnityEditor.Experimental.TerrainAPI
                 Graphics.Blit(source, dest);
                 return;
             }
-            
+
             OnEval(filterContext, source, dest);
         }
 
         /// <summary>
         /// Evaluate the Filter. Override this function for custom Filter logic
         /// </summary>
-        /// <param name="filterContext"></param>
-        /// <param name="source"></param>
-        /// <param name="dest"></param>
+        /// <param name="filterContext">The FilterContext related to the current evaluation</param>
+        /// <param name="source">The source RenderTexture on which the Filter operates</param>
+        /// <param name="dest">The destination RenderTexture to which the Filter blits the results of the Filter operation</param>
         protected virtual void OnEval(FilterContext filterContext, RenderTexture source, RenderTexture dest)
         {
-            Graphics.Blit( source, dest);
+            Graphics.Blit(source, dest);
         }
-        
+
         /// <summary>
         /// Draw the GUI for the Filter
         /// </summary>
@@ -90,7 +90,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 EditorGUI.LabelField(labelRect, message, EditorStyles.wordWrappedMiniLabel);
                 return;
             }
-            
+
             OnDrawGUI(rect, filterContext);
         }
 
@@ -99,7 +99,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// </summary>
         /// <param name="rect">The Rect where the GUI should be drawn</param>
         /// <param name="filterContext">The FilterContext related to the current evaluation. Use this to show different information in the Filter GUI</param>
-        protected virtual void   OnDrawGUI(Rect rect, FilterContext filterContext) {}
+        protected virtual void OnDrawGUI(Rect rect, FilterContext filterContext) { }
 
         /// <summary>
         /// Handle SceneView related logic or rendering
@@ -112,7 +112,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 return;
             }
-            
+
             OnSceneGUI(sceneView, filterContext);
         }
         /// <summary>
@@ -120,24 +120,24 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// </summary>
         /// <param name="terrain">The target Terrain</param>
         /// <param name="brushContext">The current brush parameters</param>
-        protected virtual void      OnSceneGUI(SceneView sceneView, FilterContext filterContext) {}
+        protected virtual void OnSceneGUI(SceneView sceneView, FilterContext filterContext) { }
         /// <summary>
         /// Get the height of the Filter element when drawn as part of a FilterStack GUI
         /// </summary>
         /// <returns>The height of the Filter in the FilterStack GUI</returns>
-        public virtual float     GetElementHeight() => EditorGUIUtility.singleLineHeight * 2;
+        public virtual float GetElementHeight() => EditorGUIUtility.singleLineHeight * 2;
         /// <summary>
         /// Called when the Filter is first created
         /// </summary>
-        public virtual void      OnEnable() {}
+        public virtual void OnEnable() { }
         /// <summary>
         /// Called when the Filter is disabled
         /// </summary>
-        public virtual void      OnDisable() {}
+        public virtual void OnDisable() { }
         /// <summary>
         /// Get a list of Unity Objects to serialize along with the Filter object
         /// </summary>
         /// <returns>List of Unity Objects to serialize</returns>
-        public virtual List< UnityEngine.Object >    GetObjectsToSerialize() { return null; }
+        public virtual List<UnityEngine.Object> GetObjectsToSerialize() { return null; }
     }
 }

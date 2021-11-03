@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: TerrainVisualization
-  m_Shader: {fileID: 4800000, guid: d883e31ac4c172d429e7953bd1585527, type: 3}
+  m_Shader: {fileID: 4800000, guid: efdd1bbe3db07e5479bb07143c5d0c47, type: 3}
   m_ShaderKeywords: LOCAL_SPACE
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -108,6 +108,7 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    m_Ints: []
     m_Floats:
     - _BumpScale: 1
     - _CullMode: 2
@@ -159,3 +160,4 @@ Material:
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _HeatmapData: {r: 0, g: 500, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+  m_BuildTextureStacks: []

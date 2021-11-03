@@ -163,7 +163,7 @@ half4 SplatmapFragment(VertexOutput IN) : SV_TARGET
 {
 #ifdef _HEATMAP
 	#ifdef LOCAL_SPACE
-		half height = SAMPLE_TEXTURE2D(_HeatHeightmap, sampler_HeatHeightmap, IN.uvMainAndLM.xy).r * 2;
+		half height = UnpackHeightmap(SAMPLE_TEXTURE2D(_HeatHeightmap, sampler_HeatHeightmap, IN.uvMainAndLM.xy)) * 2;
 	#else
 		half height = ((IN.positionWS.y - _HeatmapData.z) - _HeatmapData.x) / (_HeatmapData.y - _HeatmapData.x);
 	#endif

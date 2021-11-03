@@ -1,22 +1,20 @@
 using UnityEngine;
-using UnityEditor;
-using System.Collections.Generic;
 using System;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     /// <summary>
     /// A data class that can be used to define various types of noise.
     /// </summary>
-    [System.Serializable]
-    public class NoiseSettings : ScriptableObject
+    [Serializable]
+    internal class NoiseSettings : ScriptableObject
     {
         /// <summary>
         /// Struct containing information about the transform (translation, rotation, scale) to be
         /// applied to the noise. Usage of these values is depending on the actual noise
         /// implementation.
         /// </summary>
-        [System.Serializable]
+        [Serializable]
         public struct NoiseTransformSettings
         {
             /// <summary>
@@ -146,8 +144,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// The noise field's TRS transformation Matrix
         /// </summary>
         /// <returns> A Matrix4x4 for the noise field's TRS matrix </returns>
-        public Matrix4x4 trs
-        {
+        public Matrix4x4 trs {
             get
             {
                 // set noise transform values
@@ -173,7 +170,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             transformSettings = noiseSettings.transformSettings;
             domainSettings = noiseSettings.domainSettings;
-            
+
             // // TODO(wyatt): copy Filter Stack
             // Debug.LogError("TODO(wyatt): copy filter stack");
         }
@@ -229,14 +226,14 @@ namespace UnityEditor.Experimental.TerrainAPI
             noiseType?.SetupMaterial(mat, domainSettings.noiseTypeParams);
             fractalType?.SetupMaterial(mat, domainSettings.fractalTypeParams);
 
-            if( useTextureForPositions )
+            if (useTextureForPositions)
             {
-                mat.EnableKeyword( "USE_NOISE_TEXTURE" );
-                mat.SetTexture( "_NoiseTex", positionTexture );
+                mat.EnableKeyword("USE_NOISE_TEXTURE");
+                mat.SetTexture("_NoiseTex", positionTexture);
             }
             else
             {
-                mat.DisableKeyword( "USE_NOISE_TEXTURE" );
+                mat.DisableKeyword("USE_NOISE_TEXTURE");
             }
         }
 

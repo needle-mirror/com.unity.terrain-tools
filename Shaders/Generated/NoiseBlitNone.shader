@@ -92,7 +92,6 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
             {
                 // calc pos for center of pixel
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
-                uv +=  + float3(.5, 0, .5) * _MainTex_TexelSize.xxy; // offset by half a texel so we are sampling noise for the center of the texel
 
 #if USE_NOISE_TEXTURE
                 
@@ -200,7 +199,6 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
             {
                 // calc pos for center of pixel
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
-                uv +=  + float3(.5, 0, .5) * _MainTex_TexelSize.xxy; // offset by half a texel so we are sampling noise for the center of the texel
 
 #if USE_NOISE_TEXTURE
                 
@@ -308,7 +306,6 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
             {
                 // calc pos for center of pixel
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
-                uv +=  + float3(.5, 0, .5) * _MainTex_TexelSize.xxy; // offset by half a texel so we are sampling noise for the center of the texel
 
 #if USE_NOISE_TEXTURE
                 
@@ -416,7 +413,6 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
             {
                 // calc pos for center of pixel
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
-                uv +=  + float3(.5, 0, .5) * _MainTex_TexelSize.xxy; // offset by half a texel so we are sampling noise for the center of the texel
 
 #if USE_NOISE_TEXTURE
                 
@@ -524,7 +520,6 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
             {
                 // calc pos for center of pixel
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
-                uv +=  + float3(.5, 0, .5) * _MainTex_TexelSize.xxy; // offset by half a texel so we are sampling noise for the center of the texel
 
 #if USE_NOISE_TEXTURE
                 

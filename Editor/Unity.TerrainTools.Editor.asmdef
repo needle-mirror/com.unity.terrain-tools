@@ -1,5 +1,6 @@
 {
     "name": "Unity.TerrainTools.Editor",
+    "rootNamespace": "",
     "references": [
         "GUID:870ce330d12521c41ba8a44d9ad3a5fc"
     ],
@@ -12,6 +13,17 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.render-pipelines.high-definition",
+            "expression": "",
+            "define": "USE_HIGH_DEFINITION_RENDERPIPELINE"
+        },
+        {
+            "name": "com.unity.render-pipelines.universal",
+            "expression": "",
+            "define": "USE_UNIVERSAL_RENDERPIPELINE"
+        }
+    ],
     "noEngineReferences": false
 }

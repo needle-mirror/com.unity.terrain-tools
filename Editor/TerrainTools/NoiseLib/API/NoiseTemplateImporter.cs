@@ -6,13 +6,13 @@ using UnityEngine;
 #endif
 
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     /// <summary>
     /// Asset importer for noise template files. Used to detect when a noise template is imported and checks to see if the shaders need to be regenerated.
     /// </summary>
     [ScriptedImporter(1, "noisehlsltemplate")]
-    public class NoiseTemplateImporter : ScriptedImporter
+    internal class NoiseTemplateImporter : ScriptedImporter
     {
         /// <summary>
         /// Function that is called when an asset with the ".noisehlsltemplate" extension is imported by the AssetDatabase

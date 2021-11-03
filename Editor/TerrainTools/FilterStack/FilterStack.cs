@@ -2,9 +2,9 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    [System.Serializable]
+    [Serializable]
     public class FilterStack : ScriptableObject
     {
         const string k_BufferName0 = "FilterStack.SwapBuffer[0]";
@@ -21,16 +21,16 @@ namespace UnityEditor.Experimental.TerrainAPI
         void OnEnable()
         {
             // need to check if any filters have been removed for any reason, on load
-            filters.RemoveAll( f => f == null );
+            filters.RemoveAll(f => f == null);
         }
 
         /// <summary>
         /// Adds a Filter reference to the end of the FilterStack list of Filters
         /// <param name="filter">The Filter reference to add</param>
         /// </summary>
-        public void Add( Filter filter )
+        public void Add(Filter filter)
         {
-            filters.Add( filter );
+            filters.Add(filter);
         }
 
         /// <summary>
@@ -39,9 +39,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// <param name="filter">The Filter reference to insert</param>
         /// <exception>Throws an exception if the specified index is not within the valid range</exception>
         /// </summary>
-        public void Insert( int index, Filter filter )
+        public void Insert(int index, Filter filter)
         {
-            filters.Insert( index, filter );
+            filters.Insert(index, filter);
         }
 
         /// <summary>
@@ -49,9 +49,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// <param name="filter">The Filter reference to remove</param>
         /// <returns>Returns true if the specified Filter was found and removed; otherwise, returns false.</returns>
         /// </summary>
-        public bool Remove( Filter filter )
+        public bool Remove(Filter filter)
         {
-            return filters.Remove( filter );
+            return filters.Remove(filter);
         }
 
         /// <summary>
@@ -59,9 +59,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// <param name="index">The index of the Filter to be removed</param>
         /// <exception>Throws an exception if the specified index is not within the valid range</exception>
         /// </summary>
-        public void RemoveAt( int index )
+        public void RemoveAt(int index)
         {
-            filters.RemoveAt( index );
+            filters.RemoveAt(index);
         }
 
         /// <summary>
@@ -71,12 +71,12 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// </summary>
         public void Eval(FilterContext fc, RenderTexture source, RenderTexture dest)
         {
-            if(dest == null)
+            if (dest == null)
             {
                 throw new InvalidOperationException("FilterContext::Eval: Source and destination RenderTextures are not properly set up");
             }
 
-            using(new ActiveRenderTextureScope(RenderTexture.active))
+            using (new ActiveRenderTextureScope(RenderTexture.active))
             {
                 int count = filters.Count;
                 int srcIndex = 0;
@@ -93,17 +93,18 @@ namespace UnityEditor.Experimental.TerrainAPI
                 Graphics.Blit(Texture2D.whiteTexture, swapBuffer[0]); // TODO: change this to black or source. should build up the mask instead of always multiply
                 Graphics.Blit(Texture2D.blackTexture, swapBuffer[1]);
 
-                for( int i = 0; i < count; ++i )
+                for (int i = 0; i < count; ++i)
                 {
                     var filter = filters[i];
-                    if (!filter.enabled) continue;
+                    if (!filter.enabled)
+                        continue;
 
                     filter.Eval(fc, swapBuffer[srcIndex], swapBuffer[destIndex]);
 
                     // swap indices
-                    destIndex += srcIndex;
-                    srcIndex = destIndex - srcIndex;
-                    destIndex = destIndex - srcIndex;
+                    int tmp = destIndex;
+                    destIndex = srcIndex;
+                    srcIndex = tmp;
                 }
 
                 Graphics.Blit(swapBuffer[srcIndex], dest);
@@ -120,9 +121,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// </summary>
         public void Clear(bool destroy = false)
         {
-            if(destroy)
+            if (destroy)
             {
-                foreach(var filter in filters)
+                foreach (var filter in filters)
                 {
                     DestroyImmediate(filter);
                 }

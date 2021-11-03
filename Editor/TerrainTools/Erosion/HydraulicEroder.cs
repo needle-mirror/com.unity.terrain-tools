@@ -1,37 +1,33 @@
 ﻿using UnityEngine;
-using UnityEditor;
-using UnityEditor.Experimental.TerrainAPI;
 using System;
 using System.Collections.Generic;
-using UObject = UnityEngine.Object;
+using UnityEngine.TerrainTools;
 
-namespace Erosion
+namespace UnityEditor.TerrainTools.Erosion
 {
     [Serializable]
-    public class HydraulicEroder : ITerrainEroder
+    internal class HydraulicEroder : ITerrainEroder
     {
 
         [SerializeField]
         public HydraulicErosionSettings m_ErosionSettings = new HydraulicErosionSettings();
 
-        #region Resources
-
         //we need to ping-pong these
         [NonSerialized]
-        private RenderTexture[] m_HeightmapRT = { null, null };
+        private RTHandle[] m_HeightmapRT = { null, null };
         [NonSerialized]
-        private RenderTexture[] m_WaterRT = { null, null };
+        private RTHandle[] m_WaterRT = { null, null };
         [NonSerialized]
-        private RenderTexture[] m_WaterVelRT = { null, null };
+        private RTHandle[] m_WaterVelRT = { null, null };
         [NonSerialized]
-        private RenderTexture[] m_FluxRT = { null, null };
+        private RTHandle[] m_FluxRT = { null, null };
         [NonSerialized]
-        private RenderTexture[] m_SedimentRT = { null, null };
+        private RTHandle[] m_SedimentRT = { null, null };
 
 
         [NonSerialized]
-        private RenderTexture m_ErodedRT = null;
-        private RenderTexture m_HardnessRT = null;
+        private RTHandle m_ErodedRT = null;
+        private RTHandle m_HardnessRT = null;
 
         [NonSerialized]
         Vector2Int m_RTSize = new Vector2Int(0, 0);
@@ -43,103 +39,70 @@ namespace Erosion
 
 
 
-        private ComputeShader GetHydraulicCS() {
-            if (m_HydraulicCS == null) {
-                m_HydraulicCS = (ComputeShader)Resources.Load("Hydraulic");
+        private ComputeShader GetHydraulicCS()
+        {
+            if (m_HydraulicCS == null)
+            {
+                m_HydraulicCS = ComputeUtility.GetShader("Hydraulic");
             }
             return m_HydraulicCS;
         }
 
-        private ComputeShader GetThermalCS() {
-            if (m_ThermalCS == null) {
-                m_ThermalCS = (ComputeShader)Resources.Load("Thermal");
+        private ComputeShader GetThermalCS()
+        {
+            if (m_ThermalCS == null)
+            {
+                m_ThermalCS = ComputeUtility.GetShader("Thermal");
             }
             return m_ThermalCS;
         }
 
-        private void CreateRenderTextures(Vector2Int dim)
+        private void CreateRTHandles(Vector2Int dim)
         {
             m_RTSize = dim;
 
+            var r = RTUtils.GetDescriptorRW(dim.x, dim.y, 0, RenderTextureFormat.RFloat);
+            var rg = RTUtils.GetDescriptorRW(dim.x, dim.y, 0, RenderTextureFormat.RGFloat);
+            var argb = RTUtils.GetDescriptorRW(dim.x, dim.y, 0, RenderTextureFormat.ARGBFloat);
+
             for (int i = 0; i < 2; i++)
             {
-                m_HeightmapRT[i] = new RenderTexture(dim.x, dim.y, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
-                m_WaterRT[i] = new RenderTexture(dim.x, dim.y, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
-                m_WaterVelRT[i] = new RenderTexture(dim.x, dim.y, 0, RenderTextureFormat.RGFloat, RenderTextureReadWrite.Linear);
-                m_FluxRT[i] = new RenderTexture(dim.x, dim.y, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
-                m_SedimentRT[i] = new RenderTexture(dim.x, dim.y, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
+                m_HeightmapRT[i] = RTUtils.GetNewHandle(r).WithName("HydroErosion_Height" + i);
+                m_WaterRT[i] = RTUtils.GetNewHandle(r).WithName("HydroErosion_Water" + i);
+                m_WaterVelRT[i] = RTUtils.GetNewHandle(rg).WithName("HydroErosion_WaterVel" + i);
+                m_FluxRT[i] = RTUtils.GetNewHandle(argb).WithName("HydroErosion_Flux" + i);
+                m_SedimentRT[i] = RTUtils.GetNewHandle(r).WithName("HydroErosion_Sediment" + i);
 
-                m_HeightmapRT[i].enableRandomWrite = true;
-                m_WaterRT[i].enableRandomWrite = true;
-                m_WaterVelRT[i].enableRandomWrite = true;
-                m_FluxRT[i].enableRandomWrite = true;
-                m_SedimentRT[i].enableRandomWrite = true;
-
-                m_HeightmapRT[i].Create();
-                m_WaterRT[i].Create();
-                m_WaterVelRT[i].Create();
-                m_FluxRT[i].Create();
-                m_SedimentRT[i].Create();
+                m_HeightmapRT[i].RT.Create();
+                m_WaterRT[i].RT.Create();
+                m_WaterVelRT[i].RT.Create();
+                m_FluxRT[i].RT.Create();
+                m_SedimentRT[i].RT.Create();
             }
 
-            m_ErodedRT = new RenderTexture(dim.x, dim.y, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
-            m_ErodedRT.enableRandomWrite = true;
-            m_ErodedRT.Create();
+            m_ErodedRT = RTUtils.GetNewHandle(r).WithName("HydroErosion_Eroded");
+            m_ErodedRT.RT.Create();
 
-            m_HardnessRT = new RenderTexture(dim.x, dim.y, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
-            m_HardnessRT.enableRandomWrite = true;
-            m_HardnessRT.Create();
+            m_HardnessRT = RTUtils.GetNewHandle(r).WithName("HydroErosion_Hardness");
+            m_HardnessRT.RT.Create();
         }
 
-        private void ReleaseRenderTextures() {
+        private void ReleaseRTHandles()
+        {
             for (int i = 0; i < 2; i++)
             {
-                if (m_HeightmapRT[i] != null)
-                {
-                    m_HeightmapRT[i].Release();
-                    UObject.DestroyImmediate(m_HeightmapRT[i]);
-                    m_HeightmapRT[i] = null;
-                }
-                if (m_WaterRT[i] != null)
-                {
-                    m_WaterRT[i].Release();
-                    UObject.DestroyImmediate(m_WaterRT[i]);
-                    m_WaterRT[i] = null;
-                }
-                if (m_WaterVelRT[i] != null)
-                {
-                    m_WaterVelRT[i].Release();
-                    UObject.DestroyImmediate(m_WaterVelRT[i]);
-                    m_WaterVelRT[i] = null;
-                }
-                if (m_FluxRT[i] != null)
-                {
-                    m_FluxRT[i].Release();
-                    UObject.DestroyImmediate(m_FluxRT[i]);
-                    m_FluxRT[i] = null;
-                }
-                if (m_SedimentRT[i] != null)
-                {
-                    m_SedimentRT[i].Release();
-                    UObject.DestroyImmediate(m_SedimentRT[i]);
-                    m_SedimentRT[i] = null;
-                }
+                RTUtils.Release(m_HeightmapRT[i]);
+                RTUtils.Release(m_WaterRT[i]);
+                RTUtils.Release(m_WaterVelRT[i]);
+                RTUtils.Release(m_FluxRT[i]);
+                RTUtils.Release(m_SedimentRT[i]);
             }
-            if (m_ErodedRT)
-            {
-                 m_ErodedRT.Release();
-                 UObject.DestroyImmediate(m_ErodedRT);
-                 m_ErodedRT = null;
-            }
-            if (m_HardnessRT)
-            {
-                m_HardnessRT.Release();
-                UObject.DestroyImmediate(m_HardnessRT);
-                m_HardnessRT = null;
-            }
+
+            RTUtils.Release(m_ErodedRT);
+            RTUtils.Release(m_HardnessRT);
         }
 
-        private void ClearRenderTextures()
+        private void ClearRTHandles()
         {
             RenderTexture tmp = RenderTexture.active;
 
@@ -149,7 +112,6 @@ namespace Erosion
                 Graphics.Blit(Texture2D.blackTexture, m_WaterVelRT[i]);
                 Graphics.Blit(Texture2D.blackTexture, m_FluxRT[i]);
                 Graphics.Blit(Texture2D.blackTexture, m_SedimentRT[i]);
-
             }
 
             Graphics.Blit(Texture2D.blackTexture, m_ErodedRT);
@@ -158,12 +120,9 @@ namespace Erosion
             RenderTexture.active = tmp;
         }
 
-        #endregion
-
         public Dictionary<string, RenderTexture> inputTextures { get; set; } = new Dictionary<string, RenderTexture>();
-        public Dictionary<string, RenderTexture> outputTextures { get; private set; } = new Dictionary<string, RenderTexture>();
 
-        
+
         [SerializeField]
         private bool m_ShowControls = true;
         [SerializeField]
@@ -177,22 +136,24 @@ namespace Erosion
         [SerializeField]
         private bool m_ShowRiverBankUI = false;
 
-        public void OnEnable() {}
+        public void OnEnable() { }
 
-        #region GUI
-        public void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext) {
+        public void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
 
             m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForErosion(Erosion.Styles.m_HydroErosionControls, m_ShowControls, ResetToolVar);
 
 
-            if (m_ShowControls) {
+            if (m_ShowControls)
+            {
                 EditorGUILayout.BeginVertical("GroupBox");
                 m_ErosionSettings.m_SimScale.DrawInspectorGUI();
 
                 EditorGUI.indentLevel++;
-				m_ShowAdvancedUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Advanced"), m_ShowAdvancedUI);
+                m_ShowAdvancedUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Advanced"), m_ShowAdvancedUI);
 
-                if (m_ShowAdvancedUI) {
+                if (m_ShowAdvancedUI)
+                {
                     //m_ErosionSettings.m_IterationBlendScalar.DrawInspectorGUI();
                     m_ErosionSettings.m_HydroTimeDelta.DrawInspectorGUI();
                     m_ErosionSettings.m_HydroIterations.DrawInspectorGUI();
@@ -200,24 +161,27 @@ namespace Erosion
                     //m_ErosionSettings.m_GravitationalConstant = EditorGUILayout.Slider(Erosion.Styles.m_GravitationConstant, m_ErosionSettings.m_GravitationalConstant, 0.0f, -100.0f);
 
                     EditorGUI.indentLevel++;
-					m_ShowThermalUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Thermal Smoothing"), m_ShowThermalUI, 1);
-                    if (m_ShowThermalUI) {
+                    m_ShowThermalUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Thermal Smoothing"), m_ShowThermalUI, 1);
+                    if (m_ShowThermalUI)
+                    {
                         //m_ErosionSettings.m_DoThermal = EditorGUILayout.Toggle(Erosion.Styles.m_DoThermal, m_ErosionSettings.m_DoThermal);
                         m_ErosionSettings.m_ThermalTimeDelta = EditorGUILayout.Slider(Erosion.Styles.m_ThermalDTScalar, m_ErosionSettings.m_ThermalTimeDelta, 0.0001f, 10.0f);
                         m_ErosionSettings.m_ThermalIterations = EditorGUILayout.IntSlider(Erosion.Styles.m_NumIterations, m_ErosionSettings.m_ThermalIterations, 0, 100);
                         m_ErosionSettings.m_ThermalReposeAngle = EditorGUILayout.IntSlider(Erosion.Styles.m_AngleOfRepose, m_ErosionSettings.m_ThermalReposeAngle, 0, 90);
                     }
 
-					m_ShowWaterUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Water Transport"), m_ShowWaterUI, 1);
-                    if (m_ShowWaterUI) {
+                    m_ShowWaterUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Water Transport"), m_ShowWaterUI, 1);
+                    if (m_ShowWaterUI)
+                    {
                         //m_ErosionSettings.m_WaterLevelScale = EditorGUILayout.Slider(Erosion.Styles.m_WaterLevelScale, m_ErosionSettings.m_WaterLevelScale, 0.0f, 100.0f);
                         m_ErosionSettings.m_PrecipRate.DrawInspectorGUI();
                         m_ErosionSettings.m_EvaporationRate.DrawInspectorGUI();
                         m_ErosionSettings.m_FlowRate.DrawInspectorGUI();
                     }
 
-					m_ShowSedimentUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Sediment Transport"), m_ShowSedimentUI, 1);
-                    if (m_ShowSedimentUI) {
+                    m_ShowSedimentUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Sediment Transport"), m_ShowSedimentUI, 1);
+                    if (m_ShowSedimentUI)
+                    {
                         //m_ErosionSettings.m_SedimentScale = EditorGUILayout.Slider(Erosion.Styles.m_SedimentScale, m_ErosionSettings.m_SedimentScale, 0.0f, 10.0f);
                         m_ErosionSettings.m_SedimentCapacity.DrawInspectorGUI();
                         m_ErosionSettings.m_SedimentDepositRate.DrawInspectorGUI();
@@ -225,7 +189,8 @@ namespace Erosion
                     }
 
                     m_ShowRiverBankUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Riverbank"), m_ShowRiverBankUI, 1);
-                    if (m_ShowRiverBankUI) {
+                    if (m_ShowRiverBankUI)
+                    {
                         m_ErosionSettings.m_RiverBankDepositRate.DrawInspectorGUI();
                         m_ErosionSettings.m_RiverBankDissolveRate.DrawInspectorGUI();
                         m_ErosionSettings.m_RiverBedDepositRate.DrawInspectorGUI();
@@ -237,16 +202,17 @@ namespace Erosion
             }
         }
 
-        
         public void ResetToolVar()
         {
             m_ErosionSettings.Reset();
         }
 
-        public void OnMaterialInspectorGUI(Terrain terrain, IOnInspectorGUI editContext) {
+        public void OnMaterialInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
             m_ShowControls = EditorGUILayout.Foldout(m_ShowControls, "Hydraulic Erosion Controls");
 
-            if (m_ShowControls) {
+            if (m_ShowControls)
+            {
 
                 EditorGUILayout.BeginVertical("GroupBox");
 
@@ -264,8 +230,10 @@ namespace Erosion
 
                 EditorGUI.BeginChangeCheck();
                 m_ErosionSettings.m_MaterialSpread.DrawInspectorGUI();
-                if (EditorGUI.EndChangeCheck()) {
-                    switch (m_ErosionSettings.m_MaskSourceSelection) {
+                if (EditorGUI.EndChangeCheck())
+                {
+                    switch (m_ErosionSettings.m_MaskSourceSelection)
+                    {
                         case HydraulicErosionSettings.MaskSource.HeightDiff:
                         case HydraulicErosionSettings.MaskSource.Sediment:
                             m_ErosionSettings.m_SimScale.value = Mathf.Lerp(0.0f, 10.0f, m_ErosionSettings.m_MaterialSpread.value);
@@ -276,14 +244,15 @@ namespace Erosion
                             break;
                     }
                 }
-                
+
 
                 m_ErosionSettings.m_MaterialOpacity = EditorGUILayout.Slider(Erosion.Styles.m_MaterialOpacity, m_ErosionSettings.m_MaterialOpacity, 0.0f, 1.0f);
 
                 EditorGUI.indentLevel++;
                 m_ShowAdvancedUI = EditorGUILayout.Foldout(m_ShowAdvancedUI, "Advanced");
 
-                if (m_ShowAdvancedUI) {
+                if (m_ShowAdvancedUI)
+                {
                     m_ErosionSettings.m_IterationBlendScalar.DrawInspectorGUI();
                     m_ErosionSettings.m_HydroTimeDelta.DrawInspectorGUI();
                     m_ErosionSettings.m_HydroIterations.DrawInspectorGUI();
@@ -292,7 +261,8 @@ namespace Erosion
 
                     EditorGUI.indentLevel++;
                     m_ShowThermalUI = EditorGUILayout.Foldout(m_ShowThermalUI, "Thermal Erosion");
-                    if (m_ShowThermalUI) {
+                    if (m_ShowThermalUI)
+                    {
                         m_ErosionSettings.m_DoThermal = EditorGUILayout.Toggle(Erosion.Styles.m_DoThermal, m_ErosionSettings.m_DoThermal);
                         m_ErosionSettings.m_ThermalTimeDelta = EditorGUILayout.Slider(Erosion.Styles.m_ThermalDTScalar, m_ErosionSettings.m_ThermalTimeDelta, 0.0000f, 0.001f);
                         m_ErosionSettings.m_ThermalIterations = EditorGUILayout.IntSlider(Erosion.Styles.m_NumIterations, m_ErosionSettings.m_ThermalIterations, 0, 100);
@@ -300,7 +270,8 @@ namespace Erosion
                     }
 
                     m_ShowWaterUI = EditorGUILayout.Foldout(m_ShowWaterUI, "Water Transport");
-                    if (m_ShowWaterUI) {
+                    if (m_ShowWaterUI)
+                    {
                         m_ErosionSettings.m_WaterLevelScale = EditorGUILayout.Slider(Erosion.Styles.m_WaterLevelScale, m_ErosionSettings.m_WaterLevelScale, 0.0f, 100.0f);
                         m_ErosionSettings.m_PrecipRate.DrawInspectorGUI();
                         m_ErosionSettings.m_EvaporationRate.DrawInspectorGUI();
@@ -308,7 +279,8 @@ namespace Erosion
                     }
 
                     m_ShowSedimentUI = EditorGUILayout.Foldout(m_ShowSedimentUI, "Sediment Transport");
-                    if (m_ShowSedimentUI) {
+                    if (m_ShowSedimentUI)
+                    {
                         m_ErosionSettings.m_SedimentScale = EditorGUILayout.Slider(Erosion.Styles.m_SedimentScale, m_ErosionSettings.m_SedimentScale, 0.0f, 1.0f);
                         m_ErosionSettings.m_SedimentDepositRate.DrawInspectorGUI();
                         m_ErosionSettings.m_SedimentCapacity.DrawInspectorGUI();
@@ -316,7 +288,8 @@ namespace Erosion
                     }
 
                     m_ShowRiverBankUI = EditorGUILayout.Foldout(m_ShowRiverBankUI, "Riverbank");
-                    if (m_ShowRiverBankUI) {
+                    if (m_ShowRiverBankUI)
+                    {
                         m_ErosionSettings.m_RiverBankDepositRate.DrawInspectorGUI();
                         m_ErosionSettings.m_RiverBankDissolveRate.DrawInspectorGUI();
                         m_ErosionSettings.m_RiverBedDepositRate.DrawInspectorGUI();
@@ -327,15 +300,17 @@ namespace Erosion
                 EditorGUILayout.EndVertical();
             }
         }
-        #endregion
 
-        public void ErodeHeightmap(Vector3 terrainDimensions, Rect domainRect, Vector2 texelSize, bool invertEffect = false) {
-            ErodeHelper(terrainDimensions, domainRect, texelSize, invertEffect, false);
+        public void ErodeHeightmap(RenderTexture dest, Vector3 terrainDimensions, Rect domainRect, Vector2 texelSize, bool invertEffect = false)
+        {
+            ErodeHelper(dest, terrainDimensions, texelSize, invertEffect, false);
         }
 
-        public void GetShaderParams(ref int pass, ref RenderTexture maskRT) {
+        public void GetShaderParams(ref int pass, ref RenderTexture maskRT)
+        {
             //TODO: betterify this.
-            switch (m_ErosionSettings.m_MaskSourceSelection) {
+            switch (m_ErosionSettings.m_MaskSourceSelection)
+            {
                 case Erosion.HydraulicErosionSettings.MaskSource.Sediment:
                     pass = 0;
                     maskRT = m_ErodedRT;
@@ -359,12 +334,14 @@ namespace Erosion
             }
         }
 
-        private void ErodeHelper(Vector3 terrainScale, Rect domainRect, Vector2 texelSize, bool invertEffect, bool lowRes) {
+        private void ErodeHelper(RenderTexture dest, Vector3 terrainScale, Vector2 texelSize, bool invertEffect, bool lowRes)
+        {
             ComputeShader hydraulicCS = GetHydraulicCS();
             ComputeShader thermalCS = GetThermalCS();
 
             //this one is mandatory
-            if(!inputTextures.ContainsKey("Height")) {
+            if (!inputTextures.ContainsKey("Height"))
+            {
                 throw (new Exception("No input heightfield specified!"));
             }
 
@@ -379,30 +356,30 @@ namespace Erosion
             domainRes.x += numWorkGroups[0] - rx;
             domainRes.y += numWorkGroups[1] - ry;
 
-            if (lowRes) {
+            if (lowRes)
+            {
                 domainRes.x /= 2;
                 domainRes.y /= 2;
             }
 
-            //maybe rebuild the render textures
-            if (m_RTSize.x != domainRes.x || m_RTSize.y != domainRes.y) {
-                ReleaseRenderTextures();
-                CreateRenderTextures(new Vector2Int(domainRes.x, domainRes.y));
-            }
+            CreateRTHandles(new Vector2Int(domainRes.x, domainRes.y));
 
             RenderTexture rt = RenderTexture.active;
             Graphics.Blit(inputTextures["Height"], m_HeightmapRT[0]);
             Graphics.Blit(inputTextures["Height"], m_HeightmapRT[1]);
 
-            if(inputTextures.ContainsKey("Hardness")) {
+            if (inputTextures.ContainsKey("Hardness"))
+            {
                 Graphics.Blit(inputTextures["Hardness"], m_HardnessRT);
-            } else {
+            }
+            else
+            {
                 Graphics.Blit(Texture2D.blackTexture, m_HardnessRT);
             }
-            
+
             RenderTexture.active = rt;
 
-            ClearRenderTextures();
+            ClearRTHandles();
 
             int sedimentKernelIdx = hydraulicCS.FindKernel("HydraulicErosion");
             int flowKernelIdx = hydraulicCS.FindKernel("SimulateWaterFlow");
@@ -433,7 +410,8 @@ namespace Erosion
             hydraulicCS.SetVector("terrainDim", new Vector4(terrainScale.x, terrainScale.y, terrainScale.z));
             hydraulicCS.SetVector("texDim", new Vector4((float)domainRes.x, (float)domainRes.y, 0.0f, 0.0f));
 
-            if (m_ErosionSettings.m_DoThermal) {
+            if (m_ErosionSettings.m_DoThermal)
+            {
                 //thermal kernel inputs
                 Vector2 thermal_m = new Vector2(Mathf.Tan((float)m_ErosionSettings.m_ThermalReposeAngle * Mathf.Deg2Rad), Mathf.Tan((float)m_ErosionSettings.m_ThermalReposeAngle * Mathf.Deg2Rad));
 
@@ -453,12 +431,10 @@ namespace Erosion
             }
 
             int pingPongIdx = 0;
-            for (int i = 0; i < (lowRes ? m_ErosionSettings.m_HydroLowResIterations : m_ErosionSettings.m_HydroIterations.value); i++) {
+            for (int i = 0; i < (lowRes ? m_ErosionSettings.m_HydroLowResIterations : m_ErosionSettings.m_HydroIterations.value); i++)
+            {
                 int a = pingPongIdx;
                 int b = (a + 1) % 2;
-
-
-                #region Water Velocity Step
 
                 //flow kernel textures
                 hydraulicCS.SetTexture(flowKernelIdx, "TerrainHeightPrev", m_HeightmapRT[a]);
@@ -468,16 +444,11 @@ namespace Erosion
                 hydraulicCS.SetTexture(flowKernelIdx, "WaterVel", m_WaterVelRT[b]);
                 hydraulicCS.SetTexture(flowKernelIdx, "FluxPrev", m_FluxRT[a]);
                 hydraulicCS.SetTexture(flowKernelIdx, "Flux", m_FluxRT[b]);
-                
+
 
                 hydraulicCS.Dispatch(flowKernelIdx, domainRes.x / numWorkGroups[0], domainRes.y / numWorkGroups[1], numWorkGroups[2]);
 
-                #endregion
-
-
-                #region Sediment Transport Step
-
-                //sediment kernel textures
+                //Sediment Setup
                 hydraulicCS.SetTexture(sedimentKernelIdx, "TerrainHeightPrev", m_HeightmapRT[a]);
                 hydraulicCS.SetTexture(sedimentKernelIdx, "TerrainHeight", m_HeightmapRT[b]);
                 hydraulicCS.SetTexture(sedimentKernelIdx, "Water", m_WaterRT[a]);
@@ -488,16 +459,15 @@ namespace Erosion
                 hydraulicCS.SetTexture(sedimentKernelIdx, "Sediment", m_SedimentRT[b]);
                 hydraulicCS.SetTexture(sedimentKernelIdx, "Hardness", m_HardnessRT);
                 hydraulicCS.SetTexture(sedimentKernelIdx, "Eroded", m_ErodedRT);
-                
+
 
                 hydraulicCS.Dispatch(sedimentKernelIdx, domainRes.x / numWorkGroups[0], domainRes.y / numWorkGroups[1], numWorkGroups[2]);
 
-                #endregion
-
-                #region Thermal Smoothing
+                //Thermal Smoothing
                 //now do a few thermal iterations to let things settle
                 int thermalPingPongIdx = 0;
-                for (int j = 0; m_ErosionSettings.m_DoThermal && (j < m_ErosionSettings.m_ThermalIterations); j++) {
+                for (int j = 0; m_ErosionSettings.m_DoThermal && (j < m_ErosionSettings.m_ThermalIterations); j++)
+                {
                     int ta = thermalPingPongIdx;
                     int tb = (ta + 1) % 2;
                     thermalCS.SetTexture(thermalKernelIdx, "TerrainHeightPrev", m_HeightmapRT[ta]);
@@ -507,18 +477,14 @@ namespace Erosion
                     thermalCS.Dispatch(thermalKernelIdx, domainRes.x / numWorkGroups[0], domainRes.y / numWorkGroups[1], numWorkGroups[2]);
                     thermalPingPongIdx = (thermalPingPongIdx + 1) % 2;
                 }
-                #endregion
 
                 pingPongIdx = (pingPongIdx + 1) % 2;
             }
 
             // set up the output render textures
-            outputTextures["Height"] = m_HeightmapRT[1];
-            outputTextures["Sediment"] = m_SedimentRT[1];
-            outputTextures["Water Level"] = m_WaterRT[1];
-            outputTextures["Water Velocity"] = m_WaterVelRT[1];
-            outputTextures["Water Flux"] = m_FluxRT[1];
-            outputTextures["Eroded Sediment"] = m_ErodedRT;
+            Graphics.Blit(m_HeightmapRT[1], dest);
+
+            ReleaseRTHandles();
         }
     }
 }

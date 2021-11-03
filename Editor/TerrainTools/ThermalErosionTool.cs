@@ -1,14 +1,15 @@
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    internal class ThermalErosionTool : TerrainPaintTool<ThermalErosionTool>, IValidationTests
+    internal class ThermalErosionTool : TerrainPaintTool<ThermalErosionTool>
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Thermal Erosion Tool", typeof(TerrainToolShortcutContext))]               // tells shortcut manager what to call the shortcut and what to pass as args
-        static void SelectShortcut(ShortcutArguments args) {
+        static void SelectShortcut(ShortcutArguments args)
+        {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;          // gets interface to modify state of TerrainTools
             context.SelectPaintTool<ThermalErosionTool>();                                                                        // set active tool
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Thermal Erosion Tool");
@@ -17,13 +18,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI
-        {
+        private IBrushUIGroup commonUI {
             get
             {
-                if( m_commonUI == null )
+                if (m_commonUI == null)
                 {
-                    m_commonUI = new DefaultBrushUIGroup( "ThermalErosion", UpdateAnalyticParameters );
+                    m_commonUI = new DefaultBrushUIGroup("ThermalErosion", UpdateAnalyticParameters);
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -33,23 +33,25 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         Erosion.ThermalEroder m_Eroder = null;
 
-        public override void OnEnable() {
+        public override void OnEnable()
+        {
             base.OnEnable();
             m_Eroder = new Erosion.ThermalEroder();
             m_Eroder.OnEnable();
         }
 
-        public override void OnEnterToolMode() {
+        public override void OnEnterToolMode()
+        {
             base.OnEnterToolMode();
             commonUI.OnEnterToolMode();
         }
 
-        public override void OnExitToolMode() {
+        public override void OnExitToolMode()
+        {
             base.OnExitToolMode();
             commonUI.OnExitToolMode();
         }
 
-        #region Resources
         Material m_Material = null;
         Material GetPaintMaterial()
         {
@@ -65,15 +67,13 @@ namespace UnityEditor.Experimental.TerrainAPI
                 m_SplatMaterial = new Material(Shader.Find("Hidden/TerrainTools/SedimentSplat"));
             return m_SplatMaterial;
         }
-        #endregion
 
-        #region GUI
         public override string GetName()
         {
             return "Erosion/Thermal";
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return "Thermal Erosion\n" +
                 "Simulates thermal erosion from freezing / thawing processes, and the resulting avalanching of debris\n";
@@ -99,13 +99,17 @@ namespace UnityEditor.Experimental.TerrainAPI
                 return;
             }
 
-            using(IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "ThermalErosion", editContext.brushTexture))
+            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "ThermalErosion", editContext.brushTexture))
             {
-                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
+                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                
-                    brushRender.RenderBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
+                    var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
+                    Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
+                        editContext.brushTexture, brushXform, previewMaterial, 0);
+                    texelCtx.Cleanup();
                 }
             }
         }
@@ -141,37 +145,42 @@ namespace UnityEditor.Experimental.TerrainAPI
                     { 15.0f, 30.0f },  //quicksand (15-30)
                     { 38.0f, 38.0f }   //snow
                 };
+
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
-            commonUI.validationMessage = ValidateAndGenerateUserMessage(terrain);
+            commonUI.validationMessage = TerrainToolGUIHelper.ValidateAndGenerateSceneGUIMessage(terrain);
 
             m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForErosion(Erosion.Styles.m_ThermalErosionControls, m_ShowControls, m_Eroder.ResetTool);
 
-            if (m_ShowControls) {
+            if (m_ShowControls)
+            {
 
                 EditorGUILayout.BeginVertical("GroupBox");
 
-               
+
 
                 EditorGUI.BeginChangeCheck();
                 m_Eroder.m_MatPreset = EditorGUILayout.Popup(Erosion.Styles.m_MatPreset, m_Eroder.m_MatPreset, m_MatNames);
-                if (EditorGUI.EndChangeCheck() && m_Eroder.m_MatPreset != 0) {
+                if (EditorGUI.EndChangeCheck() && m_Eroder.m_MatPreset != 0)
+                {
                     m_Eroder.m_AngleOfRepose.x = m_TauValues[m_Eroder.m_MatPreset, 0];
                     m_Eroder.m_AngleOfRepose.y = m_TauValues[m_Eroder.m_MatPreset, 1];
                 }
 
                 EditorGUI.indentLevel++;
                 m_ShowAdvancedUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Advanced"), m_ShowAdvancedUI);
-                if (m_ShowAdvancedUI) {
+                if (m_ShowAdvancedUI)
+                {
                     m_Eroder.m_ThermalIterations = EditorGUILayout.IntSlider(Erosion.Styles.m_NumIterations, m_Eroder.m_ThermalIterations, 1, 1000);
                     m_Eroder.m_dt = EditorGUILayout.Slider(Erosion.Styles.m_TimeDelta, m_Eroder.m_dt, 0.00001f, 0.05f);
 
                     EditorGUI.BeginChangeCheck();
                     EditorGUILayout.MinMaxSlider(Erosion.Styles.m_AngleOfRepose, ref m_Eroder.m_AngleOfRepose.x, ref m_Eroder.m_AngleOfRepose.y, 0.0f, 90.0f);
-                    if (EditorGUI.EndChangeCheck()) {
+                    if (EditorGUI.EndChangeCheck())
+                    {
                         m_Eroder.m_MatPreset = 0; //we changed the angle of repose, so now we should switch the UI to "Custom"
                     }
 
@@ -181,35 +190,35 @@ namespace UnityEditor.Experimental.TerrainAPI
                 EditorGUILayout.EndVertical();
             }
 
-            if (EditorGUI.EndChangeCheck()) {
+            if (EditorGUI.EndChangeCheck())
+            {
                 Save(true);
                 TerrainToolsAnalytics.OnParameterChange();
             }
         }
-        #endregion
 
-        #region Paint
-
-        private void AddHeight(Terrain terrain, IOnPaint editContext) {
-            using(IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "ThermalErosion", editContext.brushTexture))
+        private void AddHeight(Terrain terrain, IOnPaint editContext)
+        {
+            using (IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "ThermalErosion", editContext.brushTexture))
             {
-                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
                     PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
-                
+
                     paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
                     Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
                     float brushStrength = Event.current.shift ? -m_Eroder.m_AddHeightAmt : m_Eroder.m_AddHeightAmt;
                     brushStrength *= (commonUI.brushStrength);
 
-                    if(Event.current.control) { brushStrength = 0.0f; }
+                    if (Event.current.control)
+                    { brushStrength = 0.0f; }
 
                     Vector4 brushParams = new Vector4(0.0001f * brushStrength, 0.0f, 0.0f, 0.0f);
                     mat.SetTexture("_BrushTex", editContext.brushTexture);
                     mat.SetVector("_BrushParams", brushParams);
 
                     brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
-                    brushRender.RenderBrush(paintContext, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.RaiseLowerHeight);
+                    brushRender.RenderBrush(paintContext, mat, (int)TerrainBuiltinPaintMaterialPasses.RaiseLowerHeight);
                 }
             }
         }
@@ -218,57 +227,47 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             commonUI.OnPaint(terrain, editContext);
 
-            if(!commonUI.allowPaint) { return false; }
+            if (!commonUI.allowPaint)
+            { return false; }
 
             int[] numWorkGroups = { 8, 8, 1 };
 
-            using(IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "ThermalErosion", editContext.brushTexture))
+            using (IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "ThermalErosion", editContext.brushTexture))
             {
-                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
                     PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
                     paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
-    
+
                     //figure out what size we need our render targets to be
                     Rect brushRect = brushXform.GetBrushXYBounds();
 
                     m_Eroder.inputTextures["Height"] = paintContext.sourceRenderTexture;
-                    
+
+                    var heightRT = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW((int)brushRect.width, (int)brushRect.height, 0, RenderTextureFormat.RFloat));
                     Vector2 texelSize = new Vector2(terrain.terrainData.size.x / terrain.terrainData.heightmapResolution,
                                                     terrain.terrainData.size.z / terrain.terrainData.heightmapResolution);
-                    m_Eroder.ErodeHeightmap(terrain.terrainData.size, brushRect, texelSize);
+                    m_Eroder.ErodeHeightmap(heightRT, terrain.terrainData.size, brushRect, texelSize);
 
                     Material mat = GetPaintMaterial();
                     var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
                     Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                     Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, 0.0f, 0.0f);
                     mat.SetTexture("_BrushTex", editContext.brushTexture);
-                    mat.SetTexture("_NewHeightTex", m_Eroder.outputTextures["Height"]);
+                    mat.SetTexture("_NewHeightTex", heightRT);
                     mat.SetVector("_BrushParams", brushParams);
 
                     brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                     brushRender.RenderBrush(paintContext, mat, 0);
                     RTUtils.Release(brushMask);
+                    RTUtils.Release(heightRT);
                 }
             }
 
             return true;
         }
-        #endregion
 
-        #region IValidationTests
-        public virtual string ValidateAndGenerateUserMessage(Terrain terrain)
-        {
-            if (terrain.terrainData.heightmapResolution < 1025)
-                return "Erosion tools work best with a heightmap resolution of 1025 or greater.";
-
-            return "";
-
-        }
-
-        #endregion
-
-        #region Analytics
+        //Analytics Setup
         private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
             new TerrainToolsAnalytics.BrushParameter<string>{Name = Erosion.Styles.m_MatPreset.text, Value = m_MatNames[m_Eroder.m_MatPreset]},
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_NumIterations.text, Value = m_Eroder.m_ThermalIterations},
@@ -276,6 +275,5 @@ namespace UnityEditor.Experimental.TerrainAPI
             new TerrainToolsAnalytics.BrushParameter<Vector2>{Name = Erosion.Styles.m_AngleOfRepose.text, Value = m_Eroder.m_AngleOfRepose},
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_AngleOfReposeJitter.text, Value = m_Eroder.m_ReposeJitter},
         };
-        #endregion
     }
 }

@@ -1,10 +1,10 @@
 ﻿using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     [System.Serializable]
-    public class HeightFilter : Filter
+    internal class HeightFilter : Filter
     {
         static readonly int RemapTexWidth = 1024;
 
@@ -40,7 +40,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             if (m_HeightCS == null)
             {
-                m_HeightCS = (ComputeShader)Resources.Load("Height");
+                m_HeightCS = ComputeUtility.GetShader("Height");
             }
             return m_HeightCS;
         }
@@ -62,7 +62,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 message = $"The current Graphics API does not support UAV resource access for GraphicsFormat.{filterContext.targetFormat}.";
                 return false;
             }
-            
+
             return true;
         }
 
@@ -91,7 +91,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 cs.SetFloat("EffectStrength", m_ConcavityStrength);
                 cs.SetVector("HeightRange", new Vector4(m_Height.x, m_Height.y, m_HeightFeather, 0.0f));
                 cs.Dispatch(kidx, source.width, source.height, 1);
-                
+
                 Graphics.Blit(destHandle, dest);
             }
         }

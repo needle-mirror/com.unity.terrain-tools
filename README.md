@@ -11,4 +11,4 @@ Terrain Tools Manual can be found here <https://docs.unity3d.com/Packages/com.un
 
 ## Requirements
 
-Terrain Tools is compatible with Unity Editor 2019.1 and later. 
+Terrain Tools is compatible with Unity Editor 2021.2 and later. 

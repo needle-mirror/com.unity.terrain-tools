@@ -2,15 +2,16 @@
 using System.IO;
 using UnityEditor;
 
-namespace Erosion {
-    #region ToolTips
-    public static class Styles {
+namespace UnityEditor.TerrainTools.Erosion
+{
+    internal static class Styles
+    {
         //Common
         public static GUIContent m_TimeDelta = EditorGUIUtility.TrTextContent("Time Interval (dt)", "Specifies the time interval used for each iteration of the simulation. A smaller value will produce a more " +
             "accurate result, but will have a smaller visual impact unless the iteration count is increased.");
         public static GUIContent m_NumIterations = EditorGUIUtility.TrTextContent("Iterations", "Specifies the number of erosion iterations to perform per brush stamp. " +
             "Increasing this value will run the simulation longer and produce more dramatic results at the expense of performance.");
-        
+
 
 
         //Hydro 
@@ -80,5 +81,4 @@ namespace Erosion {
         public static GUIContent m_RiverbedDissolve = EditorGUIUtility.TrTextContent("Riverbed Dissolution Rate", "A multiplier which controls the sediment dissolution rate where the slope of the height-field is near horizontal.");
         public static GUIContent m_RiverbedDeposit = EditorGUIUtility.TrTextContent("Riverbed Deposit Rate", "A multiplier which controls the sediment deposit rate where the slope of the height-field is near horizontal.");
     }
-    #endregion
 }

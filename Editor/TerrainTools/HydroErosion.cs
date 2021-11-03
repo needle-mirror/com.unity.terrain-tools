@@ -1,15 +1,16 @@
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using UnityEditor.ShortcutManagement;
-using Erosion;
+using UnityEditor.TerrainTools.Erosion;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    public class HydroErosionTool : TerrainPaintTool<HydroErosionTool>, IValidationTests
+    internal class HydroErosionTool : TerrainPaintTool<HydroErosionTool>
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Hydraulic Erosion Brush", typeof(TerrainToolShortcutContext), KeyCode.F4)]               // tells shortcut manager what to call the shortcut and what to pass as args
-        static void SelectShortcut(ShortcutArguments args) {
+        static void SelectShortcut(ShortcutArguments args)
+        {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;          // gets interface to modify state of TerrainTools
             context.SelectPaintTool<HydroErosionTool>();                                                                        // set active tool
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Hydraulic Erosion Brush");
@@ -18,11 +19,10 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI
-        {
+        private IBrushUIGroup commonUI {
             get
             {
-                if( m_commonUI == null )
+                if (m_commonUI == null)
                 {
                     m_commonUI = new DefaultBrushUIGroup("HydroErosion", UpdateAnalyticParameters);
                     m_commonUI.OnEnterToolMode();
@@ -34,23 +34,18 @@ namespace UnityEditor.Experimental.TerrainAPI
 
 
         NoiseSettings m_HardnessNoiseSettings = null;
-
-        #region Resources
-
         Erosion.HydraulicEroder m_Eroder = null;// = new Erosion.HydraulicEroder();
 
         Material m_Material = null;
-        Material GetPaintMaterial() {
+        Material GetPaintMaterial()
+        {
             if (m_Material == null)
                 m_Material = new Material(Shader.Find("Hidden/TerrainTools/SimpleHeightBlend"));
             return m_Material;
         }
 
-        #endregion
-
-        #region GUI
-
-        public override void OnEnable() {
+        public override void OnEnable()
+        {
             base.OnEnable();
             m_Eroder = new Erosion.HydraulicEroder();
             m_Eroder.OnEnable();
@@ -61,7 +56,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Erosion/Hydraulic";
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return "Hydraulic Erosion\nErodes the terrain according to a fluid simulation.";
         }
@@ -86,26 +81,31 @@ namespace UnityEditor.Experimental.TerrainAPI
                 return;
             }
 
-            using(IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "HydroErosion", editContext.brushTexture))
+            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "HydroErosion", editContext.brushTexture))
             {
-                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
+                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                
-                    brushRender.RenderBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
+                    var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
+                    Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
+                        editContext.brushTexture, brushXform, previewMaterial, 0);
+                    texelCtx.Cleanup();
                 }
             }
         }
-        
+
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            if (m_HardnessNoiseSettings == null) {
+            if (m_HardnessNoiseSettings == null)
+            {
                 m_HardnessNoiseSettings = ScriptableObject.CreateInstance<NoiseSettings>();
                 m_HardnessNoiseSettings.Reset();
             }
 
 
-            
+
             Erosion.HydraulicErosionSettings erosionSettings = ((Erosion.HydraulicEroder)m_Eroder).m_ErosionSettings;
 
             EditorGUI.BeginChangeCheck();
@@ -114,78 +114,67 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             m_Eroder.OnInspectorGUI(terrain, editContext);
 
-            commonUI.validationMessage = ValidateAndGenerateUserMessage(terrain);
+            commonUI.validationMessage = TerrainToolGUIHelper.ValidateAndGenerateSceneGUIMessage(terrain);
 
-            if (EditorGUI.EndChangeCheck()) {  
+            if (EditorGUI.EndChangeCheck())
+            {
                 Save(true);
                 TerrainToolsAnalytics.OnParameterChange();
             }
         }
-        #endregion
 
-        #region Paint
-
-        public override void OnEnterToolMode() {
+        public override void OnEnterToolMode()
+        {
             base.OnEnterToolMode();
             commonUI.OnEnterToolMode();
         }
 
-        public override void OnExitToolMode() {
+        public override void OnExitToolMode()
+        {
             base.OnExitToolMode();
             commonUI.OnExitToolMode();
         }
 
-        public override bool OnPaint(Terrain terrain, IOnPaint editContext) {
+        public override bool OnPaint(Terrain terrain, IOnPaint editContext)
+        {
             commonUI.OnPaint(terrain, editContext);
 
-            if(!commonUI.allowPaint) { return true; }
+            if (!commonUI.allowPaint)
+            { return true; }
 
-            using(IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "HydroErosion", editContext.brushTexture))
+            using (IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "HydroErosion", editContext.brushTexture))
             {
-                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
-                    PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
+                    var brushBounds = brushXform.GetBrushXYBounds();
+                    PaintContext paintContext = brushRender.AcquireHeightmap(true, brushBounds, 1);
                     paintContext.sourceRenderTexture.filterMode = FilterMode.Bilinear;
 
                     m_Eroder.inputTextures["Height"] = paintContext.sourceRenderTexture;
 
+                    var heightRT = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW((int)brushBounds.width, (int)brushBounds.height, 0, RenderTextureFormat.RFloat));
                     Vector2 texelSize = new Vector2(terrain.terrainData.size.x / terrain.terrainData.heightmapResolution,
                                                     terrain.terrainData.size.z / terrain.terrainData.heightmapResolution);
-                    m_Eroder.ErodeHeightmap(terrain.terrainData.size, brushXform.GetBrushXYBounds(), texelSize, commonUI.ModifierActive(BrushModifierKey.BRUSH_MOD_INVERT));
-                    m_Eroder.ErodeHeightmap(terrain.terrainData.size, brushXform.GetBrushXYBounds(), texelSize, Event.current.control);
+                    m_Eroder.ErodeHeightmap(heightRT, terrain.terrainData.size, brushXform.GetBrushXYBounds(), texelSize, Event.current.control); // TODO(wyatt): commonUI.ModifierActive(BrushModifierKey.BRUSH_MOD_INVERT)
 
                     Material mat = GetPaintMaterial();
                     var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
                     Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
                     Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, 0.0f, 0.0f);
                     mat.SetTexture("_BrushTex", editContext.brushTexture);
-                    mat.SetTexture("_NewHeightTex", m_Eroder.outputTextures["Height"]);
+                    mat.SetTexture("_NewHeightTex", heightRT);
                     mat.SetVector("_BrushParams", brushParams);
-                    
+
                     brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                     brushRender.RenderBrush(paintContext, mat, 0);
                     RTUtils.Release(brushMask);
+                    RTUtils.Release(heightRT);
                 }
             }
 
             return true;
         }
 
-        #endregion
-
-        #region IValidationTests
-        public virtual string ValidateAndGenerateUserMessage(Terrain terrain)
-        {
-            if (terrain.terrainData.heightmapResolution < 1025)
-                return "Erosion tools work best with a heightmap resolution of 1025 or greater.";
-
-            return "";
-
-        }
-
-        #endregion
-
-        #region Analytics
         private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters()
         {
             HydraulicErosionSettings settings = m_Eroder.m_ErosionSettings;
@@ -218,6 +207,5 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             };
         }
-        #endregion
     }
 }

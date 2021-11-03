@@ -1,14 +1,11 @@
-using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     /// <summary>
     /// Flags passed to NoiseSettingsGUI.OnGUI. Used to specify which portions of the Noise Settings GUI to draw.
     /// </summary>
-    public enum NoiseSettingsGUIFlags
+    internal enum NoiseSettingsGUIFlags
     {
         Preview = (1 << 0),
         Settings = (1 << 1),
@@ -18,7 +15,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     /// <summary>
     /// Class used to draw the GUI for Noise Settings.
     /// </summary>
-    public class NoiseSettingsGUI
+    internal class NoiseSettingsGUI
     {
         /// <summary>
         /// The SerializedObject for the NoiseSettings that this NoiseSettingsGUI instance is currently rendering the GUI for.

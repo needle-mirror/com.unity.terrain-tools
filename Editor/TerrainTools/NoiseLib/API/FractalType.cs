@@ -1,14 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     /// <summary>
     /// Struct that provides a definition for a FractalType implementation. Information in this
     /// struct is used during Shader generation and used to determine NoiseType and
     /// FractalType compatibilities.
     /// </summary>
-    public struct FractalTypeDescriptor
+    internal struct FractalTypeDescriptor
     {
         /// <summary>
         /// The name to be used for the FractalType
@@ -40,7 +40,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     /// Interface used for custom FractalType implementations. This should only be used by
     /// the FractalType< T > abstract class.
     /// </summary>
-    public interface IFractalType
+    internal interface IFractalType
     {
         /// <summary>
         /// Returns a descriptor struct defining the FractalType
@@ -101,7 +101,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     /// inherit from this in order to be considered a valid FractalType and included in the noise
     /// shader generation and available for use with the various noise tools.
     /// </summary>
-    public abstract class FractalType<T> : ScriptableSingleton<T>, IFractalType where T : FractalType<T>
+    internal abstract class FractalType<T> : ScriptableSingleton<T>, IFractalType where T : FractalType<T>
     {
         /// <summary>
         /// Returns a descriptor struct defining the FractalType
@@ -133,7 +133,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// changes from user interaction with the GUI
         /// </returns>
         public virtual string DoGUI(string serializedString) { return null; }
-        
+
         /// <summary>
         /// When overidden, converts an object representing the data for a FractalType implementation to a string.
         /// This is later serialized and stored in a NoiseSettings Asset.

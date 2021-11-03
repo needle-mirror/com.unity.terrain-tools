@@ -1,10 +1,10 @@
 ﻿using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     [System.Serializable]
-    public class ConcavityFilter : Filter
+    internal class ConcavityFilter : Filter
     {
         static readonly int RemapTexWidth = 1024;
 
@@ -35,7 +35,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                 Utility.AnimationCurveToRenderTexture(m_ConcavityRemapCurve, ref m_ConcavityRemapTex);
             }
-            
+
             return m_ConcavityRemapTex;
         }
 
@@ -45,7 +45,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             if (m_ConcavityCS == null)
             {
-                m_ConcavityCS = (ComputeShader)Resources.Load("Concavity");
+                m_ConcavityCS = ComputeUtility.GetShader("Concavity");
             }
             return m_ConcavityCS;
         }
@@ -67,7 +67,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 message = $"The current Graphics API does not support UAV resource access for GraphicsFormat.{filterContext.targetFormat}.";
                 return false;
             }
-            
+
             return true;
         }
 
@@ -96,7 +96,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 cs.SetFloat("EffectStrength", m_ConcavityStrength);
                 cs.SetVector("TextureResolution", new Vector4(source.width, source.height, m_ConcavityEpsilon, m_ConcavityScalar));
                 cs.Dispatch(kidx, source.width, source.height, 1);
-                
+
                 Graphics.Blit(destHandle, dest);
             }
         }
@@ -115,7 +115,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             ConcavityMode mode = m_ConcavityScalar > 0.0f ? ConcavityMode.Recessed : ConcavityMode.Exposed;
             Rect modeLabelRect = new Rect(rect.x, rect.y, labelWidth, EditorGUIUtility.singleLineHeight);
             GUI.Label(modeLabelRect, modeLabel);
-            switch(EditorGUI.EnumPopup(modeRect, mode)) {
+            switch (EditorGUI.EnumPopup(modeRect, mode))
+            {
                 case ConcavityMode.Recessed:
                     m_ConcavityScalar = 1.0f;
                     break;
@@ -143,7 +144,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             EditorGUI.BeginChangeCheck();
             m_ConcavityRemapCurve = EditorGUI.CurveField(curveRect, m_ConcavityRemapCurve);
-            if(EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck())
             {
                 var tex = GetRemapTexture();
                 Utility.AnimationCurveToRenderTexture(m_ConcavityRemapCurve, ref tex);

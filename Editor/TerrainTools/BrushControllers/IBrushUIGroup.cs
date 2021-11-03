@@ -1,30 +1,31 @@
-
 using System.Text;
 using UnityEngine;
+using UnityEngine.TerrainTools;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     public delegate void ResetBrush();
-	public interface IBrushUIGroup {
-		/// <summary>
-		/// The normalized size of the brush.
-		/// </summary>
-		float brushSize { get; }
-		
-		/// <summary>
-		/// The rotation of the brush (in degrees).
-		/// </summary>
-		float brushRotation { get; }
-		
-		/// <summary>
-		/// The normalized strength of the brush when applied.
-		/// </summary>
-		float brushStrength { get; }
-		
-		/// <summary>
-		/// The spacing used when applying certain brushes.
-		/// </summary>
-		float brushSpacing { get;  }
+    public interface IBrushUIGroup
+    {
+        /// <summary>
+        /// The normalized size of the brush.
+        /// </summary>
+        float brushSize { get; }
+
+        /// <summary>
+        /// The rotation of the brush (in degrees).
+        /// </summary>
+        float brushRotation { get; }
+
+        /// <summary>
+        /// The normalized strength of the brush when applied.
+        /// </summary>
+        float brushStrength { get; }
+
+        /// <summary>
+        /// The spacing used when applying certain brushes.
+        /// </summary>
+        float brushSpacing { get; }
 
 
         string validationMessage { get; set; }
@@ -32,25 +33,25 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// Are we allowed to paint with this brush?
         /// </summary>
         bool allowPaint { get; }
-		
-		bool InvertStrength { get; }
-		bool isInUse { get; }
+
+        bool InvertStrength { get; }
+        bool isInUse { get; }
 
         FilterStackView brushMaskFilterStackView { get; }
         FilterStack brushMaskFilterStack { get; }
 
 
         Terrain terrainUnderCursor { get; }
-		bool isRaycastHitUnderCursorValid { get; }
-		RaycastHit raycastHitUnderCursor { get; }
+        bool isRaycastHitUnderCursorValid { get; }
+        RaycastHit raycastHitUnderCursor { get; }
 
-		void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext);
-		void OnEnterToolMode();
-		void OnExitToolMode();
-		void OnPaint(Terrain terrain, IOnPaint editContext);
-		void OnSceneGUI2D(Terrain terrain, IOnSceneGUI editContext);
+        void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext);
+        void OnEnterToolMode();
+        void OnExitToolMode();
+        void OnPaint(Terrain terrain, IOnPaint editContext);
+        void OnSceneGUI2D(Terrain terrain, IOnSceneGUI editContext);
         void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext);
-		void AppendBrushInfo(Terrain terrain, IOnSceneGUI editContext, StringBuilder builder);
+        void AppendBrushInfo(Terrain terrain, IOnSceneGUI editContext, StringBuilder builder);
         void GetBrushMask(RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture);
         void GetBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture);
         void GetBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture, Vector3 position, float scale, float rotation);
@@ -63,8 +64,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// <param name="uv">The UV co-ordinate passed in transformed into the UV co-ordinate relative to the scattered terrain.</param>
         /// <returns>"true" if we scattered to a terrain, "false" if we fell off ALL terrains.</returns>
         bool ScatterBrushStamp(ref Terrain terrain, ref Vector2 uv);
-		
-		bool ModifierActive(BrushModifierKey k);
 
-	}
+        bool ModifierActive(BrushModifierKey k);
+
+    }
 }

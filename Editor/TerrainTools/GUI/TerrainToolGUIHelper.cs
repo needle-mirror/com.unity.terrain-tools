@@ -1,23 +1,14 @@
 using System;
 using UnityEngine;
 using UnityEditor;
-using UnityEngine.Rendering;
-using UnityEditor.Experimental.TerrainAPI;
-using Erosion;
-
-public interface IFloatMinMaxSlider {
-    float value { get; set; }
-    float minValue { get; set; }
-    float maxValue { get; set; }
-
-    void DrawInspectorGUI();
-}
+using UnityEditor.TerrainTools;
 
 [Serializable]
-public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
+internal class TerrainFloatMinMaxValue
+{
     [SerializeField]
     private bool m_Expanded = false;
-    [SerializeField] 
+    [SerializeField]
     private float m_Value = 0.0f;
     [SerializeField]
     private float m_MinValue = 0.0f;
@@ -31,32 +22,31 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
     private float m_MinClampValue = 0.0f;
     [SerializeField]
     private float m_MaxClampValue = 1.0f;
-    
+
     [SerializeField]
     private float m_MouseSensitivity = 1.0f;
     [SerializeField]
     private bool m_WrapValue = false;
 
     private bool m_EditRange = true;
-    private readonly bool m_EditSensitivity = true;
 
     private readonly GUIContent m_Label;
-
-    public float value
-    {
+    private static GUIContent m_MinLabel = new GUIContent("Min", "Minimum value of range");
+    private static GUIContent m_MaxLabel = new GUIContent("Max", "Maximum value of range");
+    public float value {
         get => m_Value;
         set
         {
-            if(m_WrapValue)
+            if (m_WrapValue)
             {
                 float difference = m_MaxValue - m_MinValue;
 
-                while(value < m_MinValue)
+                while (value < m_MinValue)
                 {
                     value += difference;
                 }
 
-                while(value > m_MaxValue)
+                while (value > m_MaxValue)
                 {
                     value -= difference;
                 }
@@ -68,10 +58,9 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
                 m_Value = Mathf.Clamp(value, m_MinValue, m_MaxValue);
             }
         }
-    }
+        }
 
-    public float minValue
-    {
+    public float minValue {
         get => m_MinValue;
         set
         {
@@ -92,10 +81,9 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
                 m_MaxValue = m_MinValue;
             }
         }
-    }
+        }
 
-    public float maxValue
-    {
+    public float maxValue {
         get => m_MaxValue;
         set
         {
@@ -116,9 +104,8 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
                 m_MinValue = m_MaxValue;
             }
         }
-    }
-    public bool shouldClampMin
-    {
+        }
+    public bool shouldClampMin {
         get => m_shouldClampMin;
         set
         {
@@ -128,9 +115,8 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
                 minClamp = m_MinClampValue;
             }
         }
-    }
-    public float minClamp
-    {
+        }
+    public float minClamp {
         get => m_MinClampValue;
         set
         {
@@ -145,10 +131,9 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
                 minValue = m_MinClampValue;
             }
         }
-    }
+        }
 
-    public bool shouldClampMax
-    {
+    public bool shouldClampMax {
         get => m_shouldClampMax;
         set
         {
@@ -158,9 +143,8 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
                 maxClamp = m_MaxClampValue;
             }
         }
-    }
-    public float maxClamp
-    {
+        }
+    public float maxClamp {
         get => m_MaxClampValue;
         set
         {
@@ -175,88 +159,127 @@ public class TerrainFloatMinMaxValue : IFloatMinMaxSlider {
                 maxValue = m_MaxClampValue;
             }
         }
-    }
-    
+        }
+
+
     public float mouseSensitivity {
         get => m_MouseSensitivity;
         set => m_MouseSensitivity = value;
-    }
+        }
 
-    public bool wrapValue
-    {
+    public bool wrapValue {
         get => m_WrapValue;
         set => m_WrapValue = value;
-    }
+        }
 
-    public TerrainFloatMinMaxValue(GUIContent label, float value, float minValue, float maxValue, bool editRange = true) {
+    public bool expanded {
+        get => m_Expanded;
+        }
+
+
+    public TerrainFloatMinMaxValue(GUIContent label, float value, float minValue, float maxValue, bool editRange = true)
+    {
         m_Expanded = false;
         m_Value = value;
         m_MinValue = minValue;
         m_MaxValue = maxValue;
         m_EditRange = editRange;
-        m_EditSensitivity = false;
         m_Label = label;
     }
 
-    public TerrainFloatMinMaxValue(GUIContent label, float value, float minValue, float maxValue, bool editRange, float mouseSensitivity) : this(label, value, minValue, maxValue, editRange) {
-        m_MouseSensitivity = mouseSensitivity;
-        m_EditSensitivity = true;
-    }
-
-    public void DrawInspectorGUI() {
+    public void DrawInspectorGUI()
+    {
         float fieldWidth = EditorGUIUtility.fieldWidth;
         float indentOffset = EditorGUI.indentLevel * 15f;
+        // reset indent level so we can do all our calculations without it
+        int originalIndent = EditorGUI.indentLevel;
+        EditorGUI.indentLevel = 0;
+        float paddingAmount = 5f;
         Rect totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
-        Rect labelRect = new Rect(totalRect.x, totalRect.y, EditorGUIUtility.labelWidth - indentOffset, totalRect.height);
+        totalRect.x += indentOffset;
+        totalRect.width -= indentOffset;
 
-		Rect foldoutRect = new Rect(labelRect.xMax - 15, labelRect.y, 15, totalRect.height);
-        Rect sliderRect = new Rect(foldoutRect.xMax, foldoutRect.y, totalRect.width - labelRect.width, totalRect.height);
+
+        Rect labelRect = new Rect(totalRect.x + 15, totalRect.y, EditorGUIUtility.labelWidth - 15, totalRect.height);
+        // if we don't allow range editing, just reserve a padding value for this foldout
+        Rect foldoutRect = new Rect(totalRect.x, labelRect.y, 15, totalRect.height);
+        // the implementation of the slider uses a hardcoded 5 value to define the padding between it and the float value
+        Rect sliderRect = new Rect(labelRect.xMax, foldoutRect.y, totalRect.width - labelRect.width - fieldWidth - foldoutRect.width - paddingAmount, totalRect.height);
+        Rect floatFieldRect = new Rect(sliderRect.xMax + paddingAmount, sliderRect.y, fieldWidth, totalRect.height);
         int rectHeight = 1;
-        
+
         EditorGUI.PrefixLabel(labelRect, m_Label);
-        m_Value = EditorGUI.Slider(sliderRect, m_Value, minValue, maxValue);
-        if (m_EditRange)
+        m_Value = GUI.HorizontalSlider(sliderRect, m_Value, minValue, maxValue);
+        m_Value = Mathf.Clamp(EditorGUI.FloatField(floatFieldRect, m_Value), minValue, maxValue);
+
+        m_Expanded = GUI.Toggle(foldoutRect, m_Expanded, GUIContent.none, EditorStyles.foldout);
+        // allow the label to be used as a toggle as well
+        if (Event.current != null
+                        && Event.current.type == EventType.MouseDown
+                        && labelRect.Contains(Event.current.mousePosition))
         {
-			m_Expanded = GUI.Toggle(foldoutRect, m_Expanded, GUIContent.none, EditorStyles.foldout);
-			if (m_Expanded)
+            m_Expanded = !m_Expanded;
+            Event.current.Use();
+        }
+        if (m_Expanded && m_EditRange)
+        {
+            // vertical padding
+            GUILayoutUtility.GetRect(1, 3);
+            // minimum possible display width
+            var labelPadding = 7.0f;
+            var maxLabelWidth = EditorStyles.label.CalcSize(m_MaxLabel).x;
+            var minLabelWidth = EditorStyles.label.CalcSize(m_MinLabel).x;
+            var totalWidth = EditorGUIUtility.fieldWidth + labelPadding + maxLabelWidth + minLabelWidth;
+            totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
+            // if the width would cause the range editor to clip, force it to break past the indent
+            if (sliderRect.width >= totalWidth)
             {
-                if (m_EditRange)
-                {
-                    totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
-                    Rect rangeLabelRect = new Rect(sliderRect.x, sliderRect.yMax, sliderRect.width / 2, totalRect.height);
-                    Rect minRect = new Rect(totalRect.xMax - 2 * fieldWidth + indentOffset, totalRect.y, fieldWidth, totalRect.height);
-                    Rect maxRect = new Rect(totalRect.xMax - fieldWidth, totalRect.y, fieldWidth, totalRect.height);
+                totalRect.xMin = sliderRect.xMin;
+            }
+            else
+            {
+                totalRect.xMin += totalRect.width - ((EditorGUIUtility.fieldWidth + labelPadding) * 2.0f + maxLabelWidth + minLabelWidth);
+            }
+            Rect minRect = new Rect(totalRect.xMin, totalRect.y, totalRect.width / 2, totalRect.height);
+            Rect minLabelRect = new Rect(minRect);
+            minLabelRect.width = minLabelWidth;
+            minRect.xMin += minLabelRect.width + labelPadding;
+            minRect.width = fieldWidth;
 
-                    EditorGUI.PrefixLabel(rangeLabelRect, new GUIContent("Range:"));
-                    minValue = EditorGUI.FloatField(minRect, minValue);
-                    maxValue = EditorGUI.FloatField(maxRect, maxValue);
-                }
+            Rect maxRect = new Rect(totalRect.xMin + totalRect.width / 2, totalRect.y, totalRect.width / 2, totalRect.height);
+            Rect maxLabelRect = new Rect(minRect);
+            maxRect.xMax = totalRect.xMax;
+            maxRect.xMin = totalRect.xMax - fieldWidth;
+            maxLabelRect.xMin = maxRect.xMin - maxLabelWidth - labelPadding;
 
-                if (m_EditSensitivity)
-                {
-                    totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
-                    Rect sensitivityLabelRect = new Rect(sliderRect.x, totalRect.y, sliderRect.width / 2, totalRect.height);
-                    Rect sensitivityValueRect = new Rect(totalRect.xMax - fieldWidth, totalRect.y, fieldWidth, totalRect.height);
-
-                    EditorGUI.PrefixLabel(sensitivityLabelRect, new GUIContent("Mouse Sensitivity:"));
-                    m_MouseSensitivity = EditorGUI.FloatField(sensitivityValueRect, m_MouseSensitivity);
-                }
+            EditorGUI.BeginChangeCheck();
+            EditorGUI.PrefixLabel(minLabelRect, m_MinLabel);
+            minValue = EditorGUI.FloatField(minRect, minValue);
+            EditorGUI.PrefixLabel(maxLabelRect, m_MaxLabel);
+            maxValue = EditorGUI.FloatField(maxRect, maxValue);
+            if (EditorGUI.EndChangeCheck())
+            {
+                m_Value = Mathf.Clamp(m_Value, minValue, maxValue);
             }
         }
+        // if the min/max values are the same, then auto open the range edit
+        // when the user attempts to change something
+        if (m_EditRange && minValue.Equals(maxValue)
+            && Event.current != null && Event.current.type == EventType.MouseDown
+            && totalRect.Contains(Event.current.mousePosition))
+        {
+            m_Expanded = true;
+            Event.current.Use();
+        }
         GUILayoutUtility.GetRect(1, rectHeight);
+        EditorGUI.indentLevel = originalIndent;
+        GUILayoutUtility.GetRect(1, 2);
     }
-}
-
-public interface IIntMinMaxSlider {
-    int value { get; set; }
-    int minValue { get; set; }
-    int maxValue { get; set; }
-
-    void DrawInspectorGUI();
 }
 
 [Serializable]
-public class TerrainIntMinMaxValue : IIntMinMaxSlider {
+internal class TerrainIntMinMaxValue
+{
     [SerializeField]
     private bool m_Expanded = false;
     [SerializeField]
@@ -265,27 +288,29 @@ public class TerrainIntMinMaxValue : IIntMinMaxSlider {
     private int m_MinValue = 0;
     [SerializeField]
     private int m_MaxValue = 10;
-    
-    private GUIContent m_Label;
 
+    private GUIContent m_Label;
+    private static GUIContent m_MinLabel = new GUIContent("Min", "Minimum Range Value");
+    private static GUIContent m_MaxLabel = new GUIContent("Max", "Maximum Range Value");
     public int value {
         get => m_Value;
         set => m_Value = Mathf.Clamp(value, m_MinValue, m_MaxValue);
-    }
+        }
     public int minValue {
         get => m_MinValue;
         set => m_MinValue = value;
-    }
+        }
     public int maxValue {
         get => m_MaxValue;
         set => m_MaxValue = value;
-    }
+        }
     public GUIContent label {
         get => m_Label;
         set => m_Label = value;
-    }
+        }
 
-    public TerrainIntMinMaxValue(GUIContent label, int value, int minValue, int maxValue) {
+    public TerrainIntMinMaxValue(GUIContent label, int value, int minValue, int maxValue)
+    {
         m_Expanded = false;
         m_Value = value;
         m_MinValue = minValue;
@@ -293,35 +318,104 @@ public class TerrainIntMinMaxValue : IIntMinMaxSlider {
         m_Label = label;
     }
 
-    public void DrawInspectorGUI() {
+    public void DrawInspectorGUI()
+    {
         float fieldWidth = EditorGUIUtility.fieldWidth;
         float indentOffset = EditorGUI.indentLevel * 15f;
+        // reset indent level so we can do all our calculations without it
+        int originalIndent = EditorGUI.indentLevel;
+        EditorGUI.indentLevel = 0;
+        float paddingAmount = 5f;
         Rect totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
-        Rect labelRect = new Rect(totalRect.x, totalRect.y, EditorGUIUtility.labelWidth - indentOffset, totalRect.height);
+        totalRect.x += indentOffset;
+        totalRect.width -= indentOffset;
 
-        Rect foldoutRect = new Rect(labelRect.xMax - 8, labelRect.y, 8, totalRect.height);
-        Rect sliderRect = new Rect(foldoutRect.xMax, labelRect.y, totalRect.width - labelRect.width, totalRect.height);
+
+        Rect labelRect = new Rect(totalRect.x + 15, totalRect.y, EditorGUIUtility.labelWidth - 15, totalRect.height);
+        // if we don't allow range editing, just reserve a padding value for this foldout
+        Rect foldoutRect = new Rect(totalRect.x, labelRect.y, 15, totalRect.height);
+        // the implementation of the slider uses a hardcoded 5 value to define the padding between it and the float value
+        Rect sliderRect = new Rect(labelRect.xMax, foldoutRect.y, totalRect.width - labelRect.width - fieldWidth - foldoutRect.width - paddingAmount, totalRect.height);
+        Rect floatFieldRect = new Rect(sliderRect.xMax + paddingAmount, sliderRect.y, fieldWidth, totalRect.height);
+        int rectHeight = 1;
 
         EditorGUI.PrefixLabel(labelRect, m_Label);
-        m_Value = EditorGUI.IntSlider(sliderRect, m_Value, minValue, maxValue);
+        m_Value = Mathf.RoundToInt(GUI.HorizontalSlider(sliderRect, (float)m_Value, minValue, maxValue));
+        m_Value = (int)Mathf.Clamp(EditorGUI.FloatField(floatFieldRect, m_Value), minValue, maxValue);
 
-		m_Expanded = GUI.Toggle(foldoutRect, m_Expanded, GUIContent.none, EditorStyles.foldout);
-		if (m_Expanded) {
-            totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
-            Rect rangeLabelRect = new Rect(sliderRect.x, sliderRect.yMax, sliderRect.width / 2, totalRect.height);
-            Rect minRect = new Rect(totalRect.xMax - 2 * fieldWidth + indentOffset, totalRect.y, fieldWidth, totalRect.height);
-            Rect maxRect = new Rect(totalRect.xMax - fieldWidth, totalRect.y, fieldWidth, totalRect.height);
-
-            EditorGUI.PrefixLabel(rangeLabelRect, new GUIContent("Range:"));
-            m_MinValue = EditorGUI.IntField(minRect, m_MinValue);
-            m_MaxValue = EditorGUI.IntField(maxRect, m_MaxValue);
+        m_Expanded = GUI.Toggle(foldoutRect, m_Expanded, GUIContent.none, EditorStyles.foldout);
+        // allow the label to be used as a toggle as well
+        if (Event.current != null
+                        && Event.current.type == EventType.MouseDown
+                        && labelRect.Contains(Event.current.mousePosition))
+        {
+            m_Expanded = !m_Expanded;
+            Event.current.Use();
         }
+
+        if (m_Expanded)
+        {
+            // vertical padding
+            GUILayoutUtility.GetRect(1, 3);
+            // minimum possible display width
+            var labelPadding = 7.0f;
+            var maxLabelWidth = EditorStyles.label.CalcSize(m_MaxLabel).x;
+            var minLabelWidth = EditorStyles.label.CalcSize(m_MinLabel).x;
+            var totalWidth = EditorGUIUtility.fieldWidth + labelPadding + maxLabelWidth + minLabelWidth;
+            totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
+            // if the width would cause the range editor to clip, force it to break past the indent
+            if (sliderRect.width >= totalWidth)
+            {
+                totalRect.xMin = sliderRect.xMin;
+            }
+            else
+            {
+                totalRect.xMin += totalRect.width - ((EditorGUIUtility.fieldWidth + labelPadding) * 2.0f + maxLabelWidth + minLabelWidth);
+            }
+            Rect minRect = new Rect(totalRect.xMin, totalRect.y, totalRect.width / 2, totalRect.height);
+            Rect minLabelRect = new Rect(minRect);
+            minLabelRect.width = minLabelWidth;
+            minRect.xMin += minLabelRect.width + labelPadding;
+            minRect.width = fieldWidth;
+
+            Rect maxRect = new Rect(totalRect.xMin + totalRect.width / 2, totalRect.y, totalRect.width / 2, totalRect.height);
+            Rect maxLabelRect = new Rect(minRect);
+            maxRect.xMax = totalRect.xMax;
+            maxRect.xMin = totalRect.xMax - fieldWidth;
+            maxLabelRect.xMin = maxRect.xMin - maxLabelWidth - labelPadding;
+
+            EditorGUI.BeginChangeCheck();
+            EditorGUI.PrefixLabel(minLabelRect, m_MinLabel);
+            minValue = EditorGUI.IntField(minRect, minValue);
+            EditorGUI.PrefixLabel(maxLabelRect, m_MaxLabel);
+            maxValue = EditorGUI.IntField(maxRect, maxValue);
+            if (EditorGUI.EndChangeCheck())
+            {
+                maxValue = Mathf.Max(minValue, maxValue);
+                minValue = Mathf.Min(minValue, maxValue);
+                value = Mathf.Clamp(value, minValue, maxValue);
+            }
+        }
+        // if the min/max values are the same, then auto open the range edit
+        // when the user attempts to change something
+        if (minValue.Equals(maxValue)
+            && Event.current != null && Event.current.type == EventType.MouseDown
+            && totalRect.Contains(Event.current.mousePosition))
+        {
+            m_Expanded = true;
+            Event.current.Use();
+        }
+        GUILayoutUtility.GetRect(1, rectHeight);
+        EditorGUI.indentLevel = originalIndent;
         GUILayoutUtility.GetRect(1, 2);
     }
 }
 
-public static class TerrainToolGUIHelper
+internal static class TerrainToolGUIHelper
 {
+
+    public delegate void ResetTool();
+
     public static GUILayoutOption dontExpandWidth = GUILayout.ExpandWidth(false);
 
     public static GUIStyle toolbarNormalStyle = null;
@@ -331,7 +425,8 @@ public static class TerrainToolGUIHelper
     public static GUIStyle midToolbarActiveStyle = null;
     public static GUIStyle rightToolbarStyle = null;
 
-    static TerrainToolGUIHelper() {
+    static TerrainToolGUIHelper()
+    {
         toolbarNormalStyle = new GUIStyle("ToolbarButton");
         toolbarActiveStyle = new GUIStyle("ToolbarButton");
         toolbarActiveStyle.normal.background = toolbarNormalStyle.hover.background;
@@ -364,11 +459,11 @@ public static class TerrainToolGUIHelper
         var toggleRect = foldoutRect;
         toggleRect.x = foldoutRect.xMax + 4f;
 
-		// Background rect should be full-width
-		backgroundRect.xMin = 16f * EditorGUI.indentLevel;
-		backgroundRect.xMin = 0;
+        // Background rect should be full-width
+        backgroundRect.xMin = 16f * EditorGUI.indentLevel;
+        backgroundRect.xMin = 0;
 
-		backgroundRect.width += 4f;
+        backgroundRect.width += 4f;
 
         // Background
         float backgroundTint = EditorGUIUtility.isProSkin ? 0.1f : 1f;
@@ -402,60 +497,60 @@ public static class TerrainToolGUIHelper
         return state;
     }
 
-	public static bool DrawToggleHeaderFoldout(GUIContent title, bool state, ref bool enabled, float padding)
-	{
-		var backgroundRect = GUILayoutUtility.GetRect(1f, 17f);
+    public static bool DrawToggleHeaderFoldout(GUIContent title, bool state, ref bool enabled, float padding)
+    {
+        var backgroundRect = GUILayoutUtility.GetRect(1f, 17f);
 
-		var labelRect = backgroundRect;
-		labelRect.xMin += 32f;
-		labelRect.xMax -= 20f;
+        var labelRect = backgroundRect;
+        labelRect.xMin += 32f;
+        labelRect.xMax -= 20f;
 
-		var foldoutRect = backgroundRect;
-		foldoutRect.xMin += padding;
-		foldoutRect.y += 1f;
-		foldoutRect.width = 13f;
-		foldoutRect.height = 13f;
+        var foldoutRect = backgroundRect;
+        foldoutRect.xMin += padding;
+        foldoutRect.y += 1f;
+        foldoutRect.width = 13f;
+        foldoutRect.height = 13f;
 
-		var toggleRect = foldoutRect;
-		toggleRect.x = foldoutRect.xMax + 4f;
+        var toggleRect = foldoutRect;
+        toggleRect.x = foldoutRect.xMax + 4f;
 
-		// Background rect should be full-width
-		backgroundRect.xMin = padding;
-		backgroundRect.xMin = 0;
+        // Background rect should be full-width
+        backgroundRect.xMin = padding;
+        backgroundRect.xMin = 0;
 
-		backgroundRect.width += 4f;
+        backgroundRect.width += 4f;
 
-		// Background
-		float backgroundTint = EditorGUIUtility.isProSkin ? 0.1f : 1f;
-		EditorGUI.DrawRect(backgroundRect, new Color(backgroundTint, backgroundTint, backgroundTint, 0.2f));
+        // Background
+        float backgroundTint = EditorGUIUtility.isProSkin ? 0.1f : 1f;
+        EditorGUI.DrawRect(backgroundRect, new Color(backgroundTint, backgroundTint, backgroundTint, 0.2f));
 
-		// Title
-		EditorGUI.LabelField(labelRect, title, EditorStyles.boldLabel);
+        // Title
+        EditorGUI.LabelField(labelRect, title, EditorStyles.boldLabel);
 
-		// Active checkbox
-		state = GUI.Toggle(foldoutRect, state, GUIContent.none, EditorStyles.foldout);
+        // Active checkbox
+        state = GUI.Toggle(foldoutRect, state, GUIContent.none, EditorStyles.foldout);
 
-		// Enabled toggle
-		enabled = GUI.Toggle(toggleRect, enabled, GUIContent.none, EditorStyles.toggle);
+        // Enabled toggle
+        enabled = GUI.Toggle(toggleRect, enabled, GUIContent.none, EditorStyles.toggle);
 
-		var e = Event.current;
+        var e = Event.current;
 
-		if (e.type == EventType.MouseDown && e.button == 0)
-		{
-			if (toggleRect.Contains(e.mousePosition))
-			{
-				enabled = !enabled;
-				e.Use();
-			}
-			else if (backgroundRect.Contains(e.mousePosition))
-			{
-				state = !state;
-				e.Use();
-			}
-		}
+        if (e.type == EventType.MouseDown && e.button == 0)
+        {
+            if (toggleRect.Contains(e.mousePosition))
+            {
+                enabled = !enabled;
+                e.Use();
+            }
+            else if (backgroundRect.Contains(e.mousePosition))
+            {
+                state = !state;
+                e.Use();
+            }
+        }
 
-		return state;
-	}
+        return state;
+    }
 
     public static bool DrawHeaderFoldout(GUIContent title, bool state)
     {
@@ -485,7 +580,7 @@ public static class TerrainToolGUIHelper
         // Active checkbox
         state = GUI.Toggle(foldoutRect, state, GUIContent.none, EditorStyles.foldout);
 
-        var e = Event.current; 
+        var e = Event.current;
 
         if (e.type == EventType.MouseDown && backgroundRect.Contains(e.mousePosition) && e.button == 0)
         {
@@ -496,16 +591,16 @@ public static class TerrainToolGUIHelper
         return state;
     }
 
-	public static bool DrawSimpleFoldout(GUIContent label, bool state, int indentLevel = 0, float width = 10f)
-	{
-		EditorGUILayout.BeginHorizontal();
-		GUILayout.Space(indentLevel * 15);
-		state = GUILayout.Toggle(state, GUIContent.none, EditorStyles.foldout, GUILayout.Width(width));
-		GUILayout.Label(label);
-		EditorGUILayout.EndHorizontal();
+    public static bool DrawSimpleFoldout(GUIContent label, bool state, int indentLevel = 0, float width = 10f)
+    {
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Space(indentLevel * 15);
+        state = GUILayout.Toggle(state, GUIContent.none, EditorStyles.foldout, GUILayout.Width(width));
+        GUILayout.Label(label);
+        EditorGUILayout.EndHorizontal();
 
-		return state;
-	}
+        return state;
+    }
 
     public static bool DrawHeaderFoldoutForErosion(GUIContent title, bool state, ResetTool resetMethod)
     {
@@ -635,25 +730,6 @@ public static class TerrainToolGUIHelper
         return state;
     }
 
-    public static bool DrawToggleFoldout(SerializedProperty prop, GUIContent title, Action func, bool toggled)
-    {
-        bool state = prop.isExpanded;
-        state = DrawToggleHeaderFoldout(title, state, ref toggled);
-
-        if (state)
-        {
-            EditorGUI.indentLevel++;
-            if (func != null)
-            {
-                func();
-            }
-            --EditorGUI.indentLevel;
-        }
-
-        prop.isExpanded = state;
-
-        return toggled;
-    }
 
     public static bool DrawFoldout(bool expanded, GUIContent title, Action func)
     {
@@ -692,14 +768,18 @@ public static class TerrainToolGUIHelper
         Vector2 buttonSize = skin.CalcSize(toolbarContent[0]);
 
 
-        for (int i = 0; i < toolbarContent.Length; ++i) {
+        for (int i = 0; i < toolbarContent.Length; ++i)
+        {
             buttonSize = skin.CalcSize(toolbarContent[i]);
 
-            if (buttonPos.x + buttonSize.x > maxRect.xMax) {
+            if (buttonPos.x + buttonSize.x > maxRect.xMax)
+            {
                 buttonPos.x = maxRect.xMin;
                 buttonPos.y += buttonSize.y;
                 linecount++;
-            } else {
+            }
+            else
+            {
                 totalRect.xMax = Mathf.Max(buttonPos.x + buttonSize.x, totalRect.xMax);
             }
 
@@ -723,25 +803,33 @@ public static class TerrainToolGUIHelper
 
         Vector2 buttonPos = new Vector2(toolbarRect.xMin, toolbarRect.yMin);
 
-        for (int i = 0; i < toolbarContent.Length; ++i) {
+        for (int i = 0; i < toolbarContent.Length; ++i)
+        {
             int enumVal = enumValues[i];
             bool wasActive = (selection & enumVal) == enumVal && enumVal != 0;
             GUIStyle skin = GetToolbarToggleStyle(wasActive);
             Vector2 buttonSize = skin.CalcSize(toolbarContent[i]);
 
-            if (buttonPos.x + buttonSize.x > toolbarRect.xMax) {
+            if (buttonPos.x + buttonSize.x > toolbarRect.xMax)
+            {
                 buttonPos.x = toolbarRect.xMin;
                 buttonPos.y += buttonSize.y;
             }
 
             Rect buttonRect = new Rect(buttonPos.x, buttonPos.y, buttonSize.x, buttonSize.y);
 
-            if (GUI.Button(buttonRect, toolbarContent[i], skin)) {
-                if (enumVal == 0) {
+            if (GUI.Button(buttonRect, toolbarContent[i], skin))
+            {
+                if (enumVal == 0)
+                {
                     selection = enumVal;
-                } else if (enumVal == ~0) {
+                }
+                else if (enumVal == ~0)
+                {
                     selection = wasActive ? ~enumVal : enumVal;
-                } else {
+                }
+                else
+                {
                     selection = wasActive ? (selection & ~enumVal) : (selection | enumVal);
                 }
             }
@@ -764,7 +852,8 @@ public static class TerrainToolGUIHelper
         bool newLine = true;
         //int skinID = 0; // left = 0, 1 = mid, 2 = right
 
-        for (int i = 0; i < toolbarContent.Length; ++i) {
+        for (int i = 0; i < toolbarContent.Length; ++i)
+        {
             int enumVal = enumValues[i];
             bool wasActive = (selection & enumVal) == enumVal && enumVal != 0;
             GUIStyle skin = GetToolbarToggleStyle(wasActive);
@@ -775,25 +864,33 @@ public static class TerrainToolGUIHelper
 
             totalRect.yMax = Mathf.Max(currPos.y + size.y, totalRect.yMax);
 
-            if (currPos.x + size.x > widthRect.xMax) {
+            if (currPos.x + size.x > widthRect.xMax)
+            {
                 currPos.x = widthRect.xMin;
                 currPos.y += size.y;
                 newLine = true;
             }
 
-            if (newLine) {
+            if (newLine)
+            {
                 // reserve a rect for the line
                 Rect reservedRect = GUILayoutUtility.GetRect(widthRect.width, size.y);
                 // GUI.Box(reservedRect, GUIContent.none);
                 newLine = false;
             }
 
-            if (GUI.Button(buttonRect, toolbarContent[i], skin)) {
-                if (enumVal == 0) {
+            if (GUI.Button(buttonRect, toolbarContent[i], skin))
+            {
+                if (enumVal == 0)
+                {
                     selection = enumVal;
-                } else if (enumVal == ~0) {
+                }
+                else if (enumVal == ~0)
+                {
                     selection = wasActive ? ~enumVal : enumVal;
-                } else {
+                }
+                else
+                {
                     selection = wasActive ? (selection & ~enumVal) : (selection | enumVal);
                 }
             }
@@ -802,7 +899,8 @@ public static class TerrainToolGUIHelper
         return selection;
     }
 
-    public static int MinMaxSliderInt(GUIContent label, int value, ref int minValue, ref int maxValue) {
+    public static int MinMaxSliderInt(GUIContent label, int value, ref int minValue, ref int maxValue)
+    {
         float fieldWidth = EditorGUIUtility.fieldWidth;
         float indentOffset = EditorGUI.indentLevel * 15f;
         Rect totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
@@ -824,7 +922,8 @@ public static class TerrainToolGUIHelper
         return value;
     }
 
-    public static float MinMaxSlider(GUIContent label, float value, ref float minValue, ref float maxValue) {
+    public static float MinMaxSlider(GUIContent label, float value, ref float minValue, ref float maxValue)
+    {
         float fieldWidth = EditorGUIUtility.fieldWidth;
         float indentOffset = EditorGUI.indentLevel * 15f;
         Rect totalRect = GUILayoutUtility.GetRect(1, EditorGUIUtility.singleLineHeight);
@@ -834,7 +933,7 @@ public static class TerrainToolGUIHelper
 
         Rect minLabelRect = new Rect(sliderRect.xMax + 4 - indentOffset, labelRect.y, fieldWidth, totalRect.height);
         Rect minRect = new Rect(minLabelRect.xMax, labelRect.y, fieldWidth / 2 + indentOffset, totalRect.height);
-        
+
         Rect maxRect = new Rect(minRect.xMax - indentOffset, sliderRect.y, fieldWidth / 2 + indentOffset, totalRect.height);
 
         EditorGUI.PrefixLabel(labelRect, label);
@@ -844,5 +943,57 @@ public static class TerrainToolGUIHelper
         maxValue = EditorGUI.FloatField(maxRect, maxValue);
 
         return value;
+    }
+
+    private static GUIContent s_TempGUIContent = new GUIContent();
+
+    public static GUIContent TempContent(string str)
+    {
+        s_TempGUIContent.image = null;
+        s_TempGUIContent.text = str;
+        s_TempGUIContent.tooltip = null;
+        return s_TempGUIContent;
+    }
+
+    /// <summary>
+    /// Terrain editor hash.
+    /// </summary>
+    public static int s_TerrainEditorHash = "TerrainEditor".GetHashCode();
+
+    /// <summary>
+    /// Percentage based slider GUI, used on brush spacing, scatter and strength controls.
+    /// </summary>
+    /// <param name="content">The style and content of the slider GUI.</param>
+    /// <param name="valueInPercent">The current value in percentage.</param>
+    /// <param name="minVal">The minimum value of the slider.</param>
+    /// <param name="maxVal">The maximum value of the slider.</param>
+    /// <returns>Return the current slider GUI value in percentage.</returns>
+    public static float PercentSlider(GUIContent content, float valueInPercent, float minVal, float maxVal)
+    {
+        EditorGUI.BeginChangeCheck();
+        float v = EditorGUILayout.Slider(content, Mathf.Round(valueInPercent * 100f), minVal * 100f, maxVal * 100f);
+
+        if (EditorGUI.EndChangeCheck())
+        {
+            return v / 100f;
+        }
+        return valueInPercent;
+    }
+
+    /// <summary>
+    /// Check heightmap resolution on terrain and add an extra line of message in scene GUI if size smaller than 1025.
+    /// Currently used in all Erosion brushes, since resolution sensitive.
+    /// </summary>
+    /// <param name="terrain">The terrain tile in check.</param>
+    /// <returns>Return the user message string.</returns>
+    public static string ValidateAndGenerateSceneGUIMessage(Terrain terrain)
+    {
+        if (terrain.terrainData.heightmapResolution < 1025)
+        {
+            return "Erosion tools work best with \n" +
+                "a heightmap resolution of 1025 or greater.";
+        }            
+
+        return "";
     }
 }

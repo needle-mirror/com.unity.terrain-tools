@@ -1,32 +1,27 @@
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEditor;
 using System;
 using System.Collections.Generic;
 using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     /// <summary>
     /// A utility class for rendering noise defined by NoiseSettings into various Texture types.
     /// </summary>
-    public static class NoiseUtils
+    internal static class NoiseUtils
     {
-        // private static readonly int kAllSlices = -1;
-
         /// <summary>
         /// Number of passes that the builtin noise blit shader contains. The passes include
         /// one for blitting 2D noise and one for blitting 3D noise.
         /// </summary>
         public static readonly int kNumBlitPasses = 2;
 
-        private static bool supportsCopyTexture3D
-        {
+        private static bool supportsCopyTexture3D {
             get { return (SystemInfo.copyTextureSupport & CopyTextureSupport.Copy3D) != 0; }
         }
 
-        private static bool supportsCopyTextureRTToTexture
-        {
+        private static bool supportsCopyTextureRTToTexture {
             get { return (SystemInfo.copyTextureSupport & CopyTextureSupport.RTToTexture) != 0; }
         }
 
@@ -49,7 +44,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         static NoiseUtils()
         {
-            
         }
 
         /*=========================================================================
@@ -62,7 +56,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         private static Material GetDefaultPreviewMaterial()
         {
-            if(s_defaultPreviewMaterial == null)
+            if (s_defaultPreviewMaterial == null)
             {
                 s_defaultPreviewMaterial = new Material(Shader.Find("Hidden/TerrainTools/Noise/Preview"));
             }
@@ -90,14 +84,14 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// <returns> A reference to the default blit Material for the specified NoiseSettings instance </returns>
         public static Material GetDefaultBlitMaterial(NoiseSettings noise)
         {
-            IFractalType fractal = NoiseLib.GetFractalTypeInstance( noise.domainSettings.fractalTypeName );
-            
-            if(fractal == null)
+            IFractalType fractal = NoiseLib.GetFractalTypeInstance(noise.domainSettings.fractalTypeName);
+
+            if (fractal == null)
             {
                 return null;
             }
 
-            return GetDefaultBlitMaterial( fractal.GetType() );
+            return GetDefaultBlitMaterial(fractal.GetType());
         }
 
         /*=========================================================================
@@ -131,10 +125,10 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// <param name="mat"> The material to be used in the blit operation </param>
         public static void BlitPreview2D(RenderTexture src, RenderTexture dest, Material mat)
         {
-            if(mat == null)
+            if (mat == null)
             {
                 Debug.LogError("NoiseUtils::BlitPreview2D: Provided preview material is NULL");
-                
+
                 Graphics.Blit(src, dest);
 
                 return;
@@ -156,14 +150,14 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// <param name = "dest"> The destination RenderTexture that the noise will be rendered into. </param>
         public static void Blit2D(NoiseSettings noise, RenderTexture dest)
         {
-            Material mat = GetDefaultBlitMaterial( noise );
-            
-            if( mat == null )
+            Material mat = GetDefaultBlitMaterial(noise);
+
+            if (mat == null)
             {
                 return;
             }
 
-            Blit2D( noise, dest, mat );
+            Blit2D(noise, dest, mat);
         }
 
         /// <summary>
@@ -175,14 +169,14 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// <param name = "mat"> The Material to be used for rendering the noise </param>
         public static void Blit2D(NoiseSettings noise, RenderTexture dest, Material mat)
         {
-            int pass = NoiseLib.GetNoiseIndex( noise.domainSettings.noiseTypeName );
+            int pass = NoiseLib.GetNoiseIndex(noise.domainSettings.noiseTypeName);
 
-            INTERNAL_Blit2D( noise, dest, mat, pass * kNumBlitPasses + 0 );
+            INTERNAL_Blit2D(noise, dest, mat, pass * kNumBlitPasses + 0);
         }
 
         private static void INTERNAL_Blit2D(NoiseSettings noise, RenderTexture dest, Material mat, int pass)
         {
-            noise.SetupMaterial( mat );
+            noise.SetupMaterial(mat);
 
             var tempRT = RenderTexture.GetTemporary(dest.descriptor);
             var prev = RenderTexture.active;
@@ -206,9 +200,9 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             // Debug.Assert(dest.dimension == UnityEngine.Rendering.TextureDimension.Tex3D,
             //              "NoiseUtils::Blit3D: Provided RenderTexture is not a 3D texture. You have to manually create it as a volume");
-            
+
             // Material mat = GetDefaultBlitMaterial(noise);
-            
+
             // if(mat == null)
             // {
             //     return;
@@ -240,17 +234,17 @@ namespace UnityEditor.Experimental.TerrainAPI
                                                 TextureCreationFlags flags = TextureCreationFlags.None)
         {
             RenderTexture rt = RenderTexture.GetTemporary(width, height, 0, GraphicsFormat.R16_UNorm);
-            Texture2D texture = new Texture2D( width, height, format, flags );
+            Texture2D texture = new Texture2D(width, height, format, flags);
 
             Blit2D(noise, rt);
 
             RenderTexture.active = rt;
 
-            bool mipChain = ( (int)flags & (int)TextureCreationFlags.MipChain ) != 0;
-            texture.ReadPixels( new Rect( 0, 0, width, height ), 0, 0, mipChain );
+            bool mipChain = ((int)flags & (int)TextureCreationFlags.MipChain) != 0;
+            texture.ReadPixels(new Rect(0, 0, width, height), 0, 0, mipChain);
 
             RenderTexture.active = null;
-            RenderTexture.ReleaseTemporary( rt );
+            RenderTexture.ReleaseTemporary(rt);
 
             return texture;
         }
@@ -274,9 +268,9 @@ namespace UnityEditor.Experimental.TerrainAPI
                                                 GraphicsFormat format = GraphicsFormat.R16_UNorm,
                                                 TextureCreationFlags flags = TextureCreationFlags.None)
         {
-            Material mat = GetDefaultBlitMaterial( noise );
-            
-            if(mat == null)
+            Material mat = GetDefaultBlitMaterial(noise);
+
+            if (mat == null)
             {
                 return null;
             }
@@ -293,7 +287,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             List<Color[]> sliceColors = new List<Color[]>(depth);
 
-            for(int i = 0; i < depth; ++i)
+            for (int i = 0; i < depth; ++i)
             {
                 float uvy = ((float)i + 0.5f) / depth;
                 mat.SetFloat("_UVY", uvy);
@@ -307,16 +301,16 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             int pixPerSlice = width * height;
 
-            for(int sliceID = 0; sliceID < sliceColors.Count; ++sliceID)
+            for (int sliceID = 0; sliceID < sliceColors.Count; ++sliceID)
             {
-                for(int pixelID = 0; pixelID < sliceColors[sliceID].Length; ++pixelID)
+                for (int pixelID = 0; pixelID < sliceColors[sliceID].Length; ++pixelID)
                 {
                     int pixel = (pixPerSlice * sliceID) + pixelID;
                     colors[pixel] = sliceColors[sliceID][pixelID];
                 }
             }
 
-            bool mipChain = ( (int)flags & (int)TextureCreationFlags.MipChain ) != 0;
+            bool mipChain = ((int)flags & (int)TextureCreationFlags.MipChain) != 0;
 
             Texture3D texture = new Texture3D(width, height, depth, format, flags);
 
@@ -324,7 +318,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             texture.Apply(mipChain);
 
             RenderTexture.active = null;
-            RenderTexture.ReleaseTemporary( sliceRT );
+            RenderTexture.ReleaseTemporary(sliceRT);
 
             return texture;
         }

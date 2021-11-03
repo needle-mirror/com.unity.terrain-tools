@@ -1,12 +1,11 @@
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
-using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    public class NoiseHeightTool : TerrainPaintTool<NoiseHeightTool>
+    internal class NoiseHeightTool : TerrainPaintTool<NoiseHeightTool>
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Noise Height Brush", typeof(TerrainToolShortcutContext))]               // tells shortcut manager what to call the shortcut and what to pass as args
@@ -43,19 +42,21 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         private NoiseToolSettings m_toolSettings;
         private RenderTexture m_previewRT;
-        
+
         private float m_simulationTime;
         private bool m_showToolGUI = true;
         private bool m_liveUpdate;
         private bool m_simulate;
+        private float m_lastRotation;
+        private Vector3 m_lastBrushPosition;
+        private Matrix4x4   m_noiseToWorld;
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI
-        {
+        private IBrushUIGroup commonUI {
             get
             {
-                if( m_commonUI == null )
+                if (m_commonUI == null)
                 {
                     LoadSettings();
                     m_commonUI = new DefaultBrushUIGroup("NoiseHeightTool", UpdateAnalyticParameters);
@@ -67,11 +68,10 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         private NoiseSettings m_noiseSettingsIfNull;
-        private NoiseSettings noiseSettingsIfNull
-        {
+        private NoiseSettings noiseSettingsIfNull {
             get
             {
-                if(m_noiseSettingsIfNull == null)
+                if (m_noiseSettingsIfNull == null)
                 {
                     m_noiseSettingsIfNull = ScriptableObject.CreateInstance<NoiseSettings>();
                 }
@@ -80,23 +80,21 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
 
-        private string getNoiseSettingsPath
-        {
+        private string getNoiseSettingsPath {
             get { return Application.persistentDataPath + "/TerrainTools_NoiseHeightTool_NoiseSettings.noisesettings"; }
         }
 
         private NoiseSettings m_activeNoiseSettingsProfile;
         private NoiseSettings m_noiseSettings;
-        private NoiseSettings noiseSettings
-        {
+        private NoiseSettings noiseSettings {
             get
             {
-                if(m_noiseSettings == null)
+                if (m_noiseSettings == null)
                 {
-                    if( System.IO.File.Exists( getNoiseSettingsPath ) )
+                    if (System.IO.File.Exists(getNoiseSettingsPath))
                     {
-                        UnityEngine.Object[] obs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget( getNoiseSettingsPath );
-                        m_noiseSettings = obs[ 0 ] as NoiseSettings;
+                        UnityEngine.Object[] obs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget(getNoiseSettingsPath);
+                        m_noiseSettings = obs[0] as NoiseSettings;
                     }
                     else
                     {
@@ -110,27 +108,36 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         private NoiseSettingsGUI m_noiseSettingsGUI;
-        private NoiseSettingsGUI noiseSettingsGUI
-        {
+        private NoiseSettingsGUI noiseSettingsGUI {
             get
             {
-                if(m_noiseSettingsGUI == null)
+                if (m_noiseSettingsGUI == null)
                 {
                     m_noiseSettingsGUI = new NoiseSettingsGUI();
                 }
 
-                if( m_noiseSettingsGUI.target == null || m_noiseSettingsGUI.serializedNoise.targetObject == null )
+                if (m_noiseSettingsGUI.target == null || m_noiseSettingsGUI.serializedNoise.targetObject == null)
                 {
-                    m_noiseSettingsGUI.Init( noiseSettings );
+                    m_noiseSettingsGUI.Init(noiseSettings);
                 }
 
                 return m_noiseSettingsGUI;
             }
         }
-        
+
+        /// <summary>
+        /// Allows overriding for unit testing purposes
+        /// </summary>
+        /// <param name="uiGroup"></param>
+        internal void ChangeCommonUI(IBrushUIGroup uiGroup)
+        {
+            m_commonUI = uiGroup;
+        }
+
         public override void OnEnterToolMode()
         {
             base.OnEnterToolMode();
+            m_noiseToWorld = Matrix4x4.identity;
             commonUI.OnEnterToolMode();
         }
 
@@ -140,64 +147,11 @@ namespace UnityEditor.Experimental.TerrainAPI
             commonUI.OnExitToolMode();
         }
 
-        // brush pivot noise rotation from chris
-        /* 
-            private Vector2 m_brushPosWS;
-            private float m_lastBrushRotation;
-            private float m_brushRotation;
-
-            // definition of noise space (in world space XZ)
-            private Vector2 noiseOrigin = new Vector2(0.0f, 0.0f);
-            private Vector2 noiseU = new Vector2(1.0f, 0.0f);
-            private Vector2 noiseV { get { return new Vector2(-noiseU.y, noiseU.x); } }
-
-            void OnUpdateBrushRotation()
-            {
-                if (m_brushRotation != m_lastBrushRotation)
-                {
-                    // user must have rotated!
-                    RotateNoiseSpaceAroundPoint(m_brushPosWS, m_brushRotation - m_lastBrushRotation);
-                    m_lastBrushRotation = m_brushRotation;
-                }
-            }
-
-            void RotateNoiseSpaceAroundPoint(Vector2 brushXZinWS, float degrees)
-            {
-                Quaternion rotQ = Quaternion.AngleAxis( degrees, Vector3.up );
-                Matrix4x4 rot = Matrix4x4.Rotate(rotQ);
-
-                Vector4 o = new Vector4(noiseOrigin.x, 0, noiseOrigin.y, 0);
-                o = rot * (o - new Vector4(brushXZinWS.x, 0, brushXZinWS.y, 0)  + new Vector4(brushXZinWS.x, 0, brushXZinWS.y, 0));
-
-                Vector4 u = new Vector4(noiseU.x, 0, noiseU.y, 0);
-                u = rot * u;
-
-                noiseOrigin = new Vector2(o.x, o.z);
-                noiseU = new Vector2(u.x, u.z);
-
-                noiseU = noiseU.normalized;
-            }
-
-            Vector2 NoiseSpaceToWorldSpace(Vector2 noiseSpace)
-            {
-                return noiseOrigin + noiseU * noiseSpace.x + noiseV * noiseSpace.y;
-            }
-
-            Vector2 WorldSpaceToNoiseSpace(Vector2 worldSpace)
-            {
-                float noiseX = Vector3.Dot(worldSpace - noiseOrigin, noiseU);
-                float noiseZ = Vector3.Dot(worldSpace - noiseOrigin, noiseV);
-
-                return new Vector2(noiseX, noiseZ);
-            }
-        */
-
         private static Material m_paintMaterial;
-        private static Material paintMaterial
-        {
+        private static Material paintMaterial {
             get
             {
-                if(m_paintMaterial == null)
+                if (m_paintMaterial == null)
                 {
                     m_paintMaterial = new Material(Shader.Find("Hidden/TerrainTools/NoiseHeightTool"));
                 }
@@ -210,23 +164,18 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             EditorApplication.update -= NoiseSimulationCB;
         }
-        
+
         public override string GetName()
         {
             return "Sculpt/Noise";
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return "Tool for painting height based on noise";
         }
 
-        //===================================================================================================
-        //
-        //      NOISE TOOL GUI
-        //
-        //===================================================================================================
-
+        // GUI
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             EditorGUI.BeginChangeCheck();
@@ -238,7 +187,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                 m_showToolGUI = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.noiseToolSettings, m_showToolGUI);
 
-                if(m_showToolGUI)
+                if (m_showToolGUI)
                 {
                     GUILayout.Space(12);
 
@@ -255,7 +204,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                     //     {
                     //         FillTile(terrain);
                     //     }
-                        
+
                     //     if(GUILayout.Button(Styles.fillGroup))
                     //     {
                     //         FillAllTiles(terrain);
@@ -271,12 +220,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                     {
                         EditorGUILayout.PrefixLabel(Styles.coordSpace);
 
-                        if(GUILayout.Toggle(m_toolSettings.coordSpace == CoordinateSpace.World, Styles.worldSpace, GUI.skin.button))
+                        if (GUILayout.Toggle(m_toolSettings.coordSpace == CoordinateSpace.World, Styles.worldSpace, GUI.skin.button))
                         {
                             m_toolSettings.coordSpace = CoordinateSpace.World;
                         }
 
-                        if(GUILayout.Toggle(m_toolSettings.coordSpace == CoordinateSpace.Brush, Styles.brushSpace, GUI.skin.button))
+                        if (GUILayout.Toggle(m_toolSettings.coordSpace == CoordinateSpace.Brush, Styles.brushSpace, GUI.skin.button))
                         {
                             m_toolSettings.coordSpace = CoordinateSpace.Brush;
                         }
@@ -285,10 +234,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                     GUILayout.Space(12);
 
-                    // DoSimulationControls();
-                    
                     DoNoiseSettingsObjectField();
-                
+
                     noiseSettingsGUI.OnGUI(NoiseSettingsGUIFlags.Settings);
 
                     GUILayout.Space(12);
@@ -349,9 +296,9 @@ namespace UnityEditor.Experimental.TerrainAPI
             NoiseSettings settingsProfile = m_activeNoiseSettingsProfile;
             settingsProfile = (NoiseSettings)EditorGUI.ObjectField(fieldRect, settingsProfile, typeof(NoiseSettings), false);
 
-            if(m_activeNoiseSettingsProfile != null)
+            if (m_activeNoiseSettingsProfile != null)
             {
-                if(GUI.Button(resetButtonRect, Styles.revert))
+                if (GUI.Button(resetButtonRect, Styles.revert))
                 {
                     Undo.RecordObject(noiseSettings, "Noise Settings - Revert");
 
@@ -360,7 +307,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
             else
             {
-                if(GUI.Button(resetButtonRect, Styles.reset))
+                if (GUI.Button(resetButtonRect, Styles.reset))
                 {
                     Undo.RecordObject(noiseSettings, "Noise Settings - Reset");
 
@@ -368,20 +315,20 @@ namespace UnityEditor.Experimental.TerrainAPI
                 }
             }
 
-            if(profileInUse && GUI.Button(saveButtonRect, Styles.apply))
+            if (profileInUse && GUI.Button(saveButtonRect, Styles.apply))
             {
-                Undo.RecordObject( m_activeNoiseSettingsProfile, "NoiseHeightTool - Apply Settings" );
+                Undo.RecordObject(m_activeNoiseSettingsProfile, "NoiseHeightTool - Apply Settings");
                 m_activeNoiseSettingsProfile.CopySerialized(noiseSettings);
             }
 
-            if(GUI.Button(saveAsButtonRect, Styles.saveAs))
+            if (GUI.Button(saveAsButtonRect, Styles.saveAs))
             {
                 string path = EditorUtility.SaveFilePanel("Save Noise Settings",
                                                           Application.dataPath,
                                                           "New Noise Settings.asset",
                                                           "asset");
                 // saving to project's asset folder
-                if(path.StartsWith(Application.dataPath))
+                if (path.StartsWith(Application.dataPath))
                 {
                     // TODO(wyatt): need to check if this works with different locales/languages. folder might not be
                     //              called "Assets" in non-English Editor builds
@@ -391,7 +338,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                     settingsProfile.CopySerialized(noiseSettings);
                 }
                 // saving asset somewhere else. why? dunno!
-                else if(!string.IsNullOrEmpty(path))
+                else if (!string.IsNullOrEmpty(path))
                 {
                     Debug.LogError("Invalid path specified for creation of new Noise Settings asset. Must be a valid path within the current Unity project's Assets folder/data path.");
                 }
@@ -404,7 +351,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 if (settingsProfile == null)
                 {
-                    noiseSettings.Copy( noiseSettingsIfNull );
+                    noiseSettings.Copy(noiseSettingsIfNull);
                 }
                 else
                 {
@@ -423,12 +370,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             GUILayout.Space(12);
         }
 
-        //===================================================================================================
-        //
-        //      FILL TILES
-        //
-        //===================================================================================================
-
+        // Fill Tiles
         private void FillAllTiles(Terrain terrain)
         {
             Terrain[] terrains = TerrainFillUtility.GetTerrainsInGroup(terrain);
@@ -470,7 +412,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             // // use this value to remap noise values
             // material.SetVector( "_WorldHeightRemap", m_toolSettings.worldHeightRemap );
-            
+
             // // assign matrices
             // material.SetMatrix( "_b2w",             b2w );
             // material.SetMatrix( "_b2w_Translation", translation );
@@ -484,7 +426,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             // material.SetMatrix( "_w2b_Scale",       scale.inverse );
 
             // noiseSettings.SetupMaterial(material);
-            
+
             // BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, Vector2.one * .5f,
             //                                     Mathf.Min(terrain.terrainData.size.x, terrain.terrainData.size.z), 0);
             // PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
@@ -497,62 +439,57 @@ namespace UnityEditor.Experimental.TerrainAPI
             // terrain.ApplyDelayedHeightmapModification();
         }
 
-        //===================================================================================================
-        //
-        //      APPLY BRUSH
-        //
-        //===================================================================================================
-
         private void ApplyBrushInternal(Terrain terrain, PaintContext ctx, BrushTransform brushXform, Vector3 brushPosWS,
                                         float brushRotation, float brushStrength, float brushSize, Texture brushTexture)
         {
             var prevRT = RenderTexture.active;
 
-            brushPosWS.y = 0;
+            var brushPositionOffset = brushPosWS - m_lastBrushPosition;
+            m_lastBrushPosition = brushPosWS;
+            brushPositionOffset.y = 0;
 
-            /*
-                blit steps
-                1. blit noise to intermediate RT, this includes all the noise transformations and filters,
-                using the appropriate noise material. do this with NoiseUtils.Blit2D?
-                2. use that noise texture and mult it with brushmask to paint height on terrain
-            */
+            var rotationDelta = brushRotation - m_lastRotation;
+            m_lastRotation = brushRotation;
+
+            //blit steps
+            //1. blit noise to intermediate RT, this includes all the noise transformations and filters,
+            //using the appropriate noise material. do this with NoiseUtils.Blit2D?
+            //2. use that noise texture and mult it with brushmask to paint height on terrain
 
             // TODO(wyatt): remove magic number and tie it into NoiseSettingsGUI preview size somehow
             float previewSize = 1 / 512f;
 
             // get proper noise material from current noise settings
             NoiseSettings noiseSettings = this.noiseSettings;
-            Material matNoise = NoiseUtils.GetDefaultBlitMaterial( noiseSettings );
+            Material matNoise = NoiseUtils.GetDefaultBlitMaterial(noiseSettings);
 
             // setup the noise material with values in noise settings
-            noiseSettings.SetupMaterial( matNoise );
-
-            // convert brushRotation to radians
-            brushRotation *= Mathf.PI / 180;
+            noiseSettings.SetupMaterial(matNoise);
 
             // change pos and scale so they match the noiseSettings preview
-            bool isWorldSpace = ( m_toolSettings.coordSpace == CoordinateSpace.World );
+            bool isWorldSpace = (m_toolSettings.coordSpace == CoordinateSpace.World);
             brushSize = isWorldSpace ? brushSize * previewSize : 1;
-            brushPosWS = isWorldSpace ? brushPosWS * previewSize : Vector3.zero;
+            brushPositionOffset = isWorldSpace ? brushPositionOffset * previewSize : Vector3.zero;
+            var brushTransform = NoiseFilter.GetBrushTransform(rotationDelta, brushSize);
+            var scaleMultiplier = new Vector2(
+                1.0f / (brushSize / brushTransform.GetBrushXYBounds().width),
+                1.0f / (brushSize / brushTransform.GetBrushXYBounds().height));
 
             // // override noise transform
-            var rotQ              = Quaternion.AngleAxis( -brushRotation, Vector3.up );
-            var translation       = Matrix4x4.Translate( brushPosWS );
-            var rotation          = Matrix4x4.Rotate( rotQ );
-            var scale             = Matrix4x4.Scale( Vector3.one * brushSize );
-            var noiseToWorld      = translation * scale;
+            Quaternion rotQ = Quaternion.AngleAxis(-rotationDelta, Vector3.up);
+            // accumulate transformation delta
+            m_noiseToWorld *= Matrix4x4.TRS(brushPositionOffset, rotQ, Vector3.one);
 
-            matNoise.SetMatrix( NoiseSettings.ShaderStrings.transform,
-                                noiseSettings.trs * noiseToWorld );
+            matNoise.SetMatrix(NoiseSettings.ShaderStrings.transform, noiseSettings.trs * m_noiseToWorld * Matrix4x4.Scale(new Vector3(scaleMultiplier.x, 1.0f, scaleMultiplier.y) * brushSize));
 
-            var noisePass = NoiseUtils.kNumBlitPasses * NoiseLib.GetNoiseIndex( noiseSettings.domainSettings.noiseTypeName );
+            var noisePass = NoiseUtils.kNumBlitPasses * NoiseLib.GetNoiseIndex(noiseSettings.domainSettings.noiseTypeName);
 
             // render the noise field to a texture
             // TODO(wyatt): Handle the 3D case. Would need to blit to Volume Texture
             var rtDesc = ctx.destinationRenderTexture.descriptor;
             rtDesc.graphicsFormat = NoiseUtils.singleChannelFormat;
             rtDesc.sRGB = false;
-            var noiseRT = RTUtils.GetTempHandle( rtDesc );
+            var noiseRT = RTUtils.GetTempHandle(rtDesc);
             RenderTexture.active = noiseRT; // keep this
             Graphics.Blit(noiseRT, matNoise, noisePass);
 
@@ -560,18 +497,18 @@ namespace UnityEditor.Experimental.TerrainAPI
             Material matFinal = paintMaterial;
             var brushMask = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
             Utility.SetFilterRT(commonUI, ctx.sourceRenderTexture, brushMask, matFinal);
-            TerrainPaintUtility.SetupTerrainToolMaterialProperties( ctx, brushXform, matFinal );
+            TerrainPaintUtility.SetupTerrainToolMaterialProperties(ctx, brushXform, matFinal);
             // set brush params
-            Vector4 brushParams = new Vector4( 0.01f * brushStrength, 0.0f, brushSize, 1 / brushSize );
-            matFinal.SetVector( "_BrushParams", brushParams );
-            matFinal.SetTexture( "_BrushTex", brushTexture );
-            matFinal.SetTexture( "_NoiseTex", noiseRT );
-            matFinal.SetVector( "_WorldHeightRemap", m_toolSettings.worldHeightRemap );
-            Graphics.Blit( ctx.sourceRenderTexture, ctx.destinationRenderTexture, matFinal, 0 );
+            Vector4 brushParams = new Vector4(0.01f * brushStrength, 0.0f, brushSize, 1 / brushSize);
+            matFinal.SetVector("_BrushParams", brushParams);
+            matFinal.SetTexture("_BrushTex", brushTexture);
+            matFinal.SetTexture("_NoiseTex", noiseRT);
+            matFinal.SetVector("_WorldHeightRemap", m_toolSettings.worldHeightRemap);
+            Graphics.Blit(ctx.sourceRenderTexture, ctx.destinationRenderTexture, matFinal, 0);
 
-            RTUtils.Release( noiseRT );
-            RTUtils.Release( brushMask );
-            
+            RTUtils.Release(noiseRT);
+            RTUtils.Release(brushMask);
+
             RenderTexture.active = prevRT;
         }
 
@@ -595,35 +532,36 @@ namespace UnityEditor.Experimental.TerrainAPI
                 return;
             }
 
-            using( IBrushRenderPreviewUnderCursor brushPreview =
-                    new BrushRenderPreviewUIGroupUnderCursor(commonUI, "NoiseHeightTool", editContext.brushTexture) )
+            using (IBrushRenderPreviewUnderCursor brushPreview =
+                    new BrushRenderPreviewUIGroupUnderCursor(commonUI, "NoiseHeightTool", editContext.brushTexture))
             {
-                
+
                 float brushSize = commonUI.brushSize;
-                float brushRotation = commonUI.brushRotation;
                 float brushStrength = Event.current.control ? -commonUI.brushStrength : commonUI.brushStrength;
                 Vector3 brushPosWS = commonUI.raycastHitUnderCursor.point;
 
-                BrushTransform brushXform;
-                brushPreview.CalculateBrushTransform(out brushXform);
+                brushPreview.CalculateBrushTransform(out var brushXform);
 
                 PaintContext ctx = brushPreview.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                
-                Material material = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
-                brushPreview.RenderBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushXform, material, 0);
+
+                Material previewMaterial = Utility.GetDefaultPreviewMaterial();
+                var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
+                Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
+                    editContext.brushTexture, brushXform, previewMaterial, 0);
 
                 ApplyBrushInternal(terrain, ctx, brushXform, brushPosWS, commonUI.brushRotation,
                                     brushStrength, brushSize, editContext.brushTexture);
 
-                TerrainPaintUtility.SetupTerrainToolMaterialProperties(ctx, brushXform, material);
+                TerrainPaintUtility.SetupTerrainToolMaterialProperties(ctx, brushXform, previewMaterial);
 
                 // restore old render target
                 RenderTexture.active = ctx.oldRenderTexture;
 
-                material.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
-
-                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture,
-                                                            editContext.brushTexture, brushXform, material, 1);
+                previewMaterial.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
+                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.DestinationRenderTexture,
+                    editContext.brushTexture, brushXform, previewMaterial, 1);
+                texelCtx.Cleanup();
 
                 TerrainPaintUtility.ReleaseContextResources(ctx);
             }
@@ -644,18 +582,22 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 Vector2 uv = editContext.uv;
 
-                if(commonUI.ScatterBrushStamp(ref terrain, ref uv))
+                if (commonUI.ScatterBrushStamp(ref terrain, ref uv))
                 {
                     BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, uv, commonUI.brushSize, commonUI.brushRotation);
                     PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds());
-                    float brushStrength = Event.current.control ? -commonUI.brushStrength : commonUI.brushStrength;
-                    
+                    float brushStrength = commonUI.brushStrength;
+                    if (Event.current != null && Event.current.control)
+                    {
+                        brushStrength = -commonUI.brushStrength;
+                    }
+
                     Vector3 brushPosWS = WSPosFromTerrainUV(terrain, uv);
 
                     ApplyBrushInternal(terrain, paintContext, brushXform, brushPosWS, commonUI.brushRotation,
                                         brushStrength, commonUI.brushSize, editContext.brushTexture);
 
-                    TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Noise");   
+                    TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Noise");
                 }
             }
             editContext.Repaint(RepaintFlags.UI);
@@ -668,12 +610,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             SceneView.RepaintAll();
         }
 
-        //===================================================================================================
-        //
-        //      TOOL SETTINGS I/O
-        //
-        //===================================================================================================
-
+        // Tool Settings I/O
         const string kToolSettingsName = "Unity.TerrainTools.NoiseHeightTool";
 
         private void LoadSettings()
@@ -683,10 +620,10 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             string settingsStr = EditorPrefs.GetString(kToolSettingsName, JsonUtility.ToJson(defaultSettings));
             m_toolSettings = JsonUtility.FromJson<NoiseToolSettings>(settingsStr);
-            
+
             string assetPath = AssetDatabase.GUIDToAssetPath(m_toolSettings.noiseAssetGUID);
 
-            if(!string.IsNullOrEmpty(assetPath))
+            if (!string.IsNullOrEmpty(assetPath))
             {
                 m_activeNoiseSettingsProfile = AssetDatabase.LoadAssetAtPath<NoiseSettings>(assetPath);
             }
@@ -694,30 +631,24 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         private void SaveSettings()
         {
-            if(m_activeNoiseSettingsProfile != null)
+            if (m_activeNoiseSettingsProfile != null)
             {
                 string assetPath = AssetDatabase.GetAssetPath(m_activeNoiseSettingsProfile);
 
-                if(!string.IsNullOrEmpty(assetPath))
+                if (!string.IsNullOrEmpty(assetPath))
                 {
                     m_toolSettings.noiseAssetGUID = AssetDatabase.AssetPathToGUID(assetPath);
                 }
             }
-            
+
             string settingsStr = JsonUtility.ToJson(m_toolSettings);
             EditorPrefs.SetString(kToolSettingsName, settingsStr);
 
             // save the noise settings
-            UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget( new UnityEngine.Object[] { m_noiseSettings }, getNoiseSettingsPath, true );
+            UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(new UnityEngine.Object[] { m_noiseSettings }, getNoiseSettingsPath, true);
         }
 
-
-        //===================================================================================================
-        //
-        //      GUI CONTENT AND STYLES
-        //
-        //===================================================================================================
-
+        // GUI Content and Styles
         static class Styles
         {
             public static GUILayoutOption dontExpandWidth = GUILayout.ExpandWidth(false);
@@ -732,7 +663,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             public static GUIContent apply = EditorGUIUtility.TrTextContent("Apply", "Apply the current Noise Settings to the Asset that is saved on disk");
             public static GUIContent saveAs = EditorGUIUtility.TrTextContent("Save As", "Open a window allowing you to save the current Noise Settings to a new Asset on disk");
             public static GUIContent liveUpdate = EditorGUIUtility.TrTextContent("Live Update:");
-            public static GUIContent noiseSettingsProfile = EditorGUIUtility.TrTextContent("Noise Settings Profile", "The Noise Settings Asset to use when generating Noise for this tool");
+            public static GUIContent noiseSettingsProfile = EditorGUIUtility.TrTextContent("Noise Settings Asset", "The Noise Settings Asset to use when generating Noise for this tool");
             public static GUIContent coordSpace = EditorGUIUtility.TrTextContent("Coordinate Space", "The coordinate space that is used when calculating positions fed into the Noise generation");
             public static GUIContent worldSpace = EditorGUIUtility.TrTextContent("World", "World space positions are used to generate Noise");
             public static GUIContent brushSpace = EditorGUIUtility.TrTextContent("Brush", "Brush space positions based on Brush UVs are used to generate Noise");
@@ -740,7 +671,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             public static GUIContent noiseToolSettings = EditorGUIUtility.TrTextContent("Noise Height Tool Settings", "Settings for the Noise Height Tool");
         }
 
-        #region Analytics
+        //Analytics Setup
         List<TerrainToolsAnalytics.IBrushParameter> m_AnalyticsData = new List<TerrainToolsAnalytics.IBrushParameter>();
         private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters()
         {
@@ -780,7 +711,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             //Add fractal specific settings to be sent as analytic data
             IFractalType fractalType = NoiseLib.GetFractalTypeInstance(fractalTypeName.stringValue);
-            switch(domainSettings.FindPropertyRelative("fractalTypeName").stringValue)
+            switch (domainSettings.FindPropertyRelative("fractalTypeName").stringValue)
             {
                 case "Fbm":
                     FbmFractalType.FbmFractalInput fbmFractalSettings = (FbmFractalType.FbmFractalInput)fractalType.FromSerializedString(fractalTypeParams.stringValue);
@@ -799,7 +730,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 case "Strata":
                     StrataFractalType.StrataFractalInput strataFractalSettings = (StrataFractalType.StrataFractalInput)fractalType.FromSerializedString(fractalTypeParams.stringValue);
                     m_AnalyticsData.AddRange(new TerrainToolsAnalytics.IBrushParameter[]{
-                        
+
                         new TerrainToolsAnalytics.BrushParameter<float>{Name = StrataFractalType.Styles.octaves.text, Value = strataFractalSettings.octaves},
                         new TerrainToolsAnalytics.BrushParameter<float>{Name = StrataFractalType.Styles.amplitude.text, Value = strataFractalSettings.amplitude},
                         new TerrainToolsAnalytics.BrushParameter<float>{Name = StrataFractalType.Styles.persistence.text, Value = strataFractalSettings.persistence},
@@ -820,6 +751,5 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             return m_AnalyticsData.ToArray();
         }
-        #endregion
     }
 }

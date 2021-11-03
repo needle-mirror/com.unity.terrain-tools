@@ -41,7 +41,7 @@ Shader "Hidden/Builtin_TerrainVisualization" {
 		{
 #ifdef _HEATMAP
 	#ifdef LOCAL_SPACE
-			half height = tex2D(_HeatHeightmap, IN.tc.xy).r * 2;
+			half height = UnpackHeightmap(tex2D(_HeatHeightmap, IN.tc.xy)) * 2;
 	#else
 			half height = ((IN.vertex.y - _HeatmapData.z) - _HeatmapData.x) / (_HeatmapData.y - _HeatmapData.x);
 	#endif

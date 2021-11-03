@@ -1,10 +1,10 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     [CustomEditor(typeof(NoiseSettings))]
-    public class NoiseSettingsEditor : Editor
+    internal class NoiseSettingsEditor : Editor
     {
         NoiseSettingsGUI gui = new NoiseSettingsGUI();
 

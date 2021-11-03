@@ -90,9 +90,10 @@
             #pragma vertex vert
             #pragma fragment StampHeight
 
-            #define BRUSH_OPACITY       (_BrushParams[0])
+            #define STAMP_TOOL_MODE     (_BrushParams[0]) // Min=0 | Set=1 | Max=2  
+            #define HEIGHT_UNDER_CURSOR (_BrushParams[1])   
             #define BRUSH_STAMPHEIGHT   (_BrushParams[2])
-            #define BRUSH_MAXBLENDADD   (_BrushParams[3])
+            #define BRUSHFLATTEN        (_BrushParams[3])
 
             float SmoothMax(float a, float b, float p)
             {
@@ -110,23 +111,25 @@
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
                 float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
-                float brushShape = oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float brushShape = oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
                 float brushHeight = brushShape * BRUSH_STAMPHEIGHT;
 
+                // smoothmax behavior
                 float targetHeight;
-                if (BRUSH_MAXBLENDADD > 0.0f)
+                float brushIntersection = saturate(1.0f - brushShape);
+                float brushSmooth = exp2(brushIntersection * 8.0f);
+                targetHeight = SmoothMax(height, brushHeight, brushSmooth);
+					
+                // "preserve details = 0" stamp is an offset from the height under the cursor
+                float flatHeight = lerp(height, HEIGHT_UNDER_CURSOR + BRUSH_STAMPHEIGHT, brushShape);
+                
+                // composite results
+                float outheight = lerp(flatHeight, targetHeight, BRUSHFLATTEN);	
+                if (STAMP_TOOL_MODE != 2)
                 {
-                    float brushIntersection = saturate(1.0f - BRUSH_MAXBLENDADD);
-                    float brushSmooth = exp2(brushIntersection * 8.0f);
-                    targetHeight = SmoothMax(height, brushHeight, brushSmooth);
+                    outheight = lerp(min(height, outheight), max(height, outheight), STAMP_TOOL_MODE);
                 }
-                else
-                {
-                    targetHeight = max(height, brushHeight);
-                }
-                height = lerp(height, targetHeight, BRUSH_OPACITY);
-
-                return PackHeightmap(clamp(height, 0.0f, kMaxHeight));
+                return PackHeightmap(clamp(outheight, 0.0f, kMaxHeight));
             }
             ENDCG
         }

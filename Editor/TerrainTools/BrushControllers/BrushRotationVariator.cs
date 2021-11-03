@@ -1,10 +1,12 @@
 
 using System.Text;
 using UnityEngine;
+using UnityEngine.TerrainTools;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    public class BrushRotationVariator : BaseBrushVariator, IBrushRotationController {
+    internal class BrushRotationVariator : BaseBrushVariator, IBrushRotationController
+    {
 
         private const float kMinBrushRotation = -180.0f;
         private const float kMaxBrushRotation = 180.0f;
@@ -22,8 +24,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         // Values below are not modifiable directly -- they are means of caching the current state of the brush and/or used in calculations
         private float m_PreviousRotation;
         private RaycastHit m_PreviousRaycastHit;
-
-        class Styles {
+        private float m_InitialRotation;
+        class Styles
+        {
             public readonly GUIContent brushRotation = EditorGUIUtility.TrTextContent("Brush Rotation", "Rotation of the brush used to paint.");
             public readonly GUIContent brushRotOffset = EditorGUIUtility.TrTextContent("Offset", "Rotation relative to mouse movement. Use Ctrl+Shift (Command+Shift on Mac) to control rotation in view.");
             public readonly GUIContent brushFollowMouse = EditorGUIUtility.TrTextContent("Rotation Follows Mouse", "Brush rotation follows mouse movement. (No Randomization)");
@@ -32,8 +35,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         static readonly Styles styles = new Styles();
 
-        public float brushRotation
-        {
+        public float brushRotation {
             get { return CalculateRotation(m_BrushRotation.value); }
             set
             {
@@ -41,19 +43,23 @@ namespace UnityEditor.Experimental.TerrainAPI
                 m_PreviousRotation = m_BrushRotation.value;
             }
         }
+
         public float currentRotation => CalculateRotation(m_BrushRotation.value);
 
-        public BrushRotationVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache, bool smoothJitter = false) : base(toolName, eventHandler, terrainCache)
+        public BrushRotationVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache,
+            bool smoothJitter = false) : base(toolName, eventHandler, terrainCache)
         {
             m_JitterHandler = new BrushJitterHandler(0.0f, kMinBrushRotation, kMaxBrushRotation, smoothJitter);
             m_BrushRotation.wrapValue = true;
         }
 
-        private float CalculateRotation(float initialRotation) {
+        private float CalculateRotation(float initialRotation)
+        {
             return m_JitterHandler.CalculateValue(initialRotation);
         }
-        
-        public float GetMouseFollowAngle(RaycastHit hit) {
+
+        public float GetMouseFollowAngle(RaycastHit hit, bool isMouseDrag)
+        {
             Vector3 direction = hit.point - m_PreviousRaycastHit.point;
 
             float theAngle = Mathf.Rad2Deg * -Mathf.Atan2(direction.z, direction.x);
@@ -62,12 +68,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             // Which is also why we are always saving previous rotation as an offset relative to m_BrushRotation
             // That's how this function is used in the mouse drag case, which is the only time we care about
             // m_PreviousRotation.  The goal here is to keep the rotation changes as smooth as possible.
-            if (Event.current.type == EventType.MouseDrag) {
+            if (isMouseDrag)
+            {
                 // This is the extra step to account for the instabilities you get with atan2...
                 float angleDelta = theAngle - m_PreviousRotation;
-                if (angleDelta < -90) {
+                if (angleDelta < -90)
+                {
                     theAngle += 180;
-                } else if (angleDelta > 90) {
+                }
+                else if (angleDelta > 90)
+                {
                     theAngle -= 180;
                 }
 
@@ -82,10 +92,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                 weight = Mathf.Exp(angleDelta * angleDelta);
                 theAngle = weight * theAngle + (1 - weight) * m_PreviousRotation;
             }
+
             return theAngle;
         }
 
-        private void UpdateCurrentRotation(float rotValue) {
+        private void UpdateCurrentRotation(float rotValue)
+        {
             // Just a quicky to make sure that both the current and previous rotation are up to date
             m_PreviousRotation = m_BrushRotation.value;
             m_BrushRotation.value = rotValue;
@@ -94,6 +106,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         private void BeginAdjustingRotation()
         {
             LockTerrainUnderCursor(true);
+            m_InitialRotation = m_BrushRotation.value;
             m_AdjustingRotation = true;
         }
 
@@ -103,68 +116,103 @@ namespace UnityEditor.Experimental.TerrainAPI
             UnlockTerrainUnderCursor();
         }
 
-        #region IBrushController
-        public override void OnEnterToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler) {
+        public override void OnEnterToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler)
+        {
             base.OnEnterToolMode(shortcutHandler);
-            
+
             m_BrushRotation.value = GetEditorPrefs("TerrainBrushRotation", kDefaultBrushRotation);
-            m_BrushRotation.mouseSensitivity = GetEditorPrefs("TerrainBrushRotMouseSensitivity",kDefaultMouseSensitivity);
+            m_BrushRotation.mouseSensitivity =
+                GetEditorPrefs("TerrainBrushRotMouseSensitivity", kDefaultMouseSensitivity);
             m_JitterHandler.jitter = GetEditorPrefs("TerrainBrushRotJitter", 0.0f);
             m_FollowMouse = GetEditorPrefs("TerrainBrushRotFollowMouse", false);
+
+            if (!canUpdateTerrainUnderCursor)
+            {
+                UnlockTerrainUnderCursor();
+            }
 
             shortcutHandler.AddActions(BrushShortcutType.Rotation, BeginAdjustingRotation, EndAdjustingRotation);
 
             UpdateCurrentRotation(m_BrushRotation.value);
         }
 
-        public override void OnExitToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler) {
+        public override void OnExitToolMode(BrushShortcutHandler<BrushShortcutType> shortcutHandler)
+        {
             shortcutHandler.RemoveActions(BrushShortcutType.Rotation);
-            
+
             SetEditorPrefs("TerrainBrushRotation", m_BrushRotation.value);
-            SetEditorPrefs("TerrainBrushRotMouseSensitivity",m_BrushRotation.mouseSensitivity);
+            SetEditorPrefs("TerrainBrushRotMouseSensitivity", m_BrushRotation.mouseSensitivity);
             SetEditorPrefs("TerrainBrushRotJitter", m_JitterHandler.jitter);
             SetEditorPrefs("TerrainBrushRotFollowMouse", m_FollowMouse);
-            
+
+            EndAdjustingRotation();
+
             base.OnExitToolMode(shortcutHandler);
         }
 
-        public override void OnSceneGUI(Event currentEvent, int controlId, Terrain terrain, IOnSceneGUI editContext) {
+        public override void OnSceneGUI(Event currentEvent, int controlId, Terrain terrain, IOnSceneGUI editContext)
+        {
             RaycastHit raycastHit = editContext.raycastHit;
-
             base.OnSceneGUI(currentEvent, controlId, terrain, editContext);
-
             m_JitterHandler.frequency = m_SmoothJitterFreq.value;
             m_JitterHandler.Update();
+            OnSceneEvent(raycastHit, currentEvent.isMouse, currentEvent.type == EventType.MouseDrag);
 
-            if(m_AdjustingRotation)
+            if (m_AdjustingRotation && editContext.hitValidTerrain)
             {
-                float rotation = GetMouseFollowAngle(raycastHit);
-                int rotationInDegrees = Mathf.RoundToInt(rotation);
-                GUIStyle style = new GUIStyle();
-                
-                style.normal.background = Texture2D.whiteTexture;
-                style.fontSize = 12;
-                Handles.Label(raycastHit.point, $"Rotation: {rotationInDegrees}°", style);
-                UpdateCurrentRotation(rotation);
+                // need to compensate for higher dpi screens
+                float pixelPointMultiplier = 1.0f / EditorGUIUtility.pixelsPerPoint;
+                var pos = editContext.sceneView.camera.WorldToScreenPoint(raycastHitUnderCursor.point) * pixelPointMultiplier;
+                Handles.BeginGUI();
+                {
+                    GUI.matrix = Matrix4x4.identity;
+                    var temp = TerrainToolGUIHelper.TempContent($"Rotation: {Mathf.RoundToInt(currentRotation)}°");
+                    GUI.Label(new Rect(pos.x + 10 * pixelPointMultiplier, (Screen.height * pixelPointMultiplier - pos.y - 60 * pixelPointMultiplier) + EditorGUIUtility.singleLineHeight, s_SceneLabelStyle.CalcSize(temp).x, EditorGUIUtility.singleLineHeight), temp, s_SceneLabelStyle);
+                }
+                Handles.EndGUI();
                 RequestRepaint();
             }
-            else
+        }
+        /// <summary>
+        /// Internal function for automated testing
+        /// </summary>
+        /// <param name="raycastHit">The hit position on the terrain</param>
+        /// <param name="adjustingRotation">is the rotation currently being adjusted</param>
+        /// <param name="eventIsMouse">is the current event a mouse event</param>
+        /// <param name="eventIsMouseDrag">is the current event a mouse drag event</param>
+        /// <returns>is gui redraw necessary</returns>
+        internal bool OnSceneEvent(RaycastHit raycastHit, bool eventIsMouse, bool eventIsMouseDrag = false)
+        {
+            if (!m_AdjustingRotation)
             {
                 m_PreviousRaycastHit = raycastHit;
             }
+            else if (eventIsMouse)
+            {
+                float rotation = GetMouseFollowAngle(raycastHit, eventIsMouseDrag);
+                rotation += m_InitialRotation;
+                UpdateCurrentRotation(rotation);
+                return true;
+            }
+
+            return false;
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext) {
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
             base.OnInspectorGUI(terrain, editContext);
-            
-            m_BrushRotation.DrawInspectorGUI();
-            m_JitterHandler.OnGuiLayout("Randomly vary the brush rotation between the values in the slider.");
-            if(m_JitterHandler.smoothJitter) {
-                m_SmoothJitterFreq.DrawInspectorGUI();
-            }
-            
-            //m_FollowMouse = EditorGUILayout.Toggle(styles.brushFollowMouse, m_FollowMouse, GUILayout.ExpandWidth(false));
 
+            m_BrushRotation.DrawInspectorGUI();
+            if (m_BrushRotation.expanded)
+            {
+                EditorGUI.indentLevel++;
+                m_JitterHandler.OnGuiLayout("Randomly vary the brush rotation between the values in the slider.");
+                if (m_JitterHandler.smoothJitter)
+                {
+                    m_SmoothJitterFreq.DrawInspectorGUI();
+                }
+                EditorGUI.indentLevel--;
+            }
             UpdateCurrentRotation(m_BrushRotation.value);
         }
 
@@ -179,35 +227,32 @@ namespace UnityEditor.Experimental.TerrainAPI
             base.AppendBrushInfo(terrain, editContext, builder);
             builder.AppendLine($"Rotation = {brushRotation:F3}");
         }
-        #endregion
 
-        #region Mouse Handling
-		protected override bool OnBeginModifier()
+        protected override bool OnBeginModifier()
         {
-			base.OnBeginModifier();
+            base.OnBeginModifier();
 
             LockTerrainUnderCursor(false);
             return true;
-		}
+        }
 
-		protected override bool OnModifierUsingMouseMove(Event mouseEvent, Terrain terrain, IOnSceneGUI editContext)
-		{
-			base.OnModifierUsingMouseMove(mouseEvent, terrain, editContext);
+        protected override bool OnModifierUsingMouseMove(Event mouseEvent, Terrain terrain, IOnSceneGUI editContext)
+        {
+            base.OnModifierUsingMouseMove(mouseEvent, terrain, editContext);
 
             Vector2 delta = CalculateMouseDelta(mouseEvent, m_BrushRotation.mouseSensitivity);
-			
+
             m_BrushRotation.value -= delta.x;
             UpdateCurrentRotation(m_BrushRotation.value);
             return true;
-		}
+        }
 
-		protected override bool OnEndModifier()
-		{
-			base.OnEndModifier();
+        protected override bool OnEndModifier()
+        {
+            base.OnEndModifier();
 
             UnlockTerrainUnderCursor();
             return true;
-		}
-        #endregion
+        }
     }
 }

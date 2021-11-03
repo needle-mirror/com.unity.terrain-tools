@@ -1,14 +1,15 @@
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    public class PinchHeightTool : TerrainPaintTool<PinchHeightTool>
+    internal class PinchHeightTool : TerrainPaintTool<PinchHeightTool>
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Pinch Tool", typeof(TerrainToolShortcutContext))]                     // tells shortcut manager what to call the shortcut and what to pass as args
-        static void SelectShortcut(ShortcutArguments args) {
+        static void SelectShortcut(ShortcutArguments args)
+        {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;              // gets interface to modify state of TerrainTools
             context.SelectPaintTool<PinchHeightTool>();                                                  // set active tool
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Pinch Tool");
@@ -19,14 +20,13 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI
-        {
+        private IBrushUIGroup commonUI {
             get
             {
-                if( m_commonUI == null )
+                if (m_commonUI == null)
                 {
                     LoadSettings();
-                    m_commonUI = new DefaultBrushUIGroup( "PinchTool" );
+                    m_commonUI = new DefaultBrushUIGroup("PinchTool");
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -55,17 +55,19 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Transform/Pinch";
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return "Click to Pinch the terrain height. Click plus control to bulge.";
         }
 
-        public override void OnEnterToolMode() {
+        public override void OnEnterToolMode()
+        {
             base.OnEnterToolMode();
             commonUI.OnEnterToolMode();
         }
 
-        public override void OnExitToolMode() {
+        public override void OnExitToolMode()
+        {
             base.OnExitToolMode();
             commonUI.OnExitToolMode();
         }
@@ -91,20 +93,24 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
 
             Texture brushTexture = editContext.brushTexture;
-            
-            using(IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PinchHeight", brushTexture))
+
+            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PinchHeight", brushTexture))
             {
-                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
-                    Material material = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
                     PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                
-                    brushRender.RenderBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushXform, material, 0);
+                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
+
+                    var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
+                    Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
+                        editContext.brushTexture, brushXform, previewMaterial, 0);
 
                     // draw result preview
                     {
                         float finalPinchAmount = m_PinchAmount * 0.005f; //scale to a reasonable value and negate so default mode is clockwise
-                        if (Event.current.shift) {
+                        if (Event.current.shift)
+                        {
                             finalPinchAmount *= -1.0f;
                         }
 
@@ -113,9 +119,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                         // restore old render target
                         RenderTexture.active = ctx.oldRenderTexture;
 
-                        material.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
-                        brushRender.RenderBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture, brushXform, material, 1);
+                        previewMaterial.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
+                        TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.DestinationRenderTexture,
+                            editContext.brushTexture, brushXform, previewMaterial, 1);
                     }
+
+                    texelCtx.Cleanup();
                 }
             }
         }
@@ -128,7 +137,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controls, m_ShowControls, Reset);
 
-            if(m_ShowControls)
+            if (m_ShowControls)
             {
                 EditorGUILayout.BeginVertical("GroupBox");
                 {
@@ -160,7 +169,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             m_AffectHeight = true;
         }
 
-        public void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, float pinchAmount, Texture brushTexture, BrushTransform brushXform) 
+        public void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, float pinchAmount, Texture brushTexture, BrushTransform brushXform)
         {
             Material mat = GetPaintMaterial();
 
@@ -169,7 +178,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             Vector4 brushParams = new Vector4(brushStrength, 0.0f, pinchAmount, Mathf.Deg2Rad * commonUI.brushRotation);
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
-            
+
             renderer.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
             renderer.RenderBrush(paintContext, mat, 0);
         }
@@ -178,14 +187,16 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             commonUI.OnPaint(terrain, editContext);
 
-            if(!commonUI.allowPaint) { return true; }
+            if (!commonUI.allowPaint)
+            { return true; }
 
-            using(IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "PinchHeight", editContext.brushTexture))
+            using (IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "PinchHeight", editContext.brushTexture))
             {
-                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
                     float finalPinchAmount = m_PinchAmount * 0.005f; //scale to a reasonable value and negate so default mode is clockwise
-                    if (Event.current.shift) {
+                    if (Event.current.shift)
+                    {
                         finalPinchAmount *= -1.0f;
                     }
 
@@ -210,7 +221,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                         }
                     }
 
-                    if (m_AffectHeight) {
+                    if (m_AffectHeight)
+                    {
                         PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
                         var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
                         Utility.SetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
@@ -234,7 +246,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             public static readonly GUIContent materials = EditorGUIUtility.TrTextContent("Materials");
             public static readonly GUIContent heightmap = EditorGUIUtility.TrTextContent("Heightmap");
         }
-        
+
         private void SaveSetting()
         {
             EditorPrefs.SetFloat("Unity.TerrainTools.Pinch.PinchAmount", m_PinchAmount);
@@ -249,13 +261,12 @@ namespace UnityEditor.Experimental.TerrainAPI
             m_AffectMaterials = EditorPrefs.GetBool("Unity.TerrainTools.Pinch.Materials", true);
         }
 
-        #region Analytics
+        //Analytics Setup
         private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.pinchAmount.text, Value = m_PinchAmount},
             new TerrainToolsAnalytics.BrushParameter<bool>{Name = Styles.materials.text, Value = m_AffectHeight},
             new TerrainToolsAnalytics.BrushParameter<bool>{Name = Styles.heightmap.text, Value = m_AffectMaterials},
-        
+
         };
-        #endregion
     }
 }

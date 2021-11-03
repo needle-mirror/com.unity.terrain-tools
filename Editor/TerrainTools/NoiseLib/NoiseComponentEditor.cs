@@ -1,11 +1,11 @@
 using UnityEngine;
 using UnityEditor;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     [CustomEditor(typeof(NoiseComponent))]
-    public class NoiseComponentEditor : Editor
+    internal class NoiseComponentEditor : Editor
     {
 
     }

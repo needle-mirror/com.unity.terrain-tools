@@ -60,7 +60,7 @@ Multiplies all the pixels of the current mask by the input value.
 Reverses the sign of all pixels in the current mask. For example, 1 becomes -1, 0 remains the same, and -1 becomes 1.
 
 ### Noise
-Applies noise to the Brush Mask. See the [Noise Settings API documentation](../api/UnityEditor.Experimental.TerrainAPI.html) for more information about the actual settings stored in the Noise Settings Asset.
+Applies noise to the Brush Mask. See the [Noise Settings API documentation](../api/UnityEditor.TerrainTools.html) for more information about the actual settings stored in the Noise Settings Asset.
 
 ### Power
 Applies an exponential function to each pixel on the Brush Mask. The function is *pow(value, e)*, where *e* is the input value.

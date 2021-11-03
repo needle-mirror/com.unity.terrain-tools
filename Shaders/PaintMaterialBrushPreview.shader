@@ -14,6 +14,9 @@ Shader "Hidden/TerrainEngine/PaintMaterialBrushPreview"
             #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
 
             sampler2D _BrushTex;
+            sampler2D _FilterTex;
+
+            float _BrushStrength;
 
         ENDCG
 
@@ -27,10 +30,9 @@ Shader "Hidden/TerrainEngine/PaintMaterialBrushPreview"
 
             struct v2f {
                 float4 clipPosition : SV_POSITION;
-                float3 positionWorld : TEXCOORD0;
-                float3 positionObject : TEXCOORD1;
-                float2 pcPixels : TEXCOORD2;
-                float2 brushUV : TEXCOORD3;
+                float2 uv : TEXCOORD0;
+                float2 pcPixels : TEXCOORD1;
+                float2 brushUV : TEXCOORD2;
             };
 
             v2f vert(uint vid : SV_VertexID)
@@ -50,9 +52,8 @@ Shader "Hidden/TerrainEngine/PaintMaterialBrushPreview"
                 float3 positionWorld = TerrainObjectToWorldPosition(positionObject);
 
                 v2f o;
+                o.uv = heightmapUV;
                 o.pcPixels = pcPixels;
-                o.positionWorld = positionWorld;
-                o.positionObject = positionObject;
                 o.clipPosition = UnityWorldToClipPos(positionWorld);
                 o.brushUV = brushUV;
                 return o;
@@ -61,7 +62,7 @@ Shader "Hidden/TerrainEngine/PaintMaterialBrushPreview"
 
             float4 frag(v2f i) : SV_Target
             {
-                float brushSample = UnpackHeightmap(tex2D(_BrushTex, i.brushUV));
+                float brushSample = _BrushStrength * UnpackHeightmap(tex2D(_BrushTex, i.brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.uv));
                 
                 float iib = IsPcUvPartOfValidTerrainTileTexel(i.pcPixels / _PcPixelRect.zw);
                 clip(iib - .01);
@@ -70,13 +71,13 @@ Shader "Hidden/TerrainEngine/PaintMaterialBrushPreview"
                 float oob = all(saturate(i.brushUV) == i.brushUV) ? 1.0f : 0.0f;
 
                 // brush outline stripe
-                float stripeWidth = 0.0f;       // pixels
-                float stripeLocation = 0.2f;    // at 20% alpha
+                float stripeWidth = 1.5f;       // pixels
+                float stripeLocation = 0.0025f;
                 float brushStripe = Stripe(brushSample, stripeLocation, stripeWidth);
 
-                float4 color = float4(1.0f, 0.6f, 0.05f, 1.0f) * saturate(2.0f * brushStripe + 1.0f * brushSample);
-                color.a = 1.0f * saturate(brushSample * 5.0f);
-				return color * oob * 1.5f;
+                float4 color = float4(1.0f, 0.6f, 0.05f, 1.0f);
+                color.a = lerp(.75f * saturate(brushSample * 10), 1, saturate(brushStripe));
+                return color * oob;
             }
             ENDCG
         }

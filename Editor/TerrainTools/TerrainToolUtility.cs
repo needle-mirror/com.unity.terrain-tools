@@ -1,17 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
-using UnityEditor.Experimental.TerrainAPI;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using UnityEngine;
 using UObject = UnityEngine.Object;
-using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    public struct ActiveRenderTextureScope : System.IDisposable
+    public struct ActiveRenderTextureScope : IDisposable
     {
         RenderTexture m_Prev;
 
@@ -28,7 +25,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
     }
 
-    
+
     /// <summary>
     /// Utility class for safely managing the lifetime of a RenderTexture
     /// </summary>
@@ -36,27 +33,26 @@ namespace UnityEditor.Experimental.TerrainAPI
     {
         private RenderTexture   m_RT;
         private bool           m_IsTemp;
-        
+
         /// <summary>
         /// The RenderTexture for this RTHandle
         /// </summary>
-        public RenderTexture                RT      => m_RT;
+        public RenderTexture RT => m_RT;
 
         /// <summary>
         /// The descriptor for the RTHandle and RenderTexture
         /// </summary>
-        public RenderTextureDescriptor     Desc    => m_RT?.descriptor ?? default;
+        public RenderTextureDescriptor Desc => m_RT?.descriptor ?? default;
 
         internal bool IsTemp => m_IsTemp;
 
         /// <summary>
         /// The name for the RTHandle and RenderTexture
         /// </summary>
-        public string Name
-        {
+        public string Name {
             get => m_RT?.name ?? default;
             set => m_RT.name = value;
-        }
+            }
 
         internal RTHandle()
         {
@@ -126,7 +122,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             public int Frames;
             public string StackTrace;
         }
-        
+
         internal static bool s_EnableStackTrace = false;
         private static Stack<Log> s_LogPool = new Stack<Log>();
         private static Dictionary<RTHandle, Log> s_Logs = new Dictionary<RTHandle, Log>();
@@ -138,7 +134,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         private static void AgeCheck()
         {
-            if(!m_AgeCheckAdded)
+            if (!m_AgeCheckAdded)
             {
                 Debug.LogError("Checking lifetime of RenderTextures but m_AgeCheckAdded = false");
             }
@@ -152,18 +148,19 @@ namespace UnityEditor.Experimental.TerrainAPI
                     var trace = !s_EnableStackTrace ? string.Empty : "\n" + log.StackTrace;
                     Debug.LogWarning($"RTHandle \"{kvp.Key.Name}\" has existed for more than 4 frames. Possible memory leak.{trace}");
                 }
-                
+
                 log.Frames++;
             }
         }
 
         private static void CheckAgeCheck()
         {
-            if(s_TempHandleCount != 0 || s_CreatedHandleCount != 0) return;
+            if (s_TempHandleCount != 0 || s_CreatedHandleCount != 0)
+                return;
 
             Debug.Assert(s_Logs.Count == 0, "Internal RTHandle type counts for temporary and non-temporary RTHandles are both 0 but the containers for tracking leaked RTHandles have counts that are not 0");
 
-            if(!m_AgeCheckAdded)
+            if (!m_AgeCheckAdded)
             {
                 EditorApplication.update += AgeCheck;
                 m_AgeCheckAdded = true;
@@ -178,10 +175,11 @@ namespace UnityEditor.Experimental.TerrainAPI
         private static void AddLogForHandle(RTHandle handle)
         {
             var log = s_LogPool.Any() ? s_LogPool.Pop() : new Log();
-            if(s_EnableStackTrace) log.StackTrace = System.Environment.StackTrace;
+            if (s_EnableStackTrace)
+                log.StackTrace = System.Environment.StackTrace;
             s_Logs.Add(handle, log);
         }
-        
+
         /// <summary>
         /// Get a RenderTextureDescriptor set up for RenderTexture operations on GPU
         /// <param name="width">Width of the RenderTexture</param>
@@ -209,7 +207,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             return GetDescriptorRW(width, height, depth, GraphicsFormatUtility.GetGraphicsFormat(format, srgb), mipCount, srgb);
         }
-        
+
         /// <summary>
         /// Get a RenderTextureDescriptor set up for RenderTexture operations on GPU with the enableRandomWrite flag set to true
         /// <param name="width">Width of the RenderTexture</param>
@@ -251,16 +249,18 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             CheckAgeCheck();
 
-            if (isTemp) s_TempHandleCount++;
-            else s_CreatedHandleCount++;
-            
+            if (isTemp)
+                s_TempHandleCount++;
+            else
+                s_CreatedHandleCount++;
+
             var handle = new RTHandle();
             handle.SetRenderTexture(isTemp ? RenderTexture.GetTemporary(desc) : new RenderTexture(desc), isTemp);
             AddLogForHandle(handle);
-            
+
             return handle;
         }
-        
+
         /// <summary>
         /// Get a RTHandle for a RenderTexture acquired from RenderTexture.GetTemporary. Free using RTUtils.Release
         /// <param name="desc">RenderTextureDescriptor for the RenderTexture</param>
@@ -269,7 +269,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             return GetHandle(desc, true);
         }
-        
+
         /// <summary>
         /// Get a RTHandle for a RenderTexture acquired with RenderTexture.GetTemporary. Free using RTUtils.Release
         /// </summary>
@@ -290,7 +290,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             return GetHandle(desc, false);
         }
-        
+
         /// <summary>
         /// Get a RTHandle for a RenderTexture acquired with 'new RenderTexture(desc)'. Free using RTUtils.Release
         /// </summary>
@@ -310,18 +310,20 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// </summary>
         public static void Release(RTHandle handle)
         {
-            if(handle.RT == null) return;
-            
-            if(!s_Logs.ContainsKey(handle)) throw new InvalidOperationException("Attemping to release a RTHandle that is not currently tracked by the system. This should never happen");
+            if (handle.RT == null)
+                return;
+
+            if (!s_Logs.ContainsKey(handle))
+                throw new InvalidOperationException("Attemping to release a RTHandle that is not currently tracked by the system. This should never happen");
 
             var log = s_Logs[handle];
             s_Logs.Remove(handle);
             log.Frames = 0;
             log.StackTrace = null;
-            
+
             s_LogPool.Push(log);
 
-            if(handle.IsTemp)
+            if (handle.IsTemp)
             {
                 --s_TempHandleCount;
                 RenderTexture.ReleaseTemporary(handle.RT);
@@ -332,7 +334,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 handle.RT.Release();
                 Destroy(handle.RT);
             }
-            
+
             CheckAgeCheck();
         }
 
@@ -342,7 +344,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// </summary>
         public static void Destroy(RenderTexture rt)
         {
-            if(rt == null) return;
+            if (rt == null)
+                return;
 
 #if UNITY_EDITOR
             if (Application.isPlaying)
@@ -373,10 +376,27 @@ namespace UnityEditor.Experimental.TerrainAPI
             return m_DefaultPreviewMat;
         }
 
+        static Material m_PaintHeightMat;
+        /// <summary>
+        /// Get the paint height material to render builtin brush passes. 
+        /// This material overrides the Builtin PaintHeight shader with Terrain Tools version of PaintHeight.
+        /// See <see cref="TerrainBuiltinPaintMaterialPasses"/> for the available passes to choose from.
+        /// See "/com.unity.terrain-tools/Shaders/PaintHeight.shader" for the override PaintHeight shader.
+        /// </summary>
+        /// <returns>Material with the Paint Height shader </returns>
+        public static Material GetPaintHeightMaterial()
+        {
+            if (m_PaintHeightMat == null)
+            {
+                m_PaintHeightMat = new Material(Shader.Find("Hidden/TerrainEngine/PaintHeightTool"));
+            }
+            return m_PaintHeightMat;
+        }
+
         private static Material m_TexelValidityMaterial;
         private static Material GetTexelValidityMaterial()
         {
-            if(m_TexelValidityMaterial == null)
+            if (m_TexelValidityMaterial == null)
             {
                 m_TexelValidityMaterial = new Material(Shader.Find("Hidden/TerrainTools/TexelValidityBlit"));
             }
@@ -387,27 +407,27 @@ namespace UnityEditor.Experimental.TerrainAPI
         public static void SetupMaterialForPainting(PaintContext paintContext, BrushTransform brushTransform, Material material)
         {
             TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushTransform, material);
-            
+
             material.SetVector("_Heightmap_Tex",
-	            new Vector4(
-		            1f / paintContext.targetTextureWidth,
-		            1f / paintContext.targetTextureHeight,
-		            paintContext.targetTextureWidth,
-		            paintContext.targetTextureHeight)
+                new Vector4(
+                    1f / paintContext.targetTextureWidth,
+                    1f / paintContext.targetTextureHeight,
+                    paintContext.targetTextureWidth,
+                    paintContext.targetTextureHeight)
             );
 
             material.SetVector("_PcPixelRect",
-	            new Vector4(paintContext.pixelRect.x,
-		            paintContext.pixelRect.y,
-		            paintContext.pixelRect.width,
-		            paintContext.pixelRect.height)
+                new Vector4(paintContext.pixelRect.x,
+                    paintContext.pixelRect.y,
+                    paintContext.pixelRect.width,
+                    paintContext.pixelRect.height)
             );
 
             material.SetVector("_PcUvVectors",
-	            new Vector4(paintContext.pixelRect.x / (float)paintContext.targetTextureWidth,
-				            paintContext.pixelRect.y / (float)paintContext.targetTextureHeight,
-				            paintContext.pixelRect.width / (float)paintContext.targetTextureWidth,
-				            paintContext.pixelRect.height / (float)paintContext.targetTextureHeight)
+                new Vector4(paintContext.pixelRect.x / (float)paintContext.targetTextureWidth,
+                            paintContext.pixelRect.y / (float)paintContext.targetTextureHeight,
+                            paintContext.pixelRect.width / (float)paintContext.targetTextureWidth,
+                            paintContext.pixelRect.height / (float)paintContext.targetTextureHeight)
             );
         }
 
@@ -426,14 +446,15 @@ namespace UnityEditor.Experimental.TerrainAPI
             ctx.Gather(
                 t => t.terrain.terrainData.heightmapTexture, // just provide heightmap texture. no need to create a temp one
                 new Color(0, 0, 0, 0),
-                blitMaterial : GetTexelValidityMaterial()
+                blitMaterial: GetTexelValidityMaterial()
             );
 
             return ctx;
         }
-        
+
         //assume this a 1D texture that has already been created
-        public static Vector2 AnimationCurveToRenderTexture(AnimationCurve curve, ref Texture2D tex) {
+        public static Vector2 AnimationCurveToRenderTexture(AnimationCurve curve, ref Texture2D tex)
+        {
 
             tex.wrapMode = TextureWrapMode.Clamp;
             tex.filterMode = FilterMode.Bilinear;
@@ -443,7 +464,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             Color[] pixels = new Color[tex.width * tex.height];
             pixels[0].r = val;
-            for (int i = 1; i < tex.width; i++) {
+            for (int i = 1; i < tex.width; i++)
+            {
                 float pct = (float)i / (float)tex.width;
                 pixels[i].r = curve.Evaluate(pct);
                 range[0] = Mathf.Min(range[0], pixels[i].r);
@@ -474,13 +496,12 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         private static Material m_defaultProjectionMaterial;
-        public static Material defaultProjectionMaterial
-        {
+        public static Material defaultProjectionMaterial {
             get
             {
-                if( m_defaultProjectionMaterial == null )
+                if (m_defaultProjectionMaterial == null)
                 {
-                    m_defaultProjectionMaterial = new Material( Shader.Find( "Hidden/TerrainTools/MeshUtility" ) );
+                    m_defaultProjectionMaterial = new Material(Shader.Find("Hidden/TerrainTools/MeshUtility"));
                 }
 
                 return m_defaultProjectionMaterial;
@@ -491,65 +512,65 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             // Adapted from: http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
             Quaternion q = new Quaternion();
-            q.w = Mathf.Sqrt( Mathf.Max( 0, 1 + m[0,0] + m[1,1] + m[2,2] ) ) / 2; 
-            q.x = Mathf.Sqrt( Mathf.Max( 0, 1 + m[0,0] - m[1,1] - m[2,2] ) ) / 2; 
-            q.y = Mathf.Sqrt( Mathf.Max( 0, 1 - m[0,0] + m[1,1] - m[2,2] ) ) / 2; 
-            q.z = Mathf.Sqrt( Mathf.Max( 0, 1 - m[0,0] - m[1,1] + m[2,2] ) ) / 2; 
-            q.x *= Mathf.Sign( q.x * ( m[2,1] - m[1,2] ) );
-            q.y *= Mathf.Sign( q.y * ( m[0,2] - m[2,0] ) );
-            q.z *= Mathf.Sign( q.z * ( m[1,0] - m[0,1] ) );
+            q.w = Mathf.Sqrt(Mathf.Max(0, 1 + m[0, 0] + m[1, 1] + m[2, 2])) / 2;
+            q.x = Mathf.Sqrt(Mathf.Max(0, 1 + m[0, 0] - m[1, 1] - m[2, 2])) / 2;
+            q.y = Mathf.Sqrt(Mathf.Max(0, 1 - m[0, 0] + m[1, 1] - m[2, 2])) / 2;
+            q.z = Mathf.Sqrt(Mathf.Max(0, 1 - m[0, 0] - m[1, 1] + m[2, 2])) / 2;
+            q.x *= Mathf.Sign(q.x * (m[2, 1] - m[1, 2]));
+            q.y *= Mathf.Sign(q.y * (m[0, 2] - m[2, 0]));
+            q.z *= Mathf.Sign(q.z * (m[1, 0] - m[0, 1]));
             return q;
         }
 
-        public static Bounds TransformBounds( Matrix4x4 m, Bounds bounds )
+        public static Bounds TransformBounds(Matrix4x4 m, Bounds bounds)
         {
-            Vector3[] points = new Vector3[ 8 ];
+            Vector3[] points = new Vector3[8];
 
             // get points for each corner of the bounding box
-            points[ 0 ] = new Vector3( bounds.max.x, bounds.max.y, bounds.max.z );
-            points[ 1 ] = new Vector3( bounds.min.x, bounds.max.y, bounds.max.z );
-            points[ 2 ] = new Vector3( bounds.max.x, bounds.min.y, bounds.max.z );
-            points[ 3 ] = new Vector3( bounds.max.x, bounds.max.y, bounds.min.z );
-            points[ 4 ] = new Vector3( bounds.min.x, bounds.min.y, bounds.max.z );
-            points[ 5 ] = new Vector3( bounds.min.x, bounds.min.y, bounds.min.z );
-            points[ 6 ] = new Vector3( bounds.max.x, bounds.min.y, bounds.min.z );
-            points[ 7 ] = new Vector3( bounds.min.x, bounds.max.y, bounds.min.z );
+            points[0] = new Vector3(bounds.max.x, bounds.max.y, bounds.max.z);
+            points[1] = new Vector3(bounds.min.x, bounds.max.y, bounds.max.z);
+            points[2] = new Vector3(bounds.max.x, bounds.min.y, bounds.max.z);
+            points[3] = new Vector3(bounds.max.x, bounds.max.y, bounds.min.z);
+            points[4] = new Vector3(bounds.min.x, bounds.min.y, bounds.max.z);
+            points[5] = new Vector3(bounds.min.x, bounds.min.y, bounds.min.z);
+            points[6] = new Vector3(bounds.max.x, bounds.min.y, bounds.min.z);
+            points[7] = new Vector3(bounds.min.x, bounds.max.y, bounds.min.z);
 
             Vector3 min = Vector3.one * float.PositiveInfinity;
             Vector3 max = Vector3.one * float.NegativeInfinity;
 
-            for( int i = 0; i < points.Length; ++i )
+            for (int i = 0; i < points.Length; ++i)
             {
-                Vector3 p = m.MultiplyPoint( points[ i ] );
+                Vector3 p = m.MultiplyPoint(points[i]);
 
                 // update min values
-                if( p.x < min.x )
+                if (p.x < min.x)
                 {
                     min.x = p.x;
                 }
 
-                if( p.y < min.y )
+                if (p.y < min.y)
                 {
                     min.y = p.y;
                 }
 
-                if( p.z < min.z )
+                if (p.z < min.z)
                 {
                     min.z = p.z;
                 }
 
                 // update max values
-                if( p.x > max.x )
+                if (p.x > max.x)
                 {
                     max.x = p.x;
                 }
 
-                if( p.y > max.y )
+                if (p.y > max.y)
                 {
                     max.y = p.y;
                 }
 
-                if( p.z > max.z )
+                if (p.z > max.z)
                 {
                     max.z = p.z;
                 }
@@ -558,53 +579,53 @@ namespace UnityEditor.Experimental.TerrainAPI
             return new Bounds() { max = max, min = min };
         }
 
-        private static string GetPrettyVectorString( Vector3 v )
+        private static string GetPrettyVectorString(Vector3 v)
         {
-            return string.Format( "( {0}, {1}, {2} )", v.x, v.y, v.z );
+            return string.Format("( {0}, {1}, {2} )", v.x, v.y, v.z);
         }
 
-        public static void RenderTopdownProjection( Mesh mesh, Matrix4x4 model, RenderTexture destination, Material mat, ShaderPass pass )
+        public static void RenderTopdownProjection(Mesh mesh, Matrix4x4 model, RenderTexture destination, Material mat, ShaderPass pass)
         {
             RenderTexture prev = RenderTexture.active;
             RenderTexture.active = destination;
-            
-            Bounds modelBounds = TransformBounds( model, mesh.bounds );
 
-            float nearPlane = ( modelBounds.max.y - modelBounds.center.y ) * 4;
-            float farPlane =  ( modelBounds.min.y - modelBounds.center.y );
+            Bounds modelBounds = TransformBounds(model, mesh.bounds);
 
-            Vector3 viewFrom = new Vector3( modelBounds.center.x, modelBounds.center.z, -modelBounds.center.y );
+            float nearPlane = (modelBounds.max.y - modelBounds.center.y) * 4;
+            float farPlane = (modelBounds.min.y - modelBounds.center.y);
+
+            Vector3 viewFrom = new Vector3(modelBounds.center.x, modelBounds.center.z, -modelBounds.center.y);
             Vector3 viewTo = viewFrom + Vector3.down;
             Vector3 viewUp = Vector3.forward;
-            
-//             Debug.Log(
-// $@"Bounds =
-// [
-//     center: { modelBounds.center }
-//     max: { modelBounds.max }
-//     extents: { modelBounds.extents }
-// ]
-// nearPlane: { nearPlane }
-// farPlane: { farPlane }
-// diff: { nearPlane - farPlane }
-// view: [ from = { GetPrettyVectorString( viewFrom ) }, to = { GetPrettyVectorString( viewTo ) }, up = { GetPrettyVectorString( viewUp ) } ]"
-//             );
+
+            //             Debug.Log(
+            // $@"Bounds =
+            // [
+            //     center: { modelBounds.center }
+            //     max: { modelBounds.max }
+            //     extents: { modelBounds.extents }
+            // ]
+            // nearPlane: { nearPlane }
+            // farPlane: { farPlane }
+            // diff: { nearPlane - farPlane }
+            // view: [ from = { GetPrettyVectorString( viewFrom ) }, to = { GetPrettyVectorString( viewTo ) }, up = { GetPrettyVectorString( viewUp ) } ]"
+            //             );
 
             // reset the view to accomodate for the transformed bounds
-            Matrix4x4 view = Matrix4x4.LookAt( viewFrom, viewTo, viewUp );
-            Matrix4x4 proj = Matrix4x4.Ortho( -1, 1, -1, 1, nearPlane, farPlane );
+            Matrix4x4 view = Matrix4x4.LookAt(viewFrom, viewTo, viewUp);
+            Matrix4x4 proj = Matrix4x4.Ortho(-1, 1, -1, 1, nearPlane, farPlane);
             Matrix4x4 mvp = proj * view * model;
 
-            GL.Clear( true, true, Color.black );
+            GL.Clear(true, true, Color.black);
 
-            mat.SetMatrix( "_Matrix_M", model );
-            mat.SetMatrix( "_Matrix_MV", view * model );
-            mat.SetMatrix( "_Matrix_MVP", mvp );
+            mat.SetMatrix("_Matrix_M", model);
+            mat.SetMatrix("_Matrix_MV", view * model);
+            mat.SetMatrix("_Matrix_MVP", mvp);
 
-            mat.SetPass( ( int )pass );
+            mat.SetPass((int)pass);
             GL.PushMatrix();
             {
-                Graphics.DrawMeshNow( mesh, Matrix4x4.identity );
+                Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
             }
             GL.PopMatrix();
 

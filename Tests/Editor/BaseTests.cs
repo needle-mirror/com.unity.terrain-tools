@@ -1,12 +1,12 @@
 ﻿using NUnit.Framework;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     public class BaseTests
     {
         // private ulong m_PrevTextureMemory; // TODO
         private int m_PrevRTHandlesCount;
-
+        
         [SetUp]
         public virtual void Setup()
         {

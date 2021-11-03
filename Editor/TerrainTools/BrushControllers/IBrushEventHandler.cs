@@ -1,26 +1,26 @@
-
 using UnityEngine;
+using UnityEngine.TerrainTools;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-	public interface IBrushEventHandler
-	{
-		/// <summary>
-		/// Register a system event for processing later.
-		/// </summary>
-		/// <param name="newEvent"></param>
-		void RegisterEvent(Event newEvent);
-		
-		/// <summary>
-		/// Consume previously registered events.
-		/// </summary>
-		/// <param name="terrain"></param>
-		/// <param name="editContext"></param>
-		void ConsumeEvents(Terrain terrain, IOnSceneGUI editContext);
+    public interface IBrushEventHandler
+    {
+        /// <summary>
+        /// Register a system event for processing later.
+        /// </summary>
+        /// <param name="newEvent"></param>
+        void RegisterEvent(Event newEvent);
 
-		/// <summary>
-		/// Allows us to request a repaint of the GUI and scene-view.
-		/// </summary>
-		void RequestRepaint();
-	}
+        /// <summary>
+        /// Consume previously registered events.
+        /// </summary>
+        /// <param name="terrain"></param>
+        /// <param name="editContext"></param>
+        void ConsumeEvents(Terrain terrain, IOnSceneGUI editContext);
+
+        /// <summary>
+        /// Allows us to request a repaint of the GUI and scene-view.
+        /// </summary>
+        void RequestRepaint();
+    }
 }

@@ -1,11 +1,8 @@
-
 using System;
-using UnityEditor.ShortcutManagement;
-using UnityEngine;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    public class DefaultBrushModifierKeys : IBrushModifierKeyController
+    internal class DefaultBrushModifierKeys : IBrushModifierKeyController
     {
         public event Action<BrushModifierKey> OnModifierPressed;
         public event Action<BrushModifierKey> OnModifierReleased;
@@ -51,32 +48,6 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             OnModifierReleased?.Invoke(BrushModifierKey.BRUSH_MOD_INVERT);
         }
-
-
-        /*
-        #if UNITY_2019_1_OR_NEWER
-        [ClutchShortcut("Terrain/Invert Brush Effect", typeof(TerrainToolShortcutContext), KeyCode.C)]
-        static void InvertStrengthShortcut(ShortcutArguments args) {
-            s_ShortcutHandler.HandleShortcutChanged(args, BrushModifierKey.BRUSH_MOD_INVERT);
-        }
-
-        [ClutchShortcut("Terrain/Brush Modifier 1", typeof(TerrainToolShortcutContext), KeyCode.V)]
-        static void Mod1Shortcut(ShortcutArguments args) {
-            s_ShortcutHandler.HandleShortcutChanged(args, BrushModifierKey.BRUSH_MOD_1);
-        }
-
-        [ClutchShortcut("Terrain/Brush Modifier 2", typeof(TerrainToolShortcutContext))]
-        static void Mod2Shortcut(ShortcutArguments args) {
-            s_ShortcutHandler.HandleShortcutChanged(args, BrushModifierKey.BRUSH_MOD_2);
-        }
-
-        [ClutchShortcut("Terrain/Brush Modifier 3", typeof(TerrainToolShortcutContext))]
-        static void Mod3Shortcut(ShortcutArguments args) {
-            s_ShortcutHandler.HandleShortcutChanged(args, BrushModifierKey.BRUSH_MOD_3);
-        }
-        #endif
-        */
-
         
         public void OnEnterToolMode()
         {

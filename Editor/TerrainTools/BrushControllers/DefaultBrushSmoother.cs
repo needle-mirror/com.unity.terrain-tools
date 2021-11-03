@@ -1,9 +1,10 @@
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    public class DefaultBrushSmoother : IBrushSmoothController {
+    internal class DefaultBrushSmoother : IBrushSmoothController
+    {
 
         public int kernelSize { get; set; }
 
@@ -14,23 +15,27 @@ namespace UnityEditor.Experimental.TerrainAPI
             return m_Material;
         }
 
-        public DefaultBrushSmoother(string name) {
-            //m_SmoothTool = new SmoothHeightTool();
+        public DefaultBrushSmoother(string name)
+        {
+            // intentionally blank -- reserved for future customization
         }
 
         public bool active { get { return Event.current.shift; } }
 
         public void OnEnterToolMode() {}
         public void OnExitToolMode() {}
-        public void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext) {
-            //m_SmoothTool.OnSceneGUI(terrain, editContext);
+        public void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
+        {
+            // intentionally blank -- reserved for future customization
         }
 
-        public void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext) {
-            //maybe have a UI here at some point? (To select different blur tools, etc...)
+        public void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            // for future customization, to select different blur tools, etc...
         }
 
-        public bool OnPaint(Terrain terrain, IOnPaint editContext, float brushSize, float brushRotation, float brushStrength, Vector2 uv) {
+        public bool OnPaint(Terrain terrain, IOnPaint editContext, float brushSize, float brushRotation, float brushStrength, Vector2 uv)
+        {
             if (Event.current != null && Event.current.shift) {
                 BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, uv, brushSize, brushRotation);
                 PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds());

@@ -1,10 +1,10 @@
 ﻿using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     [System.Serializable]
-    public class SlopeFilter : Filter
+    internal class SlopeFilter : Filter
     {
         static readonly int RemapTexWidth = 1024;
 
@@ -27,7 +27,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                 Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref m_RemapTex);
             }
-            
+
             return m_RemapTex;
         }
 
@@ -36,7 +36,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             if (m_ConcavityCS == null)
             {
-                m_ConcavityCS = (ComputeShader)Resources.Load("Slope");
+                m_ConcavityCS = ComputeUtility.GetShader("Slope");
             }
             return m_ConcavityCS;
         }
@@ -58,10 +58,10 @@ namespace UnityEditor.Experimental.TerrainAPI
                 message = $"The current Graphics API does not support UAV resource access for GraphicsFormat.{filterContext.targetFormat}.";
                 return false;
             }
-            
+
             return true;
         }
-            
+
 
         protected override void OnEval(FilterContext fc, RenderTexture source, RenderTexture dest)
         {
@@ -74,7 +74,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 Graphics.Blit(source, sourceHandle);
                 Graphics.Blit(dest, destHandle);
-                
+
                 ComputeShader cs = GetComputeShader();
                 int kidx = cs.FindKernel("GradientMultiply");
 
@@ -89,7 +89,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 cs.SetVector("TerrainDimensions", fc.vectorProperties.ContainsKey("_TerrainSize") ? fc.vectorProperties["_TerrainSize"] : Vector4.one);
                 cs.SetVector("TextureResolution", new Vector4(sourceHandle.RT.width, sourceHandle.RT.height, m_Epsilon, fc.floatProperties[FilterContext.Keywords.TerrainScale]));
                 cs.Dispatch(kidx, sourceHandle.RT.width, sourceHandle.RT.height, 1);
-                
+
                 Graphics.Blit(destHandle, dest);
             }
         }
@@ -122,7 +122,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             EditorGUI.BeginChangeCheck();
             m_RemapCurve = EditorGUI.CurveField(curveRect, m_RemapCurve);
-            if(EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck())
             {
                 var tex = GetRemapTexture();
                 Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref tex);

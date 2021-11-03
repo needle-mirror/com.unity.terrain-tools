@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Analytics;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     /// <summary>
     /// Analytics class for collecting and sending aggregated user data
@@ -124,7 +124,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// </summary>
         static void SendAnalytics()
         {
-            if(m_Data.Equals(default(BrushAnalyticsData))) 
+            if (m_Data.Equals(default(BrushAnalyticsData)))
                 return;
 
             m_Data.duration = s_PaintingDuration;
@@ -217,7 +217,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                                 {
                                     //Check if there's a change between the original and current keyframe values
                                     //Cache the change if there's a difference
-                                    if(!currentValue[k].Equals(originalValue[k]))
+                                    if (!currentValue[k].Equals(originalValue[k]))
                                     {
                                         CacheChangedParamter($"{parameters[i].Name}", currentValue[k], originalValue[k]);
                                         break;
@@ -250,7 +250,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             m_Data.brush_parameters = s_ModifiedBrushParameters;
         }
 
-        #region Helper Methods
         /// <summary>
         /// Caches the shortcutId on keyRelease to be sent as analytics data if the 
         /// shortcut key hasn't been cached already
@@ -258,7 +257,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         /// <param name="shortcutId">ID of the shortcut </param>
         internal static void OnShortcutKeyRelease(string shortcutId)
         {
-            if(!s_UsedBrushShortcut.Contains(shortcutId))
+            if (!s_UsedBrushShortcut.Contains(shortcutId))
                 s_UsedBrushShortcut.Add(shortcutId);
         }
 
@@ -299,8 +298,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             else
                 return originalValue;
         }
-
-        #endregion
     }
 }
 

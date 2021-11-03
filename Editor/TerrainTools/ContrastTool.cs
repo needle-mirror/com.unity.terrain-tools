@@ -1,14 +1,15 @@
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-    public class ContrastTool : TerrainPaintTool<ContrastTool>
+    internal class ContrastTool : TerrainPaintTool<ContrastTool>
     {
 #if UNITY_2019_1_OR_NEWER
         [Shortcut("Terrain/Select Contrast Tool", typeof(TerrainToolShortcutContext))]
-        static void SelectShortcut(ShortcutArguments args) {
+        static void SelectShortcut(ShortcutArguments args)
+        {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             context.SelectPaintTool<ContrastTool>();
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Contrast Tool");
@@ -17,14 +18,13 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI
-        {
+        private IBrushUIGroup commonUI {
             get
             {
-                if( m_commonUI == null )
+                if (m_commonUI == null)
                 {
                     LoadSettings();
-                    m_commonUI = new DefaultBrushUIGroup( "ContrastTool", UpdateAnalyticParameters );
+                    m_commonUI = new DefaultBrushUIGroup("ContrastTool", UpdateAnalyticParameters);
                     m_commonUI.OnEnterToolMode();
                 }
 
@@ -49,17 +49,19 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Effects/Contrast";
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return "Click to sharpen the terrain height.";
         }
 
-        public override void OnEnterToolMode() {
+        public override void OnEnterToolMode()
+        {
             base.OnEnterToolMode();
             commonUI.OnEnterToolMode();
         }
 
-        public override void OnExitToolMode() {
+        public override void OnExitToolMode()
+        {
             base.OnExitToolMode();
             commonUI.OnExitToolMode();
         }
@@ -85,15 +87,17 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
 
             Texture brushTexture = editContext.brushTexture;
-            
-            using(IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "ContrastTool", brushTexture))
+
+            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "ContrastTool", brushTexture))
             {
-                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
                     PaintContext paintContext = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                    Material material = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
-                
-                    brushRender.RenderBrushPreview(paintContext, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushXform, material, 0);
+                    Material previewMaterial = Utility.GetDefaultPreviewMaterial();
+                    var texelCtx = Utility.CollectTexelValidity(paintContext.originTerrain, brushXform.GetBrushXYBounds());
+                    Utility.SetupMaterialForPaintingWithTexelValidityContext(paintContext, texelCtx, brushXform, previewMaterial);
+                    TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.SourceRenderTexture,
+                        editContext.brushTexture, brushXform, previewMaterial, 0);
 
                     // draw result preview
                     {
@@ -102,9 +106,12 @@ namespace UnityEditor.Experimental.TerrainAPI
                         // restore old render target
                         RenderTexture.active = paintContext.oldRenderTexture;
 
-                        material.SetTexture("_HeightmapOrig", paintContext.sourceRenderTexture);
-                        brushRender.RenderBrushPreview(paintContext, TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture, brushXform, material, 1);
+                        previewMaterial.SetTexture("_HeightmapOrig", paintContext.sourceRenderTexture);
+                        TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.DestinationRenderTexture,
+                            editContext.brushTexture, brushXform, previewMaterial, 1);
                     }
+
+                    texelCtx.Cleanup();
                 }
             }
         }
@@ -117,9 +124,10 @@ namespace UnityEditor.Experimental.TerrainAPI
             commonUI.OnInspectorGUI(terrain, editContext);
 
             m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controls, m_ShowControls, () => { m_FeatureSize = 25.0f; });
-            if (m_ShowControls) {
+            if (m_ShowControls)
+            {
                 EditorGUILayout.BeginVertical("GroupBox");
-                    m_FeatureSize = EditorGUILayout.Slider(Styles.featureSize, m_FeatureSize, 1.0f, 100.0f);
+                m_FeatureSize = EditorGUILayout.Slider(Styles.featureSize, m_FeatureSize, 1.0f, 100.0f);
                 EditorGUILayout.EndVertical();
             }
 
@@ -131,13 +139,14 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
 
-        public void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform) {
+        public void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
+        {
             Material mat = GetPaintMaterial();
             Vector4 brushParams = new Vector4(commonUI.brushStrength, 0.0f, m_FeatureSize, 0);
-            
+
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
-            
+
             renderer.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
             renderer.RenderBrush(paintContext, mat, 0);
         }
@@ -145,14 +154,15 @@ namespace UnityEditor.Experimental.TerrainAPI
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
             Texture brushTexture = editContext.brushTexture;
-            
+
             commonUI.OnPaint(terrain, editContext);
 
-            if(!commonUI.allowPaint) { return true; }
+            if (!commonUI.allowPaint)
+            { return true; }
 
-            using(IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "ContrastTool", brushTexture))
+            using (IBrushRenderUnderCursor brushRender = new BrushRenderUIGroupUnderCursor(commonUI, "ContrastTool", brushTexture))
             {
-                if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                 {
                     PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds(), 1);
 
@@ -183,10 +193,9 @@ namespace UnityEditor.Experimental.TerrainAPI
             m_FeatureSize = EditorPrefs.GetFloat("Unity.TerrainTools.Contrast.FeatureSize", 25.0f);
         }
 
-        #region Analytics
+        //Analytics Setup
         private TerrainToolsAnalytics.IBrushParameter[] UpdateAnalyticParameters() => new TerrainToolsAnalytics.IBrushParameter[]{
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Styles.featureSize.text, Value = m_FeatureSize},
         };
-        #endregion
     }
 }

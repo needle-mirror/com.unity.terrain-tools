@@ -1,8 +1,7 @@
-
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
-	public interface IBrushStrengthController : IBrushController
-	{
-		float brushStrength { get; set; }
-	}
+    public interface IBrushStrengthController : IBrushController
+    {
+        float brushStrength { get; set; }
+    }
 }
