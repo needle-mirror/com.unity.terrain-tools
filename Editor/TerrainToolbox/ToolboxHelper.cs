@@ -79,9 +79,9 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public static Terrain[] GetSelectedTerrainsInScene()
+        public static Terrain[] GetSelectedTerrainsInScene(SelectionMode selectionMode = SelectionMode.Unfiltered)
         {
-            var objs = Selection.GetFiltered(typeof(Terrain), SelectionMode.Unfiltered);
+            var objs = Selection.GetFiltered(typeof(Terrain), selectionMode);
             var terrains = new Terrain[objs.Length];
             for (var i = 0; i < objs.Length; i++)
             {
@@ -470,6 +470,28 @@ namespace UnityEditor.TerrainTools
 
         public static void FlipTexture(Texture2D texture, bool isHorizontal)
         {
+            if (texture == null)
+            {
+                return;
+            }
+
+            // check if texture is read-only before proceeding, because it could pass in a Texture2D from an object selector UI 
+            if (!texture.isReadable)
+            {
+                string assetPath = AssetDatabase.GetAssetPath(texture);
+                var textureImporter = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+                if (textureImporter != null)
+                {
+                    textureImporter.isReadable = true;
+                    AssetDatabase.ImportAsset(assetPath);
+                    AssetDatabase.Refresh();
+                }
+                else
+                {
+                    return;
+                }
+            }
+
             Color[] originalPixels = texture.GetPixels();
             Color[] flippedPixels = new Color[originalPixels.Length];
             int width = texture.width;

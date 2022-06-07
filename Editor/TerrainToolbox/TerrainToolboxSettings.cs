@@ -15,7 +15,6 @@ namespace UnityEditor.TerrainTools
         readonly TerrainSettings m_DefaultSettings = ScriptableObject.CreateInstance<TerrainSettings>();
 
         string m_MaterialPath = string.Empty;
-        Vector2 m_ScrollPosition = Vector2.zero;
         AnimBool m_ShowCustomMaterial = new AnimBool();
         AnimBool m_ShowBuiltinSpecular = new AnimBool();
         AnimBool m_ShowReflectionProbes = new AnimBool();
@@ -112,10 +111,8 @@ namespace UnityEditor.TerrainTools
             // scroll view of settings
             EditorGUIUtility.hierarchyMode = true;
             TerrainToolboxUtilities.DrawSeperatorLine();
-            m_ScrollPosition = EditorGUILayout.BeginScrollView(m_ScrollPosition);
-
-            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Load Settings", EditorStyles.boldLabel);
+            EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button(Styles.LoadDefaultBtn))
             {
                 ResetToDefaultSettings();
@@ -132,10 +129,10 @@ namespace UnityEditor.TerrainTools
 
             // Presets
             TerrainToolboxUtilities.DrawSeperatorLine();
-            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(Styles.Preset, EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
             m_SelectedPreset = (TerrainSettings)EditorGUILayout.ObjectField(m_SelectedPreset, typeof(TerrainSettings), false);
+            EditorGUILayout.BeginHorizontal();
             if (EditorGUI.EndChangeCheck() && m_SelectedPreset != null)
             {
                 if (EditorUtility.DisplayDialog("Confirm", "Load terrain settings from selected preset?", "OK", "Cancel"))
@@ -239,7 +236,6 @@ namespace UnityEditor.TerrainTools
 
             --EditorGUI.indentLevel;
             EditorGUILayout.Space();
-            EditorGUILayout.EndScrollView();
 
             // buttons
             TerrainToolboxUtilities.DrawSeperatorLine();

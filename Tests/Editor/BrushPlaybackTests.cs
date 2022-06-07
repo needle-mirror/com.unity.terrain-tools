@@ -243,6 +243,70 @@ namespace UnityEditor.TerrainTools
             // check to see if the terrain changed
             Assert.That(AreHeightsEqual(startHeightArr, GetFullTerrainHeights(terrainObj)), Is.False, "Brush didn't make changes to terrain heightmap");
         }
+        
+        [UnityTest]
+        [TestCase("DetailScatterHistory", ExpectedResult = null)]
+        public IEnumerator Test_DetailScatter_Playback(string recordingFilePath)
+        {
+            yield return null;
+            SetupTerrain();
+
+            DetailPrototype[] prototypes = new DetailPrototype[]
+            {
+                new DetailPrototype()
+                {
+                    prototype = GameObject.CreatePrimitive(PrimitiveType.Cube)
+                },
+                new DetailPrototype()
+                {
+                    prototype = GameObject.CreatePrimitive(PrimitiveType.Sphere)
+                },
+                new DetailPrototype()
+                {
+                    prototype = GameObject.CreatePrimitive(PrimitiveType.Capsule)
+                }
+            };
+            TerrainData tData = terrainObj.terrainData;
+            tData.detailPrototypes = prototypes;
+
+            var detailScatterTool = DetailScatterTool.instance;
+            detailScatterTool.UpdateDetailUIData(terrainObj);
+
+            
+            bool[] detailShouldBeFound = {false, true, true};
+            for (int i = 0; i < detailShouldBeFound.Length; i++)
+                detailScatterTool.detailDataList[i].isSelected = detailShouldBeFound[i];
+            
+            detailScatterTool.ChangeCommonUI(defaultBrushUiGroupMock);
+            defaultBrushUiGroupMock.SetTerrain(terrainObj);
+            RunPainting(recordingFilePath, detailScatterTool);
+
+            // We should only find prototypes that are active in the scatter tool
+            // In this case, only prototypes in layer 1 & 2 should be found (not 0)
+            bool[] detailIsFound = {false, false, false};
+            for (int i = 0; i < prototypes.Length; i++)
+            {
+                var detailLayer = terrainObj.terrainData.GetDetailLayer(0, 0, tData.detailWidth, tData.detailHeight, i);
+
+                for (int y = 0; y < tData.detailHeight; y++)
+                {
+                    for (int x = 0; x < tData.detailWidth; x++)
+                    {
+                        if (detailLayer[y, x] > 0)
+                        {
+                            detailIsFound[i] = true;
+                            break;
+                        }
+                    }
+                }
+
+            }
+            
+            // check to see if appropriate details were scattered
+            Assert.That(detailIsFound[0], Is.False);
+            Assert.That(detailIsFound[1], Is.True);
+            Assert.That(detailIsFound[2], Is.True);
+        }
 
         [UnityTest]
         [TestCase("StampToolHistory", 500.0f, ExpectedResult = null)]

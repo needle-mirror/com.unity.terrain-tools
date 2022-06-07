@@ -66,6 +66,11 @@ namespace UnityEditor.TerrainTools
             /// Uses the Multiply shader pass.
             /// </summary>
             Multiply = 9,
+
+            /// <summary>
+            /// Uses the Terrain Layer shader pass.
+            /// </summary>
+            Layer = 10
         }
 
         /// <summary>
@@ -114,6 +119,15 @@ namespace UnityEditor.TerrainTools
 
                 return m_blendModesMaterial;
             }
+        }
+
+        /// <summary>
+        /// Tells whether the Terrain Layer filter is active within the selected tool/brush
+        /// </summary>
+        private static bool m_isLayerFilterActive;
+        internal static bool LayerFilterActiveState { 
+            get { return m_isLayerFilterActive; }
+            set { m_isLayerFilterActive = value; }
         }
 
         /// <summary>

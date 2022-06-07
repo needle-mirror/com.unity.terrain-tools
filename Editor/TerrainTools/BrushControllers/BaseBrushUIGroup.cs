@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.TerrainTools;
 
 namespace UnityEditor.TerrainTools
 {
@@ -98,40 +100,123 @@ namespace UnityEditor.TerrainTools
         /// </summary>
         public bool hasEnabledFilters => brushMaskFilterStack.hasEnabledFilters;
 
+        private void SetFilterContext(TerrainData terrainData, Vector3 position, float scale, float rotation)
+        {
+            // set the filter context properties
+            filterContext.brushPos = position;
+            filterContext.brushSize = scale;
+            filterContext.brushRotation = rotation;
+
+            // bind properties for filters to read/write to
+            filterContext.diffuseTextures = terrainData.terrainLayers;
+            filterContext.floatProperties[FilterContext.Keywords.TerrainScale] = Mathf.Sqrt(terrainData.size.x * terrainData.size.x + terrainData.size.z * terrainData.size.z);
+            filterContext.vectorProperties["_TerrainSize"] = new Vector4(terrainData.size.x, terrainData.size.y, terrainData.size.z, 0.0f);
+        }
+
         /// <summary>
         /// Generates the brush mask.
         /// </summary>
+        /// <remarks>
+        /// **Note:** Using this version of the overloaded method allows for the use of the Layer Filter
+        /// </remarks>
+        /// <param name="terrain">The terrain in focus.</param>
+        /// <param name="brushRender">The brushRender object used for acquiring the heightmap and splatmap texture to blit from.</param>
+        /// <param name="destinationRenderTexture">The destination render texture for bliting to.</param>
+        /// <param name="position">The brush's position.</param>
+        /// <param name="scale">The brush's scale.</param>
+        /// <param name="rotation">The brush's rotation.</param>
+        /// <seealso cref="GenerateBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture, Vector3 position, float scale, float rotation)"/> 
+        public void GenerateBrushMask(Terrain terrain, IBrushRenderUnderCursor brushRender, RenderTexture destinationRenderTexture,
+            Vector3 position, float scale, float rotation)
+        {
+            filterContext.ReleaseRTHandles();
+
+            FilterUtility.LayerFilterActiveState = true;
+            if (brushRender.CalculateBrushTransform(out BrushTransform brushTransform))
+            {
+                Rect brushRect = brushTransform.GetBrushXYBounds();
+                
+                using (new ActiveRenderTextureScope(null))
+                {
+                    TerrainData terrainData = terrain.terrainData;
+                    SetFilterContext(terrainData, position, scale, rotation);
+
+                    // bind terrain texture data
+                    PaintContext heightContext = brushRender.AcquireHeightmap(false, brushRect);
+                    filterContext.rtHandleCollection.AddRTHandle(0, FilterContext.Keywords.Heightmap, heightContext.sourceRenderTexture.graphicsFormat);
+
+                    List<LayerFilter> layerFilters = brushMaskFilterStack.filters.OfType<LayerFilter>().ToList();
+                    if(layerFilters.Count > 0)
+                    {
+                        // bind layer filter alphamap textures
+                        for (int i = 0; i < layerFilters.Count; i++)
+                        {
+                            LayerFilter layerFilter = layerFilters[i];
+                            if (layerFilter.layerIndex >= terrainData.terrainLayers.Length)
+                                continue;
+
+                            PaintContext paintContext = brushRender.AcquireTexture(false, brushRect, terrain.terrainData.terrainLayers[layerFilter.layerIndex]);
+                            layerFilter.splatmapKeyword = FilterContext.Keywords.Splatmap + i;
+                            filterContext.rtHandleCollection.AddRTHandle(1 + i, layerFilter.splatmapKeyword, paintContext.sourceRenderTexture.graphicsFormat);
+                            brushRender.Release(paintContext);
+                        }
+                        filterContext.rtHandleCollection.GatherRTHandles(heightContext.sourceRenderTexture.width, heightContext.sourceRenderTexture.height);
+
+                        // blit the gathererd rthandles
+                        foreach(LayerFilter layerFilter in layerFilters)
+                        {
+                            if (layerFilter.layerIndex >= terrainData.terrainLayers.Length)
+                                continue;
+
+                            PaintContext paintContext = brushRender.AcquireTexture(false, brushRect, terrain.terrainData.terrainLayers[layerFilter.layerIndex]);
+                            Graphics.Blit(paintContext.sourceRenderTexture, filterContext.rtHandleCollection[layerFilter.splatmapKeyword]);
+                            brushRender.Release(paintContext);
+                        }
+                        Graphics.Blit(heightContext.sourceRenderTexture, filterContext.rtHandleCollection[FilterContext.Keywords.Heightmap]);
+                    }
+                    else
+                    {
+                        filterContext.rtHandleCollection.GatherRTHandles(heightContext.sourceRenderTexture.width, heightContext.sourceRenderTexture.height);
+                        Graphics.Blit(heightContext.sourceRenderTexture, filterContext.rtHandleCollection[FilterContext.Keywords.Heightmap]);
+                    }
+                    
+                    brushMaskFilterStack.Eval(filterContext, heightContext.sourceRenderTexture, destinationRenderTexture);
+                }
+                filterContext.ReleaseRTHandles();
+            }
+        }
+
+        /// <summary>
+        /// Generates the brush mask.
+        /// </summary>
+        /// <remarks>
+        /// **Note:** Use <see cref="GenerateBrushMask(Terrain terrain, IBrushRenderUnderCursor brushRender, RenderTexture destinationRenderTexture, Vector3 position, float scale, float rotation)"/> 
+        /// if Layer Filtering capabilities are desired.
+        /// </remarks>
         /// <param name="terrain">The terrain in focus.</param>
         /// <param name="sourceRenderTexture">The source render texture to blit from.</param>
         /// <param name="destinationRenderTexture">The destination render texture for bliting to.</param>
         /// <param name="position">The brush's position.</param>
         /// <param name="scale">The brush's scale.</param>
         /// <param name="rotation">The brush's rotation.</param>
-        public void GenerateBrushMask(Terrain terrain, RenderTexture sourceRenderTexture,
-            RenderTexture destinationRenderTexture,
-            Vector3 position, float scale, float rotation)
+        /// <seealso cref="GenerateBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture, Vector3 position, float scale, float rotation)"/>
+        public void GenerateBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture,
+           Vector3 position, float scale, float rotation)
         {
             filterContext.ReleaseRTHandles();
 
-            using(new ActiveRenderTextureScope(null))
+            FilterUtility.LayerFilterActiveState = false;
+            using (new ActiveRenderTextureScope(null))
             {
-                // set the filter context properties
-                filterContext.brushPos = position;
-                filterContext.brushSize = scale;
-                filterContext.brushRotation = rotation;
+                SetFilterContext(terrain.terrainData, position, scale, rotation);
 
-                // bind properties for filters to read/write to
-                var terrainData = terrain.terrainData;
-                filterContext.floatProperties[FilterContext.Keywords.TerrainScale] = Mathf.Sqrt(terrainData.size.x * terrainData.size.x + terrainData.size.z * terrainData.size.z);
-                filterContext.vectorProperties["_TerrainSize"] = new Vector4(terrainData.size.x, terrainData.size.y, terrainData.size.z, 0.0f);
-                
                 // bind terrain texture data
                 filterContext.rtHandleCollection.AddRTHandle(0, FilterContext.Keywords.Heightmap, sourceRenderTexture.graphicsFormat);
                 filterContext.rtHandleCollection.GatherRTHandles(sourceRenderTexture.width, sourceRenderTexture.height);
                 Graphics.Blit(sourceRenderTexture, filterContext.rtHandleCollection[FilterContext.Keywords.Heightmap]);
                 brushMaskFilterStack.Eval(filterContext, sourceRenderTexture, destinationRenderTexture);
             }
-            
+
             filterContext.ReleaseRTHandles();
         }
 
@@ -144,7 +229,7 @@ namespace UnityEditor.TerrainTools
         /// <seealso cref="GenerateBrushMask(Terrain, RenderTexture, RenderTexture, Vector3, float, float)"/>
         public void GenerateBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
         {
-            GenerateBrushMask(terrain, sourceRenderTexture, destinationRenderTexture, raycastHitUnderCursor.point, brushSize, brushRotation);
+             GenerateBrushMask(terrain, sourceRenderTexture, destinationRenderTexture, raycastHitUnderCursor.point, brushSize, brushRotation);
         }
 
         /// <summary>
@@ -155,7 +240,17 @@ namespace UnityEditor.TerrainTools
         /// <seealso cref="GenerateBrushMask(Terrain, RenderTexture, RenderTexture, Vector3, float, float)"/>
         public void GenerateBrushMask(RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture)
         {
-            GenerateBrushMask(terrainUnderCursor, sourceRenderTexture, destinationRenderTexture);
+             GenerateBrushMask(terrainUnderCursor, sourceRenderTexture, destinationRenderTexture);
+        }
+
+        /// <summary>
+        /// Generates the brush mask.
+        /// </summary>
+        /// <param name="brushRender">The brushRender object used for acquiring the heightmap and splatmap texture to blit from.</param>
+        /// <param name="destinationRenderTexture">The destination render texture for bliting to.</param>
+        public void GenerateBrushMask(IBrushRenderUnderCursor brushRender, RenderTexture destinationRenderTexture)
+        {
+            GenerateBrushMask(terrainUnderCursor, brushRender, destinationRenderTexture, raycastHitUnderCursor.point, brushSize, brushRotation);
         }
 
         /// <summary>

@@ -70,6 +70,8 @@ namespace UnityEditor.TerrainTools
 
         public PaintContext AcquireHeightmap(bool writable, Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
         {
+            if (m_HeightmapContext != null) return m_HeightmapContext;
+            
             m_WriteToHeightmap = writable;
             m_HeightmapContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, boundsInTerrainSpace, extraBorderPixels);
 
@@ -83,6 +85,8 @@ namespace UnityEditor.TerrainTools
 
         public PaintContext AcquireTexture(bool writable, Terrain terrain, Rect boundsInTerrainSpace, TerrainLayer layer, int extraBorderPixels = 0)
         {
+            if (m_TextureContext != null) return m_TextureContext;
+            
             m_WriteToTexture = writable;
             m_TextureContext = TerrainPaintUtility.BeginPaintTexture(terrain, boundsInTerrainSpace, layer, extraBorderPixels);
 
@@ -96,6 +100,8 @@ namespace UnityEditor.TerrainTools
 
         public PaintContext AcquireNormalmap(bool writable, Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
         {
+            if (m_NormalmapContext != null) return m_NormalmapContext;
+            
             m_NormalmapContext = TerrainPaintUtility.CollectNormals(terrain, boundsInTerrainSpace, extraBorderPixels);
 
             if (m_NormalmapContext == null)
@@ -108,6 +114,8 @@ namespace UnityEditor.TerrainTools
 
         public PaintContext AcquireHolesTexture(bool writable, Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
         {
+            if (m_HolesContext != null) return m_HolesContext;
+            
             m_WriteToHoles = writable;
 #if UNITY_2019_3_OR_NEWER
             m_HolesContext = TerrainPaintUtility.BeginPaintHoles(terrain, boundsInTerrainSpace, extraBorderPixels);

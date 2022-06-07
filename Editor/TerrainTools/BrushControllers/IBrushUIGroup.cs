@@ -167,6 +167,14 @@ namespace UnityEditor.TerrainTools
         void GenerateBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture, Vector3 position, float scale, float rotation);
 
         /// <summary>
+        /// Generates the brush mask.
+        /// </summary>
+        /// <param name="brushRender">The brushRender object used for acquiring the heightmap and splatmap texture to blit from.</param>
+        /// <param name="destinationRenderTexture">The destination render texture for bliting to.</param>
+        /// <remarks>This overload method enables the use of the Layer Filter.</remarks>
+        void GenerateBrushMask(IBrushRenderUnderCursor brushRender, RenderTexture destinationRenderTexture);
+
+        /// <summary>
         /// Scatters the brush around the specified UV on the specified terrain. If the scattered UV leaves
         /// the current terrain then the terrain AND UV are modified for the terrain the UV is now over.
         /// </summary>

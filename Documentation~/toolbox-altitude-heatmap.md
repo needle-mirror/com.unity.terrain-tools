@@ -6,7 +6,7 @@ Select **Altitude Heatmap** to visualize the height of your Terrain at different
 
 | **Property**         | **Description**                                              |
 | -------------------- | ------------------------------------------------------------ |
-| **Reference Space**  | Select a splatmap from the list to preview it on multiple Terrain tiles. |
+| **Reference Space**  | Select either **World Space** or **Local Space**. Click World Space to use the scene's origin as the sea level. Click Local Space to use the terrain's origin as the sea level. |
 | **Measurement Unit** | Select either **Meters** or **Feet**. A Unity unit is equivalent to 1 meter, which is approximately 3.28 feet. |
 | **Levels**           | Use the slider to select how many levels of elevation to visualize. |
 | **Levels Altitude**  | Alternatively, enter an altitude level in the number field.  |

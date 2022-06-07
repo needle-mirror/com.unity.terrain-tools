@@ -571,6 +571,23 @@ namespace UnityEditor.TerrainTools
 
         /// <summary>
         /// Sets and Generates the filter <see cref="RenderTexture"/> for transformation brushes and bind the texture to the provided Material.
+        /// **Note:** Using this method will enable the Terrain Layer filter
+        /// </summary>
+        /// <param name="commonUI">The brush's commonUI group.</param>
+        /// <param name="brushRender">The brushRender object used for acquiring the heightmap and splatmap texture to blit from.</param>
+        /// <param name="destinationRenderTexture">The <see cref="RenderTexture"/> designated as the destination.</param>
+        /// <param name="mat">The <see cref="Material"/> to update.</param>
+        /// <seealso cref="FilterStack"/>
+        /// <seealso cref="FilterContext"/>
+        public static void GenerateAndSetFilterRT(IBrushUIGroup commonUI, IBrushRenderUnderCursor brushRender, RenderTexture destinationRenderTexture, Material mat)
+        {
+            commonUI.GenerateBrushMask(brushRender, destinationRenderTexture);
+            mat.SetTexture("_FilterTex", destinationRenderTexture);
+        }
+
+        /// <summary>
+        /// Generate the filter render texture for transformation brushes and bind the texture to the provided Material
+        /// Sets and Generates the filter <see cref="RenderTexture"/> for transformation brushes and bind the texture to the provided Material.
         /// </summary>
         /// <param name="commonUI">The brush's commonUI group.</param>
         /// <param name="sourceRenderTexture">The <see cref="RenderTexture"/> designated as the source.</param>

@@ -31,6 +31,9 @@ namespace UnityEditor.TerrainTools
         internal TerrainToolboxVisualization m_TerrainVisualizationMode;
 
         const string PrefName = "TerrainToolbox.Window.Mode";
+        
+        Vector2 m_ScrollPosition = Vector2.zero;
+        private bool scrollBarActive = false; 
 
         static class Styles
         {
@@ -40,8 +43,18 @@ namespace UnityEditor.TerrainTools
                 EditorGUIUtility.TrTextContent("Terrain Settings"),
                 EditorGUIUtility.TrTextContent("Terrain Utilities"),
                 EditorGUIUtility.TrTextContent("Terrain Visualization")
+                
             };
+            // use this one if the width is smaller
 
+            public static readonly GUIContent[] CompactModeToggles =
+            {
+                new GUIContent("Create", "Create New Terrain"),
+                new GUIContent("Settings", "Terrain Settings"),
+                new GUIContent("Utilities", "Terrain Utilities"),
+                new GUIContent("Visualization", "Terrain Visualization")
+            };
+            
             public static readonly GUIStyle ButtonStyle = "LargeButton";
         }
 
@@ -60,7 +73,7 @@ namespace UnityEditor.TerrainTools
             m_TerrainVisualizationMode.LoadSettings();
             LoadSettings();
         }
-
+        
         public void OnDisable()
         {
             m_CreateTerrainMode.OnDisable();
@@ -70,15 +83,17 @@ namespace UnityEditor.TerrainTools
             m_TerrainVisualizationMode.SaveSettings();
             SaveSettings();
         }
-
         public void OnGUI()
         {
+
             EditorGUILayout.Space();
-            EditorGUILayout.BeginHorizontal();
-
+            m_ScrollPosition = EditorGUILayout.BeginScrollView(m_ScrollPosition, GUILayout.Width(EditorGUIUtility.currentViewWidth));
+            GUIStyle vertStyle = new GUIStyle();
+            // force the vertical box to be smaller than the scrollview in width so that the horizontal scrollbar is suppressed 
+            vertStyle.fixedWidth = EditorGUIUtility.currentViewWidth - (scrollBarActive ? 15 : 5);
+            // encapsulate the vertical box in the scrollview 
+            EditorGUILayout.BeginVertical(vertStyle);
             ToggleManagerMode();
-
-            EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
 
             switch (m_SelectedMode)
@@ -99,15 +114,42 @@ namespace UnityEditor.TerrainTools
                     m_TerrainVisualizationMode.OnGUI();
                     break;
             }
+
+            // before ending the scrollView, get the y value 
+            float scrollY = 0f;
+            if (Event.current.type == EventType.Repaint)
+            {
+                scrollY = GUILayoutUtility.GetLastRect().y;
+            }
+
+            // close the views 
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndScrollView();
+
+            float scrollHeight = 0f;
+            // after ending the scrollview, get its height and save it 
+            if (Event.current.type == EventType.Repaint)
+            {
+                scrollHeight = GUILayoutUtility.GetLastRect().height;
+            }
+
+            // update the scrollBarActive variable 
+            if (Event.current.type == EventType.Repaint)
+            {
+                scrollBarActive = scrollY > scrollHeight;
+            }
         }
 
         void ToggleManagerMode()
         {
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-
             EditorGUI.BeginChangeCheck();
-            m_SelectedMode = (TerrainManagerMode)GUILayout.Toolbar((int)m_SelectedMode, Styles.ModeToggles, Styles.ButtonStyle, GUI.ToolbarButtonSize.FitToContents);
+            
+            // changes toggles based on the screen width of the GUI 
+            var toggleNames= EditorGUIUtility.currentViewWidth < 453 ? Styles.CompactModeToggles : Styles.ModeToggles;
+            m_SelectedMode = (TerrainManagerMode)GUILayout.Toolbar((int)m_SelectedMode, toggleNames, Styles.ButtonStyle, GUI.ToolbarButtonSize.FitToContents);
+            
             if (EditorGUI.EndChangeCheck())
             {
                 GUIUtility.keyboardControl = 0;

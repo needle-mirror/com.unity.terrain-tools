@@ -630,8 +630,8 @@ namespace UnityEditor.TerrainTools
         private static string GetShaderName(ShaderGeneratorDescriptor generatorDesc, FractalTypeDescriptor fractalDesc)
         {
             string shaderStr = string.Format("{0}/{1}{2}", generatorDesc.shaderCategory,
-                                                        generatorDesc.name,
-                                                        fractalDesc.name);
+                                                           generatorDesc.name,
+                                                           fractalDesc.name);
 
             return shaderStr;
         }
@@ -727,7 +727,7 @@ namespace UnityEditor.TerrainTools
                         passesSB.Append(passTemplateStr);
                         passesSB.AppendLine();
                         passesSB.Replace(NoiseLib.Strings.k_tagIncludes, string.Format("#include \"{0}\"", info.generatedIncludePath));
-                    
+                       
                         info.ReplaceTags(passesSB);
                     }
 

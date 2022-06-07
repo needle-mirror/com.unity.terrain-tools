@@ -15,25 +15,43 @@ namespace UnityEngine.TerrainTools
     internal class TerrainToolboxLayer
     {
         // add a list of terrain layers to terrain, and have an option of clear existing ones
-        public static void AddLayersToTerrain(TerrainData terrainData, List<TerrainLayer> layers, bool clearExisting)
+        // return a bool representing if the added layers are already within the trerrain 
+        public static bool AddLayersToTerrain(TerrainData terrainData, List<TerrainLayer> layers, bool clearExisting)
         {
             if (terrainData == null || layers == null)
-                return;
+                return false; //Early out 
 
             if (clearExisting)
             {
+                if(terrainData.terrainLayers.Length > layers.Count)
+                {
+                    for(int i = terrainData.terrainLayers.Length - 1; i >= layers.Count; i--)
+                    {
+                        TerrainToolboxLayer.RemoveLayerFromTerrain(terrainData, i);
+                    }
+                }
                 terrainData.SetTerrainLayersRegisterUndo(layers.ToArray(), "Clearing layers");
+                return false;
             }
             else
             {
-                // check and remove existing layers
-                var filteredLayers = layers.Where(i => !terrainData.terrainLayers.Contains(i)).ToArray();
-                int oldLength = terrainData.terrainLayers.Length;
-                int newLength = oldLength + filteredLayers.Length;
-                var newArray = new TerrainLayer[newLength];
+                bool existsWithinLayers = false;
+                var filteredLayers = layers.Where(i =>
+                {
+                    bool contains = !terrainData.terrainLayers.Contains(i);
+                    if (!contains)
+                    {
+                        existsWithinLayers = true;
+                    }
+                    return contains;
+                }).ToArray();
+                int terrainLength = terrainData.terrainLayers.Length;
+                int filterdLength = filteredLayers.Length;
+                var newArray = new TerrainLayer[terrainLength + filterdLength];
                 terrainData.terrainLayers.CopyTo(newArray, 0);
-                filteredLayers.CopyTo(newArray, oldLength);
+                filteredLayers.CopyTo(newArray, terrainLength);
                 terrainData.SetTerrainLayersRegisterUndo(newArray, "Add terrain layers");
+                return existsWithinLayers;
             }			
         }
 

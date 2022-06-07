@@ -27,6 +27,11 @@ namespace UnityEditor.TerrainTools
         public float brushRotation { get; internal set; }
 
         /// <summary>
+        /// Gets and sets terrain layer diffuse textures
+        /// </summary>
+        public TerrainLayer[] diffuseTextures { get; internal set; }
+
+        /// <summary>
         /// Gets and sets a collection of common RenderTextures that are used during Filter composition.
         /// </summary>
         public RTHandleCollection rtHandleCollection { get; private set; }
@@ -119,7 +124,12 @@ namespace UnityEditor.TerrainTools
             public static readonly string Heightmap = "_Heightmap";
 
             /// <summary>
-            /// Keyword for the scale of the Terrain.
+            /// Keyword for the Splatmap texture of the associated Terrain instance
+            /// </summary>
+            public static readonly string Splatmap = "_Splatmap";
+
+            /// <summary>
+            /// Keyword for the scale of the Terrain
             /// </summary>
             public static readonly string TerrainScale = "_TerrainScale";
         }

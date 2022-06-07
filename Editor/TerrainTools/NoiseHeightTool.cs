@@ -520,52 +520,51 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
+            
+            // Only render preview if this is a repaint. losing performance if we do
+            if (Event.current.type == EventType.Repaint)
+            {
+                using (IBrushRenderPreviewUnderCursor brushPreview =
+                    new BrushRenderPreviewUIGroupUnderCursor(commonUI, "NoiseHeightTool", editContext.brushTexture))
+                {
+                    float brushSize = commonUI.brushSize;
+                    float brushStrength = Event.current.control ? -commonUI.brushStrength : commonUI.brushStrength;
+                    Vector3 brushPosWS = commonUI.raycastHitUnderCursor.point;
+                    brushPreview.CalculateBrushTransform(out var brushXform);
+                    PaintContext ctx = brushPreview.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
+
+                    Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
+                    
+                    var filter = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                    Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filter, previewMaterial);
+                    
+                    var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
+                    Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                    
+                    previewMaterial.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
+                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
+                        editContext.brushTexture, brushXform, previewMaterial, 0);
+                    
+                    ApplyBrushInternal(terrain, ctx, brushXform, brushPosWS, commonUI.brushRotation,
+                                        brushStrength, brushSize, editContext.brushTexture);
+                    TerrainPaintUtility.SetupTerrainToolMaterialProperties(ctx, brushXform, previewMaterial);
+
+                    // restore old render target
+                    RenderTexture.active = ctx.oldRenderTexture;
+                    
+                     TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.DestinationRenderTexture,
+                        editContext.brushTexture, brushXform, previewMaterial, 1);
+                    texelCtx.Cleanup();
+                    RTUtils.Release(filter);
+                    brushPreview.Release(ctx); 
+                  
+                }
+            }
+            
 
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
 
-            // dont render preview if this isnt a repaint. losing performance if we do
-            if (Event.current.type != EventType.Repaint)
-            {
-                return;
-            }
-
-            using (IBrushRenderPreviewUnderCursor brushPreview =
-                    new BrushRenderPreviewUIGroupUnderCursor(commonUI, "NoiseHeightTool", editContext.brushTexture))
-            {
-                float brushSize = commonUI.brushSize;
-                float brushStrength = Event.current.control ? -commonUI.brushStrength : commonUI.brushStrength;
-                Vector3 brushPosWS = commonUI.raycastHitUnderCursor.point;
-                brushPreview.CalculateBrushTransform(out var brushXform);
-                PaintContext ctx = brushPreview.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-
-                Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
-
-                var filter = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filter, previewMaterial);
-               
-                var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
-                Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
-                
-                previewMaterial.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
-                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
-                    editContext.brushTexture, brushXform, previewMaterial, 0);
-
-                ApplyBrushInternal(terrain, ctx, brushXform, brushPosWS, commonUI.brushRotation,
-                                    brushStrength, brushSize, editContext.brushTexture);
-
-                TerrainPaintUtility.SetupTerrainToolMaterialProperties(ctx, brushXform, previewMaterial);
-
-                // restore old render target
-                RenderTexture.active = ctx.oldRenderTexture;
-
-                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.DestinationRenderTexture,
-                    editContext.brushTexture, brushXform, previewMaterial, 1);
-                texelCtx.Cleanup();
-
-                TerrainPaintUtility.ReleaseContextResources(ctx);
-                RTUtils.Release(filter);
-            }
         }
 
         private Vector3 WSPosFromTerrainUV(Terrain terrain, Vector2 uv)

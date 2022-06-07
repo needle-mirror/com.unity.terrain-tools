@@ -11,7 +11,6 @@ namespace UnityEditor.TerrainTools
     internal class TerrainToolboxCreateTerrain
     {
         EditorWindow m_ToolboxWindow;
-        Vector2 m_ScrollPosition = Vector2.zero;
         TerrainCreationSettings m_Settings = ScriptableObject.CreateInstance<TerrainCreationSettings>();
 
         // create terrain properties
@@ -96,7 +95,7 @@ namespace UnityEditor.TerrainTools
             public static readonly GUIContent ShowGizmo = EditorGUIUtility.TrTextContent("Show", "Make gizmo object visible.");
             public static readonly GUIContent HideGizmo = EditorGUIUtility.TrTextContent("Hide", "Make gizmo object invisible.");
             public static readonly GUIContent GizmoSettings = EditorGUIUtility.TrTextContent("Gizmo Settings");
-            public static readonly GUIContent GizmoBoundsEditor = EditorGUIUtility.TrTextContent("Edit Bounds", "Edit the bounding volume.\n\n - Hold Alt after clicking the control handle to pin center inn place.\n- Hold Shift after clicking the control handle to scale uniformly.");
+            public static readonly GUIContent GizmoBoundsEditor = EditorGUIUtility.TrTextContent("Edit Bounds", "Edit the bounding volume.\n\n - Hold " + TerrainToolGUIHelper.GetCorrectModifierKey() + " after clicking the control handle to pin center inn place.\n- Hold Shift after clicking the control handle to scale uniformly.");
             public static readonly GUIContent CubeColor = EditorGUIUtility.TrTextContent("Cube Color");
             public static readonly GUIContent CubeWireColor = EditorGUIUtility.TrTextContent("Cube Wire Color");
 
@@ -138,7 +137,6 @@ namespace UnityEditor.TerrainTools
             // scroll view of settings
             EditorGUIUtility.hierarchyMode = true;
             TerrainToolboxUtilities.DrawSeperatorLine();
-            m_ScrollPosition = EditorGUILayout.BeginScrollView(m_ScrollPosition);
 
             // General Settings
             ShowGeneralGUI();
@@ -163,7 +161,6 @@ namespace UnityEditor.TerrainTools
             // Presets
             ++EditorGUI.indentLevel;
             ShowPresetGUI();
-            EditorGUILayout.EndScrollView();
 
             // Options
             ShowOptionsGUI();
@@ -314,6 +311,27 @@ namespace UnityEditor.TerrainTools
                         return false;
                     }
                 }
+                else if (m_Settings.HeightmapMode == Heightmap.Mode.Tiles)
+                {
+                    int fileIndex = 0;
+                    bool validCheck = true;
+                    string listOfInvalidFiles = "";
+                    for (int x = 0; x < m_Settings.TilesZ; x++)
+                    {
+                        for (int y = 0; y < m_Settings.TilesX; y++)
+                        {
+                            if (!File.Exists(m_Settings.TileHeightmapPaths[fileIndex]))
+                            {
+                                listOfInvalidFiles += "\n(X-" + x + " | " + "Y-" + y + ")";
+                                validCheck = false;
+                            }
+                            fileIndex++;
+                        }
+                    }
+
+                    m_HeightmapWarningMessage = string.Format("Invalid tiles heightmap folder(s): {0}", listOfInvalidFiles);
+                    return validCheck;
+                }
             }
 
             return true;
@@ -325,7 +343,7 @@ namespace UnityEditor.TerrainTools
             EditorGUILayout.Space();
             ++EditorGUI.indentLevel;
             // Terrain Sizing
-            EditorGUI.BeginChangeCheck();
+            EditorGUI.BeginChangeCheck(); 
             m_Settings.TerrainWidth = Mathf.Clamp(EditorGUILayout.FloatField(Styles.TerrainWidth, m_Settings.TerrainWidth), kMinTerrainSize, kMaxTerrainSize);
             m_Settings.TerrainLength = Mathf.Clamp(EditorGUILayout.FloatField(Styles.TerrainLength, m_Settings.TerrainLength), kMinTerrainSize, kMaxTerrainSize);
             m_Settings.TerrainHeight = Mathf.Clamp(EditorGUILayout.FloatField(Styles.TerrainHeight, m_Settings.TerrainHeight), kMinTerrainSize, kMaxTerrainHeight);
@@ -378,10 +396,21 @@ namespace UnityEditor.TerrainTools
         void ShowImportHeightmapGUI()
         {
             // Heightmap Mode
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(Styles.HeightmapMode);
-            bool modeChanged = ToggleHightmapMode();
-            EditorGUILayout.EndHorizontal();
+            bool modeChanged = false; 
+            if (EditorGUIUtility.currentViewWidth < 310)
+            {
+                // if the window is small enough, compress the buttons so we can still see them 
+                EditorGUILayout.LabelField(Styles.HeightmapMode);
+                modeChanged = ToggleHeightmapMode();
+            }
+            else
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(Styles.HeightmapMode);
+                modeChanged = ToggleHeightmapMode();
+                EditorGUILayout.EndHorizontal();
+            }
+            
 
             // Heightmap selector			
             if (m_Settings.HeightmapMode == Heightmap.Mode.Global)
@@ -521,8 +550,9 @@ namespace UnityEditor.TerrainTools
                 }
             }
 
-            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.MinMaxSlider(Styles.HeightmapRemap, ref m_Settings.HeightmapRemapMin, ref m_Settings.HeightmapRemapMax, 0f, (float)m_Settings.TerrainHeight);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
             EditorGUILayout.LabelField(Styles.HeightmapRemapMin, GUILayout.Width(40.0f));
             m_Settings.HeightmapRemapMin = EditorGUILayout.FloatField(m_Settings.HeightmapRemapMin, GUILayout.Width(75.0f));
             EditorGUILayout.LabelField(Styles.HeightmapRemapMax, GUILayout.Width(40.0f));
@@ -535,10 +565,10 @@ namespace UnityEditor.TerrainTools
         {
             TerrainToolboxUtilities.DrawSeperatorLine();
             --EditorGUI.indentLevel;
-            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(Styles.Preset, EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
             m_SelectedPreset = (TerrainCreationSettings)EditorGUILayout.ObjectField(m_SelectedPreset, typeof(TerrainCreationSettings), false);
+            EditorGUILayout.BeginHorizontal();
             if (EditorGUI.EndChangeCheck() && m_SelectedPreset != null)
             {
                 if (EditorUtility.DisplayDialog("Confirm", "Load terrain creation settings from selected preset?", "OK", "Cancel"))
@@ -705,7 +735,7 @@ namespace UnityEditor.TerrainTools
         }
 
         //returns true if the mode changes
-        bool ToggleHightmapMode()
+        bool ToggleHeightmapMode()
         {
             bool changed = false;
 

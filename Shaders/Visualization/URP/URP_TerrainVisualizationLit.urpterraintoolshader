@@ -20,12 +20,12 @@
 
 	SubShader
 	{
-		Tags { "Queue" = "Geometry-100" "RenderType" = "Opaque" "RenderPipeline" = "LightweightPipeline" "IgnoreProjector" = "False"}
+		Tags { "Queue" = "Geometry-100" "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "IgnoreProjector" = "False"}
 		
 		Pass
 		{
 			Name "ForwardLit"
-			Tags { "LightMode" = "LightweightForward" "Renderer" = "LightWeight"}
+			Tags { "LightMode" = "UniversalForward" "Renderer" = "Universal"}
 			HLSLPROGRAM
 			// Required to compile gles 2.0 with standard srp library
 			#pragma prefer_hlslcc gles
@@ -69,7 +69,7 @@
 		Pass
 		{
 			Name "DepthOnly"
-			Tags{"LightMode" = "DepthOnly" "Renderer" = "LightWeight"}
+			Tags{"LightMode" = "DepthOnly" "Renderer" = "Universal"}
 
 			ZWrite On
 			ColorMask 0
@@ -90,8 +90,6 @@
 			#include "Packages/com.unity.terrain-tools/Shaders/Visualization/URP/URP_TerrainVisualizationLitPass.hlsl"
 			ENDHLSL
 		}
-
-		
 
 		UsePass "Hidden/Nature/Terrain/Utilities/PICKING"
 		UsePass "Hidden/Nature/Terrain/Utilities/SELECTION"

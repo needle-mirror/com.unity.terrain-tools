@@ -83,55 +83,55 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-
-            // update brush UI group
-            commonUI.OnSceneGUI(terrain, editContext);
-
-            // dont render preview if this isnt a repaint. losing performance if we do
-            if (Event.current.type != EventType.Repaint)
+            
+            // Only render preview if this is a repaint. losing performance if we do
+            if (Event.current.type == EventType.Repaint)
             {
-                return;
-            }
+                Texture brushTexture = editContext.brushTexture;
 
-            Texture brushTexture = editContext.brushTexture;
-
-            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PinchHeight", brushTexture))
-            {
-                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PinchHeight", brushTexture))
                 {
-                    PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
-
-                    var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
-                    Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
-                    var filterRT = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width,
-                        ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                    Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filterRT, previewMaterial);
-                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
-                        editContext.brushTexture, brushXform, previewMaterial, 0);
-
-                    // draw result preview
+                    
+                    if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
-                        float finalPinchAmount = m_PinchAmount * 0.005f; //scale to a reasonable value and negate so default mode is clockwise
-                        if (Event.current.shift)
+                        PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
+                        Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
+
+                        var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
+                        Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                        var filterRT = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width,
+                            ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                        Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filterRT, previewMaterial);
+                        TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
+                            editContext.brushTexture, brushXform, previewMaterial, 0);
+
+                        // draw result preview
                         {
-                            finalPinchAmount *= -1.0f;
+                            float finalPinchAmount = m_PinchAmount * 0.005f; //scale to a reasonable value and negate so default mode is clockwise
+                            if (Event.current.shift)
+                            {
+                                finalPinchAmount *= -1.0f;
+                            }
+
+                            ApplyBrushInternal(brushRender, ctx, commonUI.brushStrength, finalPinchAmount, brushTexture, brushXform);
+
+                            // restore old render target
+                            RenderTexture.active = ctx.oldRenderTexture;
+
+                            previewMaterial.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
+                            TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.DestinationRenderTexture,
+                                editContext.brushTexture, brushXform, previewMaterial, 1);
                         }
 
-                        ApplyBrushInternal(brushRender, ctx, commonUI.brushStrength, finalPinchAmount, brushTexture, brushXform);
-
-                        // restore old render target
-                        RenderTexture.active = ctx.oldRenderTexture;
-
-                        previewMaterial.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
-                        TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.DestinationRenderTexture,
-                            editContext.brushTexture, brushXform, previewMaterial, 1);
+                        texelCtx.Cleanup();
+                        RTUtils.Release(filterRT);
+                        brushRender.Release(ctx);
                     }
-
-                    texelCtx.Cleanup();
-                    RTUtils.Release(filterRT);
                 }
             }
+            
+            // update brush UI group
+            commonUI.OnSceneGUI(terrain, editContext);
         }
 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
@@ -149,8 +149,8 @@ namespace UnityEditor.TerrainTools
                     EditorGUILayout.BeginHorizontal();
                     {
                         EditorGUILayout.PrefixLabel(Styles.targets);
-                        m_AffectMaterials = GUILayout.Toggle(m_AffectMaterials, Styles.materials, GUI.skin.button);
-                        m_AffectHeight = GUILayout.Toggle(m_AffectHeight, Styles.heightmap, GUI.skin.button);
+                        m_AffectMaterials = GUILayout.Toggle(m_AffectMaterials || !m_AffectHeight, Styles.materials, GUI.skin.button);
+                        m_AffectHeight = GUILayout.Toggle(m_AffectHeight || !m_AffectMaterials, Styles.heightmap, GUI.skin.button);
                     }
                     EditorGUILayout.EndHorizontal();
 

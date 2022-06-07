@@ -180,10 +180,7 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-
-            // update brush UI group
-            commonUI.OnSceneGUI(terrain, editContext);
-
+            
             ProcessInput(terrain, editContext);
 
             if (!commonUI.isInUse)
@@ -191,13 +188,16 @@ namespace UnityEditor.TerrainTools
                 UpdateBrushLocations(terrain, editContext);
             }
 
-            // dont render preview if this isnt a repaint. losing performance if we do
-            if (Event.current.type != EventType.Repaint)
+            // Only render preview if this is a repaint. losing performance if we do
+            if (Event.current.type == EventType.Repaint)
             {
-                return;
+                DrawBrushPreviews(terrain, editContext);
             }
+            
+            // update brush UI group
+            commonUI.OnSceneGUI(terrain, editContext);
 
-            DrawBrushPreviews(terrain, editContext);
+            
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)

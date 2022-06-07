@@ -93,33 +93,33 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-
+            
+            // Only render preview if this is a repaint. losing performance if we do
+            if (Event.current.type == EventType.Repaint)
+            {
+                using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "ThermalErosion", editContext.brushTexture))
+                {
+                    if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                    {
+                        Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
+                        PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
+                        var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
+                        Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                        var filterRT = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height,
+                            0, FilterUtility.defaultFormat);
+                        Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filterRT, previewMaterial);
+                        TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
+                            editContext.brushTexture, brushXform, previewMaterial, 0);
+                        texelCtx.Cleanup();
+                        RTUtils.Release(filterRT);
+                        brushRender.Release(ctx);
+                    }
+                }
+            }
+            
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
 
-            // dont render preview if this isnt a repaint. losing performance if we do
-            if (Event.current.type != EventType.Repaint)
-            {
-                return;
-            }
-
-            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "ThermalErosion", editContext.brushTexture))
-            {
-                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
-                {
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
-                    PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                    var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
-                    Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
-                    var filterRT = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height,
-                        0, FilterUtility.defaultFormat);
-                    Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filterRT, previewMaterial);
-                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
-                        editContext.brushTexture, brushXform, previewMaterial, 0);
-                    texelCtx.Cleanup();
-                    RTUtils.Release(filterRT);
-                }
-            }
         }
 
         bool m_ShowControls = true;

@@ -79,6 +79,11 @@ namespace UnityEditor.TerrainTools
             for (int i = 0; i < count; ++i)
             {
                 Type filterType = FilterUtility.GetFilterType(i);
+
+                //Check to see if LayerFilter is disabled
+                if(filterType == typeof(LayerFilter) && FilterUtility.LayerFilterActiveState == false)
+                    continue;
+
                 string path = FilterUtility.GetFilterPath(i);
                 m_ContextMenu.AddItem(new GUIContent(path), false, () => AddFilter(filterType));
             }

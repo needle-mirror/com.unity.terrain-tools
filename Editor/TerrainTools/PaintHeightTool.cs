@@ -99,17 +99,9 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-
-            // update brush UI group
-            commonUI.OnSceneGUI(terrain, editContext);
-
-            // dont render preview if this isnt a repaint. losing performance if we do
-            if (Event.current.type != EventType.Repaint)
-            {
-                return;
-            }
-
-            if (commonUI.isRaycastHitUnderCursorValid)
+            
+            // Only render preview if this is a repaint. losing performance if we do 
+            if (commonUI.isRaycastHitUnderCursorValid && Event.current.type == EventType.Repaint) 
             {
                 using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PaintHeight", editContext.brushTexture))
                 {
@@ -139,11 +131,15 @@ namespace UnityEditor.TerrainTools
                                 editContext.brushTexture, brushXform, previewMaterial, 1);
                             texelCtx.Cleanup();
                         }
-                        
+                       
                         RTUtils.Release(filterRT);
+                        brushRender.Release(paintContext); 
                     }
                 }
             }
+            
+            // update brush UI group
+            commonUI.OnSceneGUI(terrain, editContext);
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)

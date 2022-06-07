@@ -82,48 +82,54 @@ namespace UnityEditor.TerrainTools
                 return;
             }
 
-            // update brush UI group
-            commonUI.OnSceneGUI(terrain, editContext);
-
-            // dont render preview if this isnt a repaint. losing performance if we do
-            if (Event.current.type != EventType.Repaint)
-            {
-                return;
-            }
-
             Texture brushTexture = editContext.brushTexture;
 
-            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "ContrastTool", brushTexture))
+            // Only render preview if this is a repaint. losing performance if we do
+            if (Event.current.type == EventType.Repaint)
             {
-                if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
+                using (IBrushRenderPreviewUnderCursor brushRender =
+                    new BrushRenderPreviewUIGroupUnderCursor(commonUI, "ContrastTool", brushTexture))
                 {
-                    PaintContext paintContext = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
-                    Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
-                    var texelCtx = Utility.CollectTexelValidity(paintContext.originTerrain, brushXform.GetBrushXYBounds());
-                    Utility.SetupMaterialForPaintingWithTexelValidityContext(paintContext, texelCtx, brushXform, previewMaterial);
-                    var filterRT = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width,
-                        paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                    Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, filterRT,
-                        previewMaterial);
-                    TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.SourceRenderTexture,
-                        editContext.brushTexture, brushXform, previewMaterial, 0);
-
-                    // draw result preview
+                    if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
-                        ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, brushTexture, brushXform);
+                        PaintContext paintContext =
+                            brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
+                        Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
+                        var texelCtx = Utility.CollectTexelValidity(paintContext.originTerrain,
+                            brushXform.GetBrushXYBounds());
+                        Utility.SetupMaterialForPaintingWithTexelValidityContext(paintContext, texelCtx, brushXform,
+                            previewMaterial);
+                        var filterRT = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width,
+                            paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                        Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, filterRT,
+                            previewMaterial);
+                        TerrainPaintUtilityEditor.DrawBrushPreview(paintContext,
+                            TerrainBrushPreviewMode.SourceRenderTexture,
+                            editContext.brushTexture, brushXform, previewMaterial, 0);
 
-                        // restore old render target
-                        RenderTexture.active = paintContext.oldRenderTexture;
+                        // draw result preview
+                        {
+                            ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, brushTexture,
+                                brushXform);
 
-                        previewMaterial.SetTexture("_HeightmapOrig", paintContext.sourceRenderTexture);
-                        TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.DestinationRenderTexture,
-                            editContext.brushTexture, brushXform, previewMaterial, 1);
+                            // restore old render target
+                            RenderTexture.active = paintContext.oldRenderTexture;
+
+                            previewMaterial.SetTexture("_HeightmapOrig", paintContext.sourceRenderTexture);
+                            TerrainPaintUtilityEditor.DrawBrushPreview(paintContext,
+                                TerrainBrushPreviewMode.DestinationRenderTexture,
+                                editContext.brushTexture, brushXform, previewMaterial, 1);
+                        }
+
+                        texelCtx.Cleanup();
+                        RTUtils.Release(filterRT);
+                        brushRender.Release(paintContext);
                     }
-
-                    texelCtx.Cleanup();
-                    RTUtils.Release(filterRT);
                 }
             }
+            
+            // update brush UI group
+            commonUI.OnSceneGUI(terrain, editContext);
         }
 
         bool m_ShowControls = true;

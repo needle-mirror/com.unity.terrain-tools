@@ -322,9 +322,7 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-
-            commonUI.OnSceneGUI(terrain, editContext);
-
+            
             bool justPressedEditKey = s_EditTransform && !s_PrevEditTransform;
             bool justReleaseEditKey = s_PrevEditTransform && !s_EditTransform;
             s_PrevEditTransform = s_EditTransform;
@@ -387,13 +385,16 @@ namespace UnityEditor.TerrainTools
                             TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.DestinationRenderTexture,
                                 editContext.brushTexture, brushXform, previewMaterial, 1);
                         }
-                        TerrainPaintUtility.ReleaseContextResources(paintContext);
                         m_RtCollection.ReleaseRTHandles();
                         texelCtx.Cleanup();
                         RTUtils.Release(filterRT);
+                        brushRender.Release(paintContext); 
                     }
                 }
             }
+            
+            commonUI.OnSceneGUI(terrain, editContext);
+            
 
             if (s_EditTransform && s_StampToolProperties.mode == StampToolMode.Mesh)
             {

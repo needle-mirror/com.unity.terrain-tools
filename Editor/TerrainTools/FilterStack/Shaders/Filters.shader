@@ -41,7 +41,7 @@ Shader "Hidden/TerrainTools/Filters"
 
         ENDHLSL
 
-        Pass // 1 - Abs
+        Pass // 0 - Abs
         {
             HLSLPROGRAM
 
@@ -58,7 +58,7 @@ Shader "Hidden/TerrainTools/Filters"
             ENDHLSL
         }
 
-        Pass // 2 - Add
+        Pass // 1 - Add
         {
             HLSLPROGRAM
 
@@ -77,7 +77,7 @@ Shader "Hidden/TerrainTools/Filters"
             ENDHLSL
         }
 
-        Pass // 3 - Clamp
+        Pass // 2 - Clamp
         {
             HLSLPROGRAM
 
@@ -96,7 +96,7 @@ Shader "Hidden/TerrainTools/Filters"
             ENDHLSL
         }
 
-        Pass // 4 - Complement
+        Pass // 3 - Complement
         {
             HLSLPROGRAM
 
@@ -115,7 +115,7 @@ Shader "Hidden/TerrainTools/Filters"
             ENDHLSL
         }
 
-        Pass // 5 - Max
+        Pass // 4 - Max
         {
             HLSLPROGRAM
 
@@ -134,7 +134,7 @@ Shader "Hidden/TerrainTools/Filters"
             ENDHLSL
         }
 
-        Pass // 6 - Min
+        Pass // 5 - Min
         {
             HLSLPROGRAM
 
@@ -153,7 +153,7 @@ Shader "Hidden/TerrainTools/Filters"
             ENDHLSL
         }
 
-        Pass // 7 - Negate
+        Pass // 6 - Negate
         {
             HLSLPROGRAM
 
@@ -170,7 +170,7 @@ Shader "Hidden/TerrainTools/Filters"
             ENDHLSL
         }
 
-        Pass // 8 - Power
+        Pass // 7 - Power
         {
             HLSLPROGRAM
 
@@ -189,7 +189,7 @@ Shader "Hidden/TerrainTools/Filters"
             ENDHLSL
         }
 
-        Pass // 9 - Remap
+        Pass // 8 - Remap
         {
             HLSLPROGRAM
 
@@ -208,7 +208,7 @@ Shader "Hidden/TerrainTools/Filters"
             ENDHLSL
         }
 
-        Pass // 10 - Multiply
+        Pass // 9 - Multiply
         {
             HLSLPROGRAM
 
@@ -221,6 +221,27 @@ Shader "Hidden/TerrainTools/Filters"
             {
                 float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
                 s = s * _Multiply;
+                return PackHeightmap(s);
+            }
+
+            ENDHLSL
+        }
+
+        Pass // 10 - TerrainLayer
+        {
+            HLSLPROGRAM
+
+            #pragma vertex vert
+            #pragma fragment frag
+
+            sampler2D _Splatmap;
+            float2 _SharpnessRanges;
+
+            float4 frag(v2f_s i) : SV_Target
+            {
+                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                s = s * UnpackHeightmap(tex2D(_Splatmap, i.uv));
+                s = RemapFilterValue(s, _SharpnessRanges.x, _SharpnessRanges.y, 0, 1);
                 return PackHeightmap(s);
             }
 

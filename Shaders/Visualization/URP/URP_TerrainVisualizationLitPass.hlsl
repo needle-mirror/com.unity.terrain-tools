@@ -173,12 +173,11 @@ half4 SplatmapFragment(VertexOutput IN) : SV_TARGET
 #else
 	half3 albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uvMainAndLM.xy).rgb;
 #endif
-    
     InputData inputData;
 	half3 normalTS = half3(0.0h, 0.0h, 1.0h);
     InitializeInputData(IN, normalTS, inputData);
 
-    half4 color = LightweightFragmentPBR(inputData, albedo, 0, half3(0.0h, 0.0h, 0.0h), 0, /* occlusion */ 1.0, /* emission */ half3(0, 0, 0), 1);
+    half4 color = UniversalFragmentPBR(inputData, albedo, 0, half3(0.0h, 0.0h, 0.0h), 0, /* occlusion */ 1.0, /* emission */ half3(0, 0, 0), 1);
     return half4(color.rgb, 1.0h);
 }
 

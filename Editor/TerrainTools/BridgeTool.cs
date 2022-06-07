@@ -70,7 +70,7 @@ namespace UnityEditor.TerrainTools
         {
             return "Connects two points on a terrain creating a bridge.\n\n" +
                 "Hold Ctrl + Click to select the starting position.\n" +
-                "Release Ctrl + Click to set the end position.";
+                "Release Ctrl, then Click to select the end position.";
         }
 
         public override void OnEnterToolMode() {
@@ -89,35 +89,31 @@ namespace UnityEditor.TerrainTools
 
             if (editContext.hitValidTerrain || commonUI.isInUse)
             {
-                commonUI.OnSceneGUI(terrain, editContext);
-
-                if (Event.current.type != EventType.Repaint)
+                // Only render preview if this is a repaint. losing performance if we do
+                if (Event.current.type == EventType.Repaint)
                 {
-                    return;
+                    var previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
+                    float endWidth = Mathf.Abs(bridgeToolProperties.widthProfile.Evaluate(1.0f));
+                    BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, commonUI.raycastHitUnderCursor.textureCoord, commonUI.brushSize * endWidth, commonUI.brushRotation);
+                    PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
+                    var brushMask = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                    Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, brushMask, previewMaterial);
+                    var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
+                    Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
+                    TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
+                        editContext.brushTexture, brushXform, previewMaterial, 0);
+                    texelCtx.Cleanup();
+                    ctx.Cleanup();
+                    RTUtils.Release(brushMask);
+                    
                 }
-
-                var previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
-                float endWidth = Mathf.Abs(bridgeToolProperties.widthProfile.Evaluate(1.0f));
-                BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, commonUI.raycastHitUnderCursor.textureCoord, commonUI.brushSize * endWidth, commonUI.brushRotation);
-                PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
-                var brushMask = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, brushMask, previewMaterial);
-                var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
-                Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
-                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
-                    editContext.brushTexture, brushXform, previewMaterial, 0);
-                texelCtx.Cleanup();
-                ctx.Cleanup();
-                RTUtils.Release(brushMask);
+                
+                commonUI.OnSceneGUI(terrain, editContext);
             }
-
-            if (Event.current.type != EventType.Repaint)
-            {
-                return;
-            }
+            
 
             //display a brush preview at the bridge starting location, using starting size from width profile
-            if (m_StartTerrain != null)
+            if (m_StartTerrain != null && Event.current.type == EventType.Repaint)
             {
                 float startWidth = Mathf.Abs(bridgeToolProperties.widthProfile.Evaluate(0.0f));
 

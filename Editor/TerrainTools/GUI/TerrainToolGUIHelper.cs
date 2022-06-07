@@ -1039,4 +1039,21 @@ internal static class TerrainToolGUIHelper
 
         return "";
     }
+
+    /// <summary>
+    /// Gets the correct modifier key depending on the platform in use.
+    /// </summary>
+    /// <returns>Returns a <c>string</c> representing the modifier key used by the platform.</returns>
+    internal static string GetCorrectModifierKey()
+    {
+        switch(Application.platform)
+        {
+            case RuntimePlatform.OSXEditor:
+                return "Option";
+            case RuntimePlatform.WindowsEditor:
+                return "Alt";
+            default:
+                return "modifier key";
+        }
+    }
 }

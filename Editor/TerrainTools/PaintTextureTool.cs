@@ -38,7 +38,8 @@ namespace UnityEditor.TerrainTools
 
         [SerializeField]
         IBrushUIGroup m_commonUI;
-        private IBrushUIGroup commonUI {
+        private IBrushUIGroup commonUI
+        {
             get
             {
                 if (m_commonUI == null)
@@ -65,13 +66,13 @@ namespace UnityEditor.TerrainTools
         TerrainPalette m_SelectedLayerPalette;
         ReorderableList m_LayerList;
         List<Layer> m_PaletteLayers = new List<Layer>();
-        Texture2D m_layerTexture;
+        Texture2D m_LayerTexture;
         Vector2 m_ScrollPos;
         TerrainLayer m_PickedLayer;
         [SerializeField]
         string m_LayerName = "NewLayer";
-        int m_objPickerWindowID = -1;
-        int m_layerPickerWindowID = -1;
+        int m_ObjPickerWindowID = -1;
+        int m_LayerPickerWindowID = -1;
         int m_MaxLayerCount;
 
         [SerializeField]
@@ -277,38 +278,38 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-
-            // update brush UI group
-            commonUI.OnSceneGUI(terrain, editContext);
-
-            // Don't render preview if this isn't a repaint. losing performance if we do
-            if (Event.current.type != EventType.Repaint)
+            
+            // Only render preview if this is a repaint.  losing performance if we do
+            if (Event.current.type == EventType.Repaint)
             {
-                return;
-            }
+                Texture brushTexture = editContext.brushTexture;
 
-            Texture brushTexture = editContext.brushTexture;
-
-            using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PaintTextureTool", brushTexture))
-            {
-                if (brushRender.CalculateBrushTransform(out BrushTransform brushTransform)) //cute.
+                using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PaintTextureTool", brushTexture))
                 {
-                    RenderTexture tmpRT = RenderTexture.active;
-                    Rect brushBounds = brushTransform.GetBrushXYBounds();
-                    PaintContext heightmapContext = brushRender.AcquireHeightmap(false, brushBounds, 1);
-                    var previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
+                
+                    if (brushRender.CalculateBrushTransform(out BrushTransform brushTransform)) 
+                    {
+                        RenderTexture tmpRT = RenderTexture.active;
+                        Rect brushBounds = brushTransform.GetBrushXYBounds();
+                        PaintContext heightmapContext = brushRender.AcquireHeightmap(false, brushBounds, 1);
+                        var previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
 
-                    var texelCtx = Utility.CollectTexelValidity(heightmapContext.originTerrain, brushTransform.GetBrushXYBounds());
-                    Utility.SetupMaterialForPaintingWithTexelValidityContext(heightmapContext, texelCtx, brushTransform, previewMaterial);
+                        var texelCtx = Utility.CollectTexelValidity(heightmapContext.originTerrain, brushTransform.GetBrushXYBounds());
+                        Utility.SetupMaterialForPaintingWithTexelValidityContext(heightmapContext, texelCtx, brushTransform, previewMaterial);
 
-                    var filterRT = RTUtils.GetTempHandle(heightmapContext.sourceRenderTexture.width, heightmapContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                    Utility.GenerateAndSetFilterRT(commonUI, heightmapContext.sourceRenderTexture, filterRT, previewMaterial);
+                        var filterRT = RTUtils.GetTempHandle(heightmapContext.sourceRenderTexture.width, heightmapContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                        Utility.GenerateAndSetFilterRT(commonUI, heightmapContext.sourceRenderTexture, filterRT, previewMaterial);
                     
-                    brushRender.RenderBrushPreview(heightmapContext, TerrainBrushPreviewMode.SourceRenderTexture, brushTransform, previewMaterial, 0);
-                    texelCtx.Cleanup();
-                    RTUtils.Release(filterRT);
+                        brushRender.RenderBrushPreview(heightmapContext, TerrainBrushPreviewMode.SourceRenderTexture, brushTransform, previewMaterial, 0);
+                        texelCtx.Cleanup();
+                        RTUtils.Release(filterRT);
+                        brushRender.Release(heightmapContext);
+                    }
                 }
             }
+            
+            // update brush UI group
+            commonUI.OnSceneGUI(terrain, editContext);
         }
 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
@@ -319,10 +320,11 @@ namespace UnityEditor.TerrainTools
 
             m_TargetStrength = EditorGUILayout.Slider(Styles.targetStrengthTxt, m_TargetStrength, 0.0f, 1.0f);
 
-            if (m_TemplateMaterialEditor == null) m_TemplateMaterialEditor = Editor.CreateEditor(terrain.materialTemplate); // fix - 1306604
-            
+            if (m_TemplateMaterialEditor == null)
+                m_TemplateMaterialEditor = Editor.CreateEditor(terrain.materialTemplate); // fix - 1306604
+
 #if UNITY_2019_2_OR_NEWER
-            
+
             // Material GUI
             m_ShowMaterialEditor = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.materialControls, m_ShowMaterialEditor);
             if (m_ShowMaterialEditor)
@@ -450,6 +452,7 @@ namespace UnityEditor.TerrainTools
 
             if (!terrain.terrainData.terrainLayers.Equals(m_PaletteLayers))
             {
+                RemoveEmptyLayers(terrain); 
                 UpdateLayerPalette(terrain);
                 m_SelectedTerrain = terrain;
             }
@@ -459,7 +462,7 @@ namespace UnityEditor.TerrainTools
 
             // Layer creation
             if (Event.current.commandName == "ObjectSelectorClosed" &&
-                    EditorGUIUtility.GetObjectPickerControlID() == m_layerPickerWindowID)
+                    EditorGUIUtility.GetObjectPickerControlID() == m_LayerPickerWindowID)
             {
                 m_PickedLayer = (TerrainLayer)EditorGUIUtility.GetObjectPickerObject();
             }
@@ -473,15 +476,15 @@ namespace UnityEditor.TerrainTools
             }
 
             if (Event.current.commandName == "ObjectSelectorClosed" &&
-                    EditorGUIUtility.GetObjectPickerControlID() == m_objPickerWindowID)
+                    EditorGUIUtility.GetObjectPickerControlID() == m_ObjPickerWindowID)
             {
-                m_layerTexture = (Texture2D)EditorGUIUtility.GetObjectPickerObject();
+                m_LayerTexture = (Texture2D)EditorGUIUtility.GetObjectPickerObject();
             }
 
-            if (m_layerTexture != null && Event.current.type == EventType.Repaint)
+            if (m_LayerTexture != null && Event.current.type == EventType.Repaint)
             {
-                Texture2D tempTexture = m_layerTexture;
-                m_layerTexture = null;
+                Texture2D tempTexture = m_LayerTexture;
+                m_LayerTexture = null;
                 CreateNewLayerWithTexture(tempTexture);
             }
 
@@ -490,20 +493,22 @@ namespace UnityEditor.TerrainTools
             EditorGUI.BeginDisabledGroup(!CanAddLayerElement());
             if (GUILayout.Button("Add Layer", GUILayout.Height(20)))
             {
-                m_layerPickerWindowID = EditorGUIUtility.GetControlID(FocusType.Passive) + 200; // had to bump this to make it unique
-                EditorGUIUtility.ShowObjectPicker<TerrainLayer>(null, false, "", m_layerPickerWindowID);
+                m_LayerPickerWindowID = EditorGUIUtility.GetControlID(FocusType.Passive) + 200; // had to bump this to make it unique
+                EditorGUIUtility.ShowObjectPicker<TerrainLayer>(null, false, "", m_LayerPickerWindowID);
             }
             EditorGUI.EndDisabledGroup();
             if (GUILayout.Button("Remove Layer", GUILayout.Height(20)) &&
                 EditorUtility.DisplayDialog("Warning", "Splatmap data changed by this layer will be lost.", "OK", "Cancel"))
             {
                 RemoveLayerElement();
+                GUIUtility.ExitGUI();
             }
             if (GUILayout.Button(Styles.RemoveLayersBtn, GUILayout.Height(20)) &&
                 EditorUtility.DisplayDialog("Error", "Splatmap data changed by these layers will be lost.", "OK", "Cancel"))
             {
                 RemoveSelectedLayerElements();
                 m_ToggleAllElements = false;
+                GUIUtility.ExitGUI();
             }
             EditorGUILayout.EndHorizontal();
 
@@ -513,8 +518,8 @@ namespace UnityEditor.TerrainTools
             m_LayerName = EditorGUILayout.TextField(Styles.NewLayer, m_LayerName);
             if (GUILayout.Button(Styles.CreateLayersBtn, GUILayout.Width(85), GUILayout.Height(20)))
             {
-                m_objPickerWindowID = EditorGUIUtility.GetControlID(FocusType.Passive) + 100; // had to bump this to make it unique
-                EditorGUIUtility.ShowObjectPicker<Texture2D>(null, false, "", m_objPickerWindowID);
+                m_ObjPickerWindowID = EditorGUIUtility.GetControlID(FocusType.Passive) + 100; // had to bump this to make it unique
+                EditorGUIUtility.ShowObjectPicker<Texture2D>(null, false, "", m_ObjPickerWindowID);
             }
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
@@ -532,8 +537,8 @@ namespace UnityEditor.TerrainTools
             {
                 if (m_PaletteLayers[i] == null)
                 {
-                    m_PaletteLayers[ i ] = new Layer();
-                    m_PaletteLayers[ i ].AssignedLayer = m_SelectedTerrain.terrainData.terrainLayers[ i ];
+                    m_PaletteLayers[i] = new Layer();
+                    m_PaletteLayers[i].AssignedLayer = m_SelectedTerrain.terrainData.terrainLayers[i];
                 }
             }
         }
@@ -633,12 +638,12 @@ namespace UnityEditor.TerrainTools
         {
             List<TerrainLayer> existingLayers = m_PaletteLayers.Select(l => l.AssignedLayer).ToList();
 
-            if(existingLayers.Count > 0 && existingLayers.Contains(layer))
+            if (existingLayers.Count > 0 && existingLayers.Contains(layer))
             {
                 m_LayerList.index = existingLayers.IndexOf(layer);
                 return true;
             }
-            
+
             return false;
         }
 
@@ -736,6 +741,19 @@ namespace UnityEditor.TerrainTools
         bool CanAddLayerElement()
         {
             return m_PaletteLayers.Count < m_MaxLayerCount;
+        }
+        
+        void RemoveEmptyLayers(Terrain terrain)
+        {
+            List<TerrainLayer> nonNullLayers = new List<TerrainLayer>();
+            foreach (TerrainLayer layer in terrain.terrainData.terrainLayers)
+            {
+                if (layer != null)
+                {
+                    nonNullLayers.Add(layer);
+                }
+            }
+            terrain.terrainData.terrainLayers = nonNullLayers.ToArray();
         }
 
         void UpdateLayerPalette(Terrain terrain)

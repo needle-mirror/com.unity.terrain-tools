@@ -58,7 +58,7 @@ namespace UnityEditor.TerrainTools
 
         public void OnGUI()
         {
-            //Scroll view of settings
+            //Scroll view of settings 
             EditorGUIUtility.hierarchyMode = true;
             TerrainToolboxUtilities.DrawSeperatorLine();
 
@@ -122,11 +122,12 @@ namespace UnityEditor.TerrainTools
 
         void ShowPresetGUI()
         {
+            
             TerrainToolboxUtilities.DrawSeperatorLine();
-            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(Styles.Preset, EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
             m_SelectedPreset = (TerrainVisualizationSettings)EditorGUILayout.ObjectField(m_SelectedPreset, typeof(TerrainVisualizationSettings), false);
+            EditorGUILayout.BeginHorizontal();
             if (EditorGUI.EndChangeCheck() && m_SelectedPreset != null)
             {
                 if (EditorUtility.DisplayDialog("Confirm", "Load terrain creation settings from selected preset?", "OK", "Cancel"))
@@ -230,7 +231,6 @@ namespace UnityEditor.TerrainTools
             }
             if (EditorGUI.EndChangeCheck() || needsUpdate)
             {
-                ConfigureHeatLevels();
                 UpdateHeatmapSettings();
             }
             EditorGUILayout.EndVertical();
@@ -309,7 +309,7 @@ namespace UnityEditor.TerrainTools
             int num = m_Settings.HeatLevels;
             for (int i = 0; i < num; i++)
             {
-                var height = m_Settings.DistanceSelection[i] + 100;
+                var height = m_Settings.DistanceSelection[i];
                 //Compare the distances
                 if (m_Settings.CurrentMeasure == TerrainVisualizationSettings.MEASUREMENTS.Feet)
                     height /= TerrainVisualizationSettings.CONVERSIONNUM;

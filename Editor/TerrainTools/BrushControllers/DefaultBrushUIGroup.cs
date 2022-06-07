@@ -28,6 +28,7 @@ namespace UnityEditor.TerrainTools
 
             NoScatter = All & ~Scatter,
             NoSpacing = All & ~Spacing,
+            NoSmoothing = All & ~Smoothing,
         }
         
 

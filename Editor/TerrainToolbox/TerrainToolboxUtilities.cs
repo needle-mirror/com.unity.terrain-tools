@@ -20,7 +20,6 @@ namespace UnityEditor.TerrainTools
 
         // Layers
         public string PalettePath = string.Empty;
-        public bool ClearExistLayers = true;
         public bool ApplyAllTerrains = true;
 
         // Replace splatmap
@@ -50,6 +49,12 @@ namespace UnityEditor.TerrainTools
         public float ExportHeightRemapMin = 0.0f;
         public float ExportHeightRemapMax = 1.0f;
         public bool FlipVertically = false;
+        
+        // Remap heightmaps
+        public int LowerBound = 0;
+        public int UpperBound = 512;
+        public float BottomPad = 0.05f;
+        public float TopPad = 0.05f;
 
         // Enums
         public enum ImageFormat { TGA, PNG }
@@ -63,11 +68,11 @@ namespace UnityEditor.TerrainTools
         public bool ShowReplaceSplatmaps = false;
         public bool ShowExportSplatmaps = false;
         public bool ShowExportHeightmaps = false;
+        public bool ShowRemapHeightmaps = false;
     }
 
     internal class TerrainToolboxUtilities
     {
-        Vector2 m_ScrollPosition = Vector2.zero;
         internal UtilitySettings m_Settings = ScriptableObject.CreateInstance<UtilitySettings>();
 
         // Splatmaps
@@ -80,9 +85,10 @@ namespace UnityEditor.TerrainTools
         Terrain[] m_SplitTerrains;
         // Layers
         List<TerrainLayer> m_CopiedLayers = new List<TerrainLayer>();
-        List<Layer> m_PaletteLayers = new List<Layer>();
+        internal List<Layer> m_PaletteLayers = new List<Layer>();
         ReorderableList m_LayerList;
         TerrainPalette m_SelectedLayerPalette = ScriptableObject.CreateInstance<TerrainPalette>();
+        bool m_LayersAlreadyAdded = false;
         // Heightmap export
         Dictionary<string, Heightmap.Depth> m_DepthOptions = new Dictionary<string, Heightmap.Depth>()
         {
@@ -112,12 +118,11 @@ namespace UnityEditor.TerrainTools
         int m_MaxLayerCount = 0;
         int m_MaxSplatmapCount = 0;
 
-        const int kMaxLayerHD = 8; // HD allows up to 8 layers with 2 splat alpha maps
-        const int kMaxLayerFeatureLW = 4; // LW allows up to 4 layers when having density or height-based blending enabled
-        const int kMaxSplatmapHD = 2;
-        const int kMaxSplatmapFeatureLW = 1;
-        const int kMaxNoLimit = 20;
-        const int kMinHeightmapRes = 32;
+        const int k_MaxLayerHD = 8; // HD allows up to 8 layers with 2 splat alpha maps
+        const int k_MaxSplatmapHD = 2;
+        const int k_MaxNoLimit = 20;
+        const int k_MinHeightmapRes = 32;
+        const int k_MinDetailResPerPatch = 8;
 
         static class Styles
         {
@@ -137,11 +142,11 @@ namespace UnityEditor.TerrainTools
             public static readonly GUIContent SavePalette = EditorGUIUtility.TrTextContent("Save", "Save the current palette asset file on disk.");
             public static readonly GUIContent SaveAsPalette = EditorGUIUtility.TrTextContent("Save As", "Save the current palette asset as a new file on disk.");
             public static readonly GUIContent RefreshPalette = EditorGUIUtility.TrTextContent("Refresh", "Load selected palette and apply to list of layers.");
-            public static readonly GUIContent ClearExistingLayers = EditorGUIUtility.TrTextContent("Clear Existing Layers", "Remove existing layers from terrain(s).");
             public static readonly GUIContent ApplyToAllTerrains = EditorGUIUtility.TrTextContent("All Terrains in Scene", "When unchecked only apply layer changes to selected terrain(s).");
             public static readonly GUIContent ImportTerrainLayersBtn = EditorGUIUtility.TrTextContent("Import From Terrain", "Import layers from the selected terrain.");
-            public static readonly GUIContent AddLayersBtn = EditorGUIUtility.TrTextContent("Add to Terrain(s)", "Start adding layers to either all or selected terrain(s).");
-            public static readonly GUIContent RemoveLayersBtn = EditorGUIUtility.TrTextContent("Remove All Layers", "Start removing all layers from either all or selected terrain(s)");
+            public static readonly GUIContent AddLayersBtn = EditorGUIUtility.TrTextContent("Add Layers", "Add layers to the selected terrain(s) that aren't already in the palette.");
+            public static readonly GUIContent ReplacesLayersBtn = EditorGUIUtility.TrTextContent("Replace Layers", "Replace layers assigned to selected terrain(s). Removed layers will not alter the splatmap data.");
+            public static readonly GUIContent RemoveLayersBtn = EditorGUIUtility.TrTextContent("Remove All Layers", "Remove all layers from selected terrain(s)");
 
             public static readonly GUIContent TerrainToReplaceSplatmap = EditorGUIUtility.TrTextContent("Terrain", "Select a terrain to replace splatmaps on.");
             public static readonly GUIContent SplatmapResolution = EditorGUIUtility.TrTextContent("Splatmap Resolution: ", "The control texture resolution setting of selected terrain.");
@@ -179,7 +184,17 @@ namespace UnityEditor.TerrainTools
             public static readonly GUIContent HeightmapRemapMax = EditorGUIUtility.TrTextContent("Max", "Maximum input height");
             public static readonly GUIContent FlipVertically = EditorGUIUtility.TrTextContent("Flip Vertically", "Flip heights vertically when export. Enable this if using heightmap in external program like World Machine. Or use the Flip Y Axis option in World Machine instead.");
 
+            public static readonly GUIContent RemapHeightMaps = EditorGUIUtility.TrTextContent("Remap Height Maps", "Remap height values while preserving the visual appearance");
+            public static readonly GUIContent RemapLabel  = EditorGUIUtility.TrTextContent("Remap Terrain Height Range");
+            public static readonly GUIContent OptimizeLabel  = EditorGUIUtility.TrTextContent("Optimize Height Range Usage");
+            public static readonly GUIContent RemapButtonLabel  = EditorGUIUtility.TrTextContent("Remap", "Remap heightmap between supplied height values, preserving the existing position");
+            public static readonly GUIContent OptimizeButtonLabel  = EditorGUIUtility.TrTextContent("Optimize", "Remap the heightmap so that it fills the height values efficiently");
+
             public static readonly GUIStyle ToggleButtonStyle = "LargeButton";
+            
+            // for the large buttons 
+            public static int ButtonWidth = 140; 
+            public static int ButtonHeight = 25; 
         }
 
         public static void DrawSeperatorLine()
@@ -205,7 +220,6 @@ namespace UnityEditor.TerrainTools
             // scroll view of settings
             EditorGUIUtility.hierarchyMode = true;
             DrawSeperatorLine();
-            m_ScrollPosition = EditorGUILayout.BeginScrollView(m_ScrollPosition);
 
             // Terrain Edit			
             m_Settings.ShowTerrainEdit = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.TerrainEdit, m_Settings.ShowTerrainEdit);
@@ -236,6 +250,17 @@ namespace UnityEditor.TerrainTools
             }
             --EditorGUI.indentLevel;
             DrawSeperatorLine();
+            
+            // Terrain Heightmaps
+            m_Settings.ShowRemapHeightmaps =
+                TerrainToolGUIHelper.DrawHeaderFoldout(Styles.RemapHeightMaps, m_Settings.ShowRemapHeightmaps);
+            ++EditorGUI.indentLevel;
+            if (m_Settings.ShowRemapHeightmaps)
+            {
+                ShowHeightRemapGUI();
+            }
+            --EditorGUI.indentLevel;
+            DrawSeperatorLine();
 
             // Export Spaltmaps
             m_Settings.ShowExportSplatmaps = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.ExportSplatmaps, m_Settings.ShowExportSplatmaps);
@@ -256,18 +281,21 @@ namespace UnityEditor.TerrainTools
             }
             --EditorGUI.indentLevel;
 
-            EditorGUILayout.EndScrollView();
             EditorGUILayout.Space();
         }
 
         void ShowTerrainEditGUI()
         {
+            // style for labels 
+            GUIStyle labelStyle = new GUIStyle(EditorStyles.label); 
+            labelStyle.wordWrap = true; 
+            
             // Duplicate Terrain
             EditorGUILayout.LabelField(Styles.DuplicateTerrain, EditorStyles.boldLabel);
             ++EditorGUI.indentLevel;
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Select terrain(s) to make a copy from with new terrain data assets: ");
-            if (GUILayout.Button(Styles.DuplicateTerrain, GUILayout.Height(30), GUILayout.Width(200)))
+            EditorGUILayout.LabelField("Select terrain(s) to make a copy from with new terrain data assets: ", labelStyle);
+            if (GUILayout.Button(Styles.DuplicateTerrainBtn, GUILayout.Height(Styles.ButtonHeight), GUILayout.Width(Styles.ButtonWidth)))
             {
                 DuplicateTerrains();
             }
@@ -278,8 +306,8 @@ namespace UnityEditor.TerrainTools
             EditorGUILayout.LabelField(Styles.RemoveTerrain, EditorStyles.boldLabel);
             ++EditorGUI.indentLevel;
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Select terrain components to remove and delete associated terrain data assets: ");
-            if (GUILayout.Button(Styles.RemoveTerrainBtn, GUILayout.Height(30), GUILayout.Width(200)))
+            EditorGUILayout.LabelField("Select terrain components to remove and delete associated terrain data assets: ", labelStyle);
+            if (GUILayout.Button(Styles.RemoveTerrainBtn, GUILayout.Height(Styles.ButtonHeight), GUILayout.Width(Styles.ButtonWidth)))
             {
                 RemoveTerrains();
             }
@@ -294,7 +322,7 @@ namespace UnityEditor.TerrainTools
             m_Settings.AutoUpdateSettings = EditorGUILayout.Toggle(Styles.AutoUpdateSetting, m_Settings.AutoUpdateSettings);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.Space();
-            if (GUILayout.Button(Styles.SplitTerrainBtn, GUILayout.Height(30), GUILayout.Width(200)))
+            if (GUILayout.Button(Styles.SplitTerrainBtn, GUILayout.Height(Styles.ButtonHeight), GUILayout.Width(Styles.ButtonWidth)))
             {
                 SplitTerrains();
             }
@@ -305,7 +333,6 @@ namespace UnityEditor.TerrainTools
         void ShowTerrainLayerGUI()
         {
             // Layer Palette preset
-            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(Styles.PalettePreset);
             EditorGUI.BeginChangeCheck();
             m_SelectedLayerPalette = (TerrainPalette)EditorGUILayout.ObjectField(m_SelectedLayerPalette, typeof(TerrainPalette), false);
@@ -316,6 +343,7 @@ namespace UnityEditor.TerrainTools
                     LoadPalette();
                 }
             }
+            EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button(Styles.SavePalette))
             {
                 if (GetPalette())
@@ -345,16 +373,23 @@ namespace UnityEditor.TerrainTools
             ShowLayerListGUI();
 
             // Apply button			
-            m_Settings.ClearExistLayers = EditorGUILayout.Toggle(Styles.ClearExistingLayers, m_Settings.ClearExistLayers);
             m_Settings.ApplyAllTerrains = EditorGUILayout.Toggle(Styles.ApplyToAllTerrains, m_Settings.ApplyAllTerrains);
+            if (m_LayersAlreadyAdded)
+            {
+                EditorGUILayout.HelpBox("One or more of the layers are already in your terrain palette.", MessageType.Info);
+            }
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.Space();
-            if (GUILayout.Button(Styles.AddLayersBtn, GUILayout.Height(30), GUILayout.Width(200)))
+            if (GUILayout.Button(Styles.AddLayersBtn, GUILayout.Height(Styles.ButtonHeight), GUILayout.MaxWidth(Styles.ButtonWidth)))
             {
-                AddLayersToSelectedTerrains();
+                AddLayersToSelectedTerrains(false);
+            }
+            if (GUILayout.Button(Styles.ReplacesLayersBtn, GUILayout.Height(Styles.ButtonHeight), GUILayout.MaxWidth(Styles.ButtonWidth)))
+            {
+                AddLayersToSelectedTerrains(true);
             }
             // Clear button
-            if (GUILayout.Button(Styles.RemoveLayersBtn, GUILayout.Height(30), GUILayout.Width(200)))
+            if (GUILayout.Button(Styles.RemoveLayersBtn, GUILayout.Height(Styles.ButtonHeight), GUILayout.MaxWidth(Styles.ButtonWidth)))
             {
                 RemoveLayersFromSelectedTerrains();
             }
@@ -373,7 +408,7 @@ namespace UnityEditor.TerrainTools
         void ShowLayerListGUI()
         {
             EditorGUILayout.BeginVertical("Box");
-            if (GUILayout.Button(Styles.ImportTerrainLayersBtn, GUILayout.Width(200)))
+            if (GUILayout.Button(Styles.ImportTerrainLayersBtn, GUILayout.Width(Styles.ButtonWidth)))
             {
                 ImportLayersFromTerrain();
             }
@@ -390,6 +425,7 @@ namespace UnityEditor.TerrainTools
             m_LayerList.onRemoveCallback = OnRemoveLayerElement;
             m_LayerList.onCanAddCallback = OnCanAddLayerElement;
             m_LayerList.DoLayoutList();
+            LayerCreation(); 
             EditorGUILayout.EndVertical();
         }
 
@@ -429,12 +465,102 @@ namespace UnityEditor.TerrainTools
             return list.count < m_MaxLayerCount;
         }
 
+        // adding layers 
+        int m_LayerPickerWindowID = -1;
+        int m_ObjPickerWindowID = -1;
+        string m_LayerName = "NewLayer";
+        TerrainLayer m_PickedLayer;
+        Texture2D m_LayerTexture;
         void OnAddLayerElement(ReorderableList list)
         {
+            m_LayerPickerWindowID = EditorGUIUtility.GetControlID(FocusType.Passive) + 200; // had to bump this to make it unique
+            EditorGUIUtility.ShowObjectPicker<TerrainLayer>(null, false, "", m_LayerPickerWindowID);
+        }
+
+        void LayerCreation()
+        {
+            // this code grabs the layer from the ObjectSelector, and creates a new layer with the texture and adds
+            // it to the list 
+            if (Event.current.commandName == "ObjectSelectorClosed" &&
+                EditorGUIUtility.GetObjectPickerControlID() == m_LayerPickerWindowID)
+            {
+                m_PickedLayer = (TerrainLayer)EditorGUIUtility.GetObjectPickerObject();
+            }
+
+            if (m_PickedLayer != null && Event.current.type == EventType.Repaint)
+            {
+                TerrainLayer tempLayer = m_PickedLayer;
+                m_PickedLayer = null;
+                AddLayerElement(tempLayer);
+            }
+
+            if (Event.current.commandName == "ObjectSelectorClosed" &&
+                EditorGUIUtility.GetObjectPickerControlID() == m_ObjPickerWindowID)
+            {
+                m_LayerTexture = (Texture2D)EditorGUIUtility.GetObjectPickerObject();
+            }
+
+            if (m_LayerTexture != null && Event.current.type == EventType.Repaint)
+            {
+                Texture2D tempTexture = m_LayerTexture;
+                m_LayerTexture = null;
+                CreateNewLayerWithTexture(tempTexture);
+            }
+            
+            RemoveEmptyLayers(); 
+        }
+        
+        void AddLayerElement(TerrainLayer layer)
+        {
+            if (LayerExists(layer))
+            {
+                return;
+            }
             Layer newLayer = new Layer();
+            newLayer.AssignedLayer = layer;
             newLayer.IsSelected = true;
             m_PaletteLayers.Add(newLayer);
             m_LayerList.index = m_PaletteLayers.Count - 1;
+        }
+        
+        bool LayerExists(TerrainLayer layer)
+        {
+            List<TerrainLayer> existingLayers = m_PaletteLayers.Select(l => l.AssignedLayer).ToList();
+
+            if(existingLayers.Count > 0 && existingLayers.Contains(layer))
+            {
+                m_LayerList.index = existingLayers.IndexOf(layer);
+                return true;
+            }
+            
+            return false;
+        }
+
+        void RemoveEmptyLayers()
+        {
+            m_PaletteLayers.RemoveAll(layer => layer.AssignedLayer == null);
+        }
+        
+        void CreateNewLayerWithTexture(Texture2D texture)
+        {
+            Layer newLayer = new Layer();
+            newLayer.AssignedLayer = new TerrainLayer();
+            newLayer.AssignedLayer.diffuseTexture = texture;
+            m_PaletteLayers.Add(newLayer);
+            m_LayerList.index = m_PaletteLayers.Count - 1;
+
+            string path = "Assets";
+            foreach (UnityEngine.Object obj in Selection.GetFiltered(typeof(UnityEngine.Object), SelectionMode.Assets))
+            {
+                path = AssetDatabase.GetAssetPath(obj);
+                if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                {
+                    path = Path.GetDirectoryName(path);
+                    break;
+                }
+            }
+            newLayer.AssignedLayer.name = m_LayerName;
+            AssetDatabase.CreateAsset(newLayer.AssignedLayer, AssetDatabase.GenerateUniqueAssetPath($"{path}/{m_LayerName}.terrainlayer"));
         }
 
         void OnRemoveLayerElement(ReorderableList list)
@@ -446,7 +572,7 @@ namespace UnityEditor.TerrainTools
         void ShowSplatmapImportGUI()
         {
             EditorGUILayout.BeginVertical("Box");
-            if (GUILayout.Button(Styles.ImportFromSplatmapBtn, GUILayout.Width(200)))
+            if (GUILayout.Button(Styles.ImportFromSplatmapBtn, GUILayout.Width(Styles.ButtonWidth + 35)))
             {
                 ImportSplatmapsFromTerrain();
             }
@@ -527,11 +653,11 @@ namespace UnityEditor.TerrainTools
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.Space();
 
-            if (GUILayout.Button(Styles.ExportToTerrSplatmapBtn, GUILayout.Height(30), GUILayout.Width(200)))
+            if (GUILayout.Button(Styles.ExportToTerrSplatmapBtn, GUILayout.Height(Styles.ButtonHeight), GUILayout.Width(Styles.ButtonWidth)))
             {
                 ExportSplatmapsToTerrain();
             }
-            if (GUILayout.Button(Styles.ResetSplatmapsBtn, GUILayout.Height(30), GUILayout.Width(200)))
+            if (GUILayout.Button(Styles.ResetSplatmapsBtn, GUILayout.Height(Styles.ButtonHeight), GUILayout.Width(Styles.ButtonWidth)))
             {
                 ResetSplatmaps();
             }
@@ -643,11 +769,11 @@ namespace UnityEditor.TerrainTools
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.Space();
-            if (GUILayout.Button(Styles.ReplaceSplatmapsBtn, GUILayout.Height(30), GUILayout.Width(200)))
+            if (GUILayout.Button(Styles.ReplaceSplatmapsBtn, GUILayout.Height(Styles.ButtonHeight), GUILayout.Width(Styles.ButtonWidth)))
             {
                 ReplaceSplatmaps();
             }
-            if (GUILayout.Button(Styles.ResetSplatmapsBtn, GUILayout.Height(30), GUILayout.Width(200)))
+            if (GUILayout.Button(Styles.ResetSplatmapsBtn, GUILayout.Height(Styles.ButtonHeight), GUILayout.Width(Styles.ButtonWidth)))
             {
                 ResetSplatmaps();
             }
@@ -681,7 +807,7 @@ namespace UnityEditor.TerrainTools
             m_Settings.SelectedFormat = (UtilitySettings.ImageFormat)EditorGUILayout.EnumPopup(Styles.ExportSplatmapFormat, m_Settings.SelectedFormat);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.Space();
-            if (GUILayout.Button(Styles.ExportSplatmapsBtn, GUILayout.Height(30), GUILayout.Width(200)))
+            if (GUILayout.Button(Styles.ExportSplatmapsBtn, GUILayout.Height(Styles.ButtonHeight), GUILayout.Width(Styles.ButtonWidth)))
             {
                 var selectedTerrains = Selection.GetFiltered(typeof(Terrain), SelectionMode.Unfiltered);
                 ExportSplatmaps(selectedTerrains);
@@ -742,7 +868,7 @@ namespace UnityEditor.TerrainTools
             m_Settings.FlipVertically = EditorGUILayout.Toggle(Styles.FlipVertically, m_Settings.FlipVertically);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.Space();
-            if (GUILayout.Button(Styles.ExportHeightmapsBtn, GUILayout.Height(30), GUILayout.Width(200)))
+            if (GUILayout.Button(Styles.ExportHeightmapsBtn, GUILayout.Height(Styles.ButtonHeight), GUILayout.Width(Styles.ButtonWidth)))
             {
                 var selectedTerrains = Selection.GetFiltered(typeof(Terrain), SelectionMode.Unfiltered);
                 ExportHeightmaps(selectedTerrains);
@@ -751,7 +877,77 @@ namespace UnityEditor.TerrainTools
             EditorGUILayout.Separator();
         }
 
+        void ShowHeightRemapGUI()
+        {
+            EditorGUILayout.LabelField(Styles.RemapLabel, EditorStyles.boldLabel);
 
+            // ---- remap section 
+            ++EditorGUI.indentLevel;
+            EditorGUILayout.BeginHorizontal();
+
+            // min-max fields 
+            EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Heightmap lower boundary");
+            m_Settings.LowerBound = EditorGUILayout.IntField(m_Settings.LowerBound);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Heightmap upper boundary");
+            m_Settings.UpperBound = EditorGUILayout.IntField(m_Settings.UpperBound);
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+            // end min-max fields
+
+            // button line
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.Space();
+            if (GUILayout.Button(Styles.RemapButtonLabel, GUILayout.Width(Styles.ButtonWidth), GUILayout.Height(36)))
+            {
+                OptimizeHeightRange.RemapSelectedTerrains(m_Settings.LowerBound, m_Settings.UpperBound);
+            }
+
+            EditorGUILayout.EndHorizontal();
+            // end button line
+
+            EditorGUILayout.EndHorizontal();
+            --EditorGUI.indentLevel;
+            // ----  end remap section 
+
+            EditorGUILayout.Separator();
+            EditorGUILayout.Separator();
+
+            // ---- optimize section
+            EditorGUILayout.LabelField(Styles.OptimizeLabel, EditorStyles.boldLabel);
+            ++EditorGUI.indentLevel;
+            EditorGUILayout.BeginHorizontal();
+
+            // padding fields
+            EditorGUILayout.BeginVertical();
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Lower boundary padding");
+            m_Settings.BottomPad = Mathf.Clamp(EditorGUILayout.FloatField(m_Settings.BottomPad), 0, 1f);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Upper boundary padding");
+            m_Settings.TopPad = Mathf.Clamp(EditorGUILayout.FloatField(m_Settings.TopPad), 0, 1f);
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+            // end padding fields
+
+            EditorGUILayout.Space();
+            if (GUILayout.Button(Styles.OptimizeButtonLabel, GUILayout.Width(Styles.ButtonWidth), GUILayout.Height(36)))
+            {
+                OptimizeHeightRange.OptimizeSelectedTerrains(m_Settings.BottomPad, m_Settings.TopPad);
+            }
+
+            EditorGUILayout.EndHorizontal();
+            --EditorGUI.indentLevel;
+            // ---- end optimize section
+
+            EditorGUILayout.Separator();
+        }
 
         void UpdateAdjustedSplatmaps()
         {
@@ -833,7 +1029,7 @@ namespace UnityEditor.TerrainTools
             icon.filterMode = filterMode;
         }
 
-        void AddLayersToSelectedTerrains()
+        public void AddLayersToSelectedTerrains(bool clearExistingLayers)
         {
             Terrain[] terrains;
             if (m_Settings.ApplyAllTerrains)
@@ -862,13 +1058,17 @@ namespace UnityEditor.TerrainTools
                     }
 
                     EditorUtility.DisplayProgressBar("Applying terrain layers", string.Format("Updating terrain tile ({0})", terrain.name), ((float)index / (terrains.Count())));
-                    TerrainToolboxLayer.AddLayersToTerrain(terrain.terrainData, m_PaletteLayers.Select(l => l.AssignedLayer).ToList(), m_Settings.ClearExistLayers);
+                    m_LayersAlreadyAdded = TerrainToolboxLayer.AddLayersToTerrain(terrain.terrainData, m_PaletteLayers.Select(l => l.AssignedLayer).ToList(), clearExistingLayers);
 
                     index++;
                 }
 
                 AssetDatabase.SaveAssets();
                 EditorUtility.ClearProgressBar();
+            }
+            else
+            {
+                m_LayersAlreadyAdded = false;
             }
         }
 
@@ -920,7 +1120,7 @@ namespace UnityEditor.TerrainTools
         }
 
 
-        void ImportLayersFromTerrain()
+        public void ImportLayersFromTerrain()
         {
             m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene();
             if (m_Terrains.Length != 1)
@@ -967,7 +1167,7 @@ namespace UnityEditor.TerrainTools
 
         void DuplicateTerrains()
         {
-            m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene();
+            m_Terrains = ToolboxHelper.GetSelectedTerrainsInScene(SelectionMode.TopLevel);
 
             if (m_Terrains == null || m_Terrains.Length == 0)
             {
@@ -975,29 +1175,30 @@ namespace UnityEditor.TerrainTools
                 return;
             }
 
-            foreach (var terrain in m_Terrains)
+            foreach (var rootTerrain in m_Terrains)
             {
-                // copy terrain data asset to be the new terrain data asset
-                var dataPath = AssetDatabase.GetAssetPath(terrain.terrainData);
-                var dataPathNew = AssetDatabase.GenerateUniqueAssetPath(dataPath);
-                AssetDatabase.CopyAsset(dataPath, dataPathNew);
-                TerrainData terrainData = AssetDatabase.LoadAssetAtPath<TerrainData>(dataPathNew);
-                // clone terrain from old terrain
-                GameObject newGO = UnityEngine.Object.Instantiate(terrain.gameObject);
-                newGO.transform.localPosition = terrain.gameObject.transform.position;
-                newGO.GetComponent<Terrain>().terrainData = terrainData;
-                // parent to parent if any
-                if (terrain.gameObject.transform.parent != null)
-                {
-                    newGO.transform.SetParent(terrain.gameObject.transform.parent);
-                }
-                // update terrain data reference in terrain collider 
-                TerrainCollider collider = newGO.GetComponent<TerrainCollider>();
-                collider.terrainData = terrainData;
+                // Duplicate the root terrain object, which will also duplicate any child objects.
+                GameObject newGO = UnityEngine.Object.Instantiate(rootTerrain.gameObject);
 
+                // Make sure the clone matches Unity Editor naming preferences for duplicates.
+                newGO.name = rootTerrain.gameObject.name;
+                GameObjectUtility.EnsureUniqueNameForSibling(newGO);
+
+                // Find every child with a terrain and duplicate the terrain data.
+                foreach(var terrain in newGO.GetComponentsInChildren<Terrain>())
+                {
+                    var dataPath = AssetDatabase.GetAssetPath(terrain.terrainData);
+                    var dataPathNew = AssetDatabase.GenerateUniqueAssetPath(dataPath);
+                    AssetDatabase.CopyAsset(dataPath, dataPathNew);
+                    TerrainData terrainData = AssetDatabase.LoadAssetAtPath<TerrainData>(dataPathNew);
+                    terrain.GetComponent<Terrain>().terrainData = terrainData;
+
+                    // Update terrain data reference in terrain collider.
+                    TerrainCollider collider = terrain.gameObject.GetComponent<TerrainCollider>();
+                    collider.terrainData = terrainData;
+                }
                 Undo.RegisterCreatedObjectUndo(newGO, "Duplicate terrain");
             }
-
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
@@ -1136,21 +1337,21 @@ namespace UnityEditor.TerrainTools
                 return;
             }
 
-            if (newHeightmapRes < kMinHeightmapRes)
+            if (newHeightmapRes < k_MinHeightmapRes)
             {
                 if (!isTest && !EditorUtility.DisplayDialog("Warning",
                     $"The heightmap resolution of the newly split tiles is {newHeightmapRes + 1}; " +
-                    $"this is smaller than the minimum supported value of {kMinHeightmapRes + 1}.\n\n" +
+                    $"this is smaller than the minimum supported value of {k_MinHeightmapRes + 1}.\n\n" +
                     $"Would you like to split terrain into {m_Settings.TileSplit}x{m_Settings.TileSplit} " +
-                    $"tiles of heightmap resolution {kMinHeightmapRes + 1}?",
+                    $"tiles of heightmap resolution {k_MinHeightmapRes + 1}?",
                     "OK",
                     "Cancel"))
                 {
                     return;
                 }
 
-                ToolboxHelper.ResizeHeightmap(terrainData, kMinHeightmapRes * m_Settings.TileSplit);
-                newHeightmapRes = kMinHeightmapRes;
+                ToolboxHelper.ResizeHeightmap(terrainData, k_MinHeightmapRes * m_Settings.TileSplit);
+                newHeightmapRes = k_MinHeightmapRes;
             }
 
             // control map resolution
@@ -1220,7 +1421,7 @@ namespace UnityEditor.TerrainTools
                     terrainDataNew.SetAlphamaps(0, 0, alphamap);
 
                     // get and set detailmap
-                    int newDetailPatch = terrainData.detailResolutionPerPatch / m_Settings.TileSplit;
+                    int newDetailPatch = Mathf.Max(k_MinDetailResPerPatch, terrainData.detailResolutionPerPatch / m_Settings.TileSplit);
                     terrainDataNew.SetDetailResolution(newDetailmapRes, newDetailPatch);
                     terrainDataNew.detailPrototypes = terrainData.detailPrototypes;
 
@@ -1360,6 +1561,13 @@ namespace UnityEditor.TerrainTools
             targetTerrain.terrainData.wavingGrassSpeed = sourceTerrain.terrainData.wavingGrassSpeed;
             targetTerrain.terrainData.wavingGrassAmount = sourceTerrain.terrainData.wavingGrassAmount;
             targetTerrain.terrainData.wavingGrassTint = sourceTerrain.terrainData.wavingGrassTint;
+
+            targetTerrain.lightmapIndex = sourceTerrain.lightmapIndex;
+            targetTerrain.renderingLayerMask = sourceTerrain.renderingLayerMask;
+            targetTerrain.lightmapScaleOffset = sourceTerrain.lightmapScaleOffset;
+            targetTerrain.realtimeLightmapIndex = sourceTerrain.realtimeLightmapIndex;
+            targetTerrain.realtimeLightmapScaleOffset = sourceTerrain.realtimeLightmapScaleOffset;
+            targetTerrain.editorRenderFlags = sourceTerrain.editorRenderFlags;
         }
 
         void ReplaceSplatmaps()
@@ -1893,8 +2101,8 @@ namespace UnityEditor.TerrainTools
             switch (m_ActiveRenderPipeline)
             {
                 case ToolboxHelper.RenderPipeline.HD:
-                    m_MaxLayerCount = kMaxLayerHD;
-                    m_MaxSplatmapCount = kMaxSplatmapHD;
+                    m_MaxLayerCount = k_MaxLayerHD;
+                    m_MaxSplatmapCount = k_MaxSplatmapHD;
                     vizShader = Shader.Find("Hidden/HDRP_TerrainVisualization");
                     break;
                 case ToolboxHelper.RenderPipeline.LW:
@@ -1902,18 +2110,18 @@ namespace UnityEditor.TerrainTools
                     // we only support 4 layers and 1 splatmap
                     // this will get checked when applying changes to each terrain
                     // To-do: update max allowance check once LW terrain checked in
-                    m_MaxLayerCount = kMaxNoLimit;
-                    m_MaxSplatmapCount = kMaxNoLimit;
+                    m_MaxLayerCount = k_MaxNoLimit;
+                    m_MaxSplatmapCount = k_MaxNoLimit;
                     vizShader = Shader.Find("Hidden/LWRP_TerrainVisualization");
                     break;
                 case ToolboxHelper.RenderPipeline.Universal:
-                    m_MaxLayerCount = kMaxNoLimit;
-                    m_MaxSplatmapCount = kMaxNoLimit;
+                    m_MaxLayerCount = k_MaxNoLimit;
+                    m_MaxSplatmapCount = k_MaxNoLimit;
                     vizShader = Shader.Find("Hidden/Universal_TerrainVisualization");
                     break;
                 default:
-                    m_MaxLayerCount = kMaxNoLimit;
-                    m_MaxSplatmapCount = kMaxNoLimit;
+                    m_MaxLayerCount = k_MaxNoLimit;
+                    m_MaxSplatmapCount = k_MaxNoLimit;
                     if (m_Terrains == null || m_Terrains.Length == 0)
                     {
                         break;

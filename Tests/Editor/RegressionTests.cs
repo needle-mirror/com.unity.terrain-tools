@@ -481,6 +481,51 @@ namespace UnityEditor.TerrainTools
             toolboxWindow.Close();
         }
 
+        [Test]
+        public void TerrainToolboxUtilities_WhenClearExistingLayers_SplatmapDataCleared()
+        {
+            //Setup terrain layer data
+            TerrainToolboxWindow toolboxWindow = EditorWindow.GetWindow<TerrainToolboxWindow>();
+            TerrainLayer regularLayer = new TerrainLayer(), flipperdLayer = new TerrainLayer();
+            regularLayer.diffuseTexture = CreateGradientTexture();
+            flipperdLayer.diffuseTexture = CreateGradientTexture(true);
+            m_TerrainComponent.terrainData.terrainLayers = new TerrainLayer[] { regularLayer, flipperdLayer };
+            
+            Texture2D alphamap = m_TerrainComponent.terrainData.alphamapTextures[0];
+            int alphamapSize = alphamap.height * alphamap.width;
+            Color[] alphamapColors = new Color[alphamapSize];
+
+            //Populate half of the alphamap with each terrain layer
+            for(int y = 0; y < alphamap.height; y++)
+            {
+                for (int x = 0; x < alphamap.width; x++)
+                {
+                    if(x > (alphamap.width / 5))
+                    {
+                        alphamapColors[alphamap.width * y + x] = Color.red;
+                    }
+                    else
+                    {
+                        alphamapColors[alphamap.width * y + x] = Color.green;
+                    }
+                }
+            } 
+            alphamap.SetPixels(alphamapColors);
+            alphamap.Apply();
+
+            //Reproduce steps
+            Selection.activeObject = m_TerrainGO;
+            TerrainToolboxUtilities utilities = toolboxWindow.m_TerrainUtilitiesMode;
+            utilities.ImportLayersFromTerrain();
+            utilities.m_PaletteLayers.RemoveAt(1);
+            utilities.AddLayersToSelectedTerrains(true);
+
+            //Check to see if the alphamap was cleared and only 
+            alphamapColors = m_TerrainComponent.terrainData.alphamapTextures[0].GetPixels();
+            Color expectedAlphamapColor = new Color(1,0,0,0);
+            Assert.AreEqual(Enumerable.Repeat(expectedAlphamapColor, alphamapSize).ToArray(), alphamapColors);
+        }
+
         [SetUp]
         public void Setup()
         {
@@ -532,7 +577,7 @@ namespace UnityEditor.TerrainTools
         /// <param name="width">Width of the texture</param>
         /// <param name="height">Height of the texture</param>
         /// <returns></returns>
-        Texture2D CreateGradientTexture(int width = 513, int height = 513)
+        Texture2D CreateGradientTexture(bool flipped = false, int width = 513, int height = 513)
         {
             Gradient gradient = new Gradient();
             GradientColorKey[] colorKeys =
@@ -551,13 +596,29 @@ namespace UnityEditor.TerrainTools
             gradTex.filterMode = FilterMode.Bilinear;
 
             float inv = 1f / (width - 1);
-            for (int y = 0; y < height; y++)
+            
+            if (flipped)
             {
-                for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
                 {
-                    var t = x * inv;
-                    Color col = gradient.Evaluate(t);
-                    gradTex.SetPixel(x, y, col);
+                    for (int x = 0; x < width; x++)
+                    {
+                        var t = x * inv;
+                        Color col = gradient.Evaluate(t);
+                        gradTex.SetPixel(x, y, col);
+                    }
+                }
+            }
+            else
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = width; x > width; x--)
+                    {
+                        var t = (width - x) * inv;
+                        Color col = gradient.Evaluate(t);
+                        gradTex.SetPixel(x, y, col);
+                    }
                 }
             }
             gradTex.Apply();
