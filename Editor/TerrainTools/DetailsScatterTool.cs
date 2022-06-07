@@ -110,7 +110,7 @@ namespace UnityEditor.TerrainTools
             public readonly GUIContent elementNoiseSpreadLabel = EditorGUIUtility.TrTextContent("Noise Spread", "Controls the spatial frequency of the noise pattern used to vary the scale and color of the detail objects.");
             public readonly GUIContent elementDetailDensityLabel = EditorGUIUtility.TrTextContent("Detail Density", "Controls detail density for this detail prototype, relative to it's size. Only enabled in \"Coverage\" detail scatter mode.");
             public readonly GUIContent elementAlignToGround = EditorGUIUtility.TrTextContent("Align To Ground (%)", "Rotate detail axis to ground normal direction.");
-            public readonly GUIContent elementPositionOrderliness = EditorGUIUtility.TrTextContent("Position Orderliness (%)", "Controls how to generate position between random and quasirandom. \n\nQuasirandom prevents instances from overlapping each other.");
+            public readonly GUIContent elementPositionJitter = EditorGUIUtility.TrTextContent("Position Jitter (%)", "Controls the randomness of the detail distribution, from ordered to random. Only available when legacy distribution in Quality Settings is turned off.");
             public readonly GUIContent elementHolePaddingLabel = EditorGUIUtility.TrTextContent("Hole Edge Padding (%)", "Controls how far away detail objects are from the edge of the hole area.\n\nSpecify this value as a percentage of the detail width, which determines the radius of the circular area around the detail object used for hole testing.");
 
             public readonly Color prototypeColor = new Color(0.82745f, 1.07450f, 1.23333f);
@@ -746,8 +746,10 @@ namespace UnityEditor.TerrainTools
             GetSettingElementRect(settingsBoxRect, previousReferenceRect, out Rect alignToGroundField);
             prototype.alignToGround = EditorGUI.Slider(alignToGroundField, s_Styles.elementAlignToGround, prototype.alignToGround * 100, 0, 100) / 100;
 
-            GetSettingElementRect(settingsBoxRect, previousReferenceRect, out Rect orderlinessField);
-            prototype.positionOrderliness = EditorGUI.Slider(orderlinessField, s_Styles.elementPositionOrderliness, prototype.positionOrderliness * 100, 0, 100) / 100;
+            GetSettingElementRect(settingsBoxRect, previousReferenceRect, out Rect positionJitter);
+            GUI.enabled = !QualitySettings.useLegacyDetailDistribution;
+            prototype.positionJitter = EditorGUI.Slider(positionJitter, s_Styles.elementPositionJitter, prototype.positionJitter * 100, 0, 100) / 100;
+            GUI.enabled = true;
 
             GetSettingElementRect(settingsBoxRect, previousReferenceRect, out Rect minWidthField);
             prototype.minWidth = Mathf.Max(0f, EditorGUI.FloatField(minWidthField, s_Styles.elementMinWidthLabel, prototype.minWidth));
