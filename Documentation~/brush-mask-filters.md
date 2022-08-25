@@ -18,6 +18,7 @@ There are two types of filters — those that use existing Terrain data to calcu
 - Concavity
 - Height
 - Slope
+- Layer
 
 ### Math operation filters
 

@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ## [5.0.0] - 2022-04-29
 ### Added:
+- Added Paint Details tool override including multi-detail scatter, new detail selection UI, and the detail distribution slider.
+- Added Layer Filter to the Brush Mask Filter list. 
+- Added tool for optimizing heightmap range.
 
 ### Changed:
 - Updated version number to 5.0.0, minumum Unity version to 2022.2.

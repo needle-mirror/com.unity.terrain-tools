@@ -124,10 +124,10 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         /// Tells whether the Terrain Layer filter is active within the selected tool/brush
         /// </summary>
-        private static bool m_isLayerFilterActive;
+        private static bool s_isLayerFilterActive;
         internal static bool LayerFilterActiveState { 
-            get { return m_isLayerFilterActive; }
-            set { m_isLayerFilterActive = value; }
+            get { return s_isLayerFilterActive; }
+            set { s_isLayerFilterActive = value; }
         }
 
         /// <summary>

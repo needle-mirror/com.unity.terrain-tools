@@ -1,7 +1,7 @@
 {
   "name": "com.unity.terrain-tools",
   "displayName": "Terrain Tools",
-  "version": "5.0.0-pre.3",
+  "version": "5.0.0-pre.4",
   "unity": "2022.2",
   "unityRelease": "0a15",
   "description": "The Terrain Tools package adds additional Terrain sculpting brushes and tools to Unity. This add-on toolset is suitable if you require more control over the appearance of your Terrain, and want to streamline Terrain workflows. It’s also useful when you want to make more complex-looking Terrain, or author Terrain Texture data in external digital content creation tools.",
@@ -17,15 +17,12 @@
     "Filter",
     "Noise"
   ],
-  "_upm": {
-    "changelog": "### Added:\r\n\r\n### Changed:\r\n- Updated version number to 5.0.0, minumum Unity version to 2022.2.\r\n\r\n### Fixed:\r\n- Fixed the UI of the Terrain Toolbox so that the elements resize properly and provide a better user experience.\r\n- The hotkeys for brush strength, size, rotation have a tooltip that is displayed that shows the current value. Fixed a bug that involves the tooltip being obscured when the brush size is too large. \r\n- Fixed terrain Toolbox's create terrain import heightmap's tiles mode not showing a warning and disabling the create button when a invalid file path is selected.\r\n- Fixed selected parented terrains being improperly duplicated when using Toolbox's Utilities duplicate feature.\r\n- Fixed terrain transform tools target UI disabling the tool when no targets are selected. \r\n- Fixed transform tools being disabled when a user deselects both target options.\r\n- Fixed terrain Toolbox gizmo tooltip not displaying the proper modifier key for the currently used platform.\r\n- Fixed the improper modifier key being displayed within Create Terrain depending on the users Platform.\r\n- Fixed warnings being thrown when a terrain is split and the detail resolution per patch is set to a value lower than the minimum. \r\n- Fixed splitting terrain setting a detail resolution per patch lower than the minimum allowed value of 8.\r\n- Fixed terrain toolbox's layers utilities not clearing the alphamap when \"Clear Existing Layers\" is selected.\r\n- Fixed Import Heightmap error when flipping heightmap axis.\r\n- Fixed the bridge tool's description, the wording was previously confusing in regards to setting an end point for the bridge.\r\n- Fixed terrain altitude visualization not updating properly after parameters are altererd.\r\n- Fixed null layers causing index out of bounds exceptions and missing layers in PaintTextureTool and TerrainToolboxUtilities.\r\n- Updated the preview splatmaps shaders in Terrain Tools to use the Universal Rendering Pipeline rather than the old Lightweight Render Pipeline.\r\n- Fixed a bug where Split tool doesn't transfer Light Layer Mask settings correctly"
-  },
   "upmCi": {
-    "footprint": "3f47133819986f077d24592b8c944b9a00a00665"
+    "footprint": "5e6e79a0bbaa396742cce0d8a03ea9ae217f3fda"
   },
   "repository": {
     "url": "https://github.com/Unity-Technologies/TerrainTools.git",
     "type": "git",
-    "revision": "95ba80ca7be265cdbd40ca8fa8bc911577ff7704"
+    "revision": "12a314616931bcfe59357f3160b34b4f1e59b14e"
   }
 }

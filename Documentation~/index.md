@@ -9,3 +9,5 @@ While Unity includes a built-in set of Terrain features that provide basic tooli
 This add-on toolset is suitable if you require more control over the appearance of your Terrain, and want to streamline Terrain workflows. It’s also useful when you want to make more complex-looking Terrain, or author Terrain Texture data in external digital content creation tools.
 
 For more information, see [Getting started with Terrain Tools](getting-started-with-terrain-tools.md).
+
+New to Unity Terrain? Check out the latest [blog post](https://blog.unity.com/games/experience-the-new-unity-terrain-demo-scenes-for-hdrp-and-urp), and download the [HDRP Terrain Demo Scene](https://u3d.as/2L6K) or the [URP Terrain Demo Scene](https://u3d.as/2L6J) from the Asset Store to explore. 

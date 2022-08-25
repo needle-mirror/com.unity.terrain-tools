@@ -63,6 +63,12 @@ Only Graphics APIs that allow compute shaders and UAV for `GraphicsFormat.R16_SF
 | **Height Range** | Specifics the height range to which to apply the effect. |
 | **Remap Curve**  | Remaps the height input before computing the final mask. |
 
+## Layer
+
+Uses the alphamap of the selected [Terrain Layers](https://docs.unity3d.com/Manual/class-TerrainLayer.html) to mask the effect of a chosen Brush.
+
+**Sharpness** controls the amount the mask bleeds outside of the chosen layer's alphamap.
+
 ## Max
 
 Sets all pixels of the current mask to whichever is greater, the current pixel value or the input value.

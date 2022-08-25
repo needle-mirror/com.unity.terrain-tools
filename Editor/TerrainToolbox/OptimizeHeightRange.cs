@@ -13,6 +13,8 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         ///     Performs RemapTerrainHeights on the currently selected Terrain with a target efficiency of 95%
         /// </summary>
+        /// <param name="padBottom">Padding added below the height range; 0 - 1, relative the total height.</param>
+        /// <param name="padTop">Padding added above the height range; 0 - 1, relative the total height.</param>
         public static void OptimizeSelectedTerrains(float padBottom = 0.025f, float padTop = 0.025f)
         {
             var selectedTerrains = SelectedContiguousTerrains(out bool isSelectedContiguous);
@@ -131,6 +133,7 @@ namespace UnityEditor.TerrainTools
         ///     <terrainData>
         ///         . The results are
         ///         passed as out parameters.
+        ///     </terrainData>
         /// </summary>
         /// <param name="minHeight">float (will be reset)</param>
         /// <param name="maxHeight">float (will be reset)</param>

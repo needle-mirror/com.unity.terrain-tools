@@ -96,10 +96,15 @@ namespace UnityEditor.TerrainTools
                                                        Application.dataPath,
                                                        "New Noise Texture2D.png",
                                                        "png");
+                
+                if (string.IsNullOrEmpty(path))
+                {
+                    return; 
+                }
 
                 if (!path.StartsWith(Application.dataPath))
                 {
-                    Debug.LogError("You must specificy a path in your project's Assets folder to export a Noise Texture");
+                    Debug.LogError("You must specify a path in your project's Assets folder to export a Noise Texture");
                 }
 
                 if (!string.IsNullOrEmpty(path))
@@ -150,10 +155,15 @@ namespace UnityEditor.TerrainTools
                                                             Application.dataPath,
                                                             "New Noise Texture3D.asset",
                                                             "asset");
+                
+                if (string.IsNullOrEmpty(path))
+                {
+                    return; 
+                }
 
                 if (!path.StartsWith(Application.dataPath))
                 {
-                    Debug.LogError("You must specificy a path in your project's Assets folder to export a Noise Texture");
+                    Debug.LogError("You must specify a path in your project's Assets folder to export a Noise Texture");
                 }
 
                 if (!string.IsNullOrEmpty(path) && path.StartsWith(Application.dataPath))

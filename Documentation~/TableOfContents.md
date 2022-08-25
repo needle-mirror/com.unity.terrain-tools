@@ -31,6 +31,7 @@
     * [Twist](transform-twist)
   * [Smooth Height](smooth-height)
   * [Stamp Terrain](stamp-terrain)
+* [Paint Details](paint-details)
 * [Brushes](brushes)
   * [Common Brush controls and shortcut keys](brush-controls-shortcut-keys)
   * [Brush Mask Filters](brush-mask-filters)

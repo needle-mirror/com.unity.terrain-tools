@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using NUnit.Framework;
 using UnityEngine;
@@ -243,6 +244,18 @@ namespace UnityEditor.TerrainTools
             // check to see if the terrain changed
             Assert.That(AreHeightsEqual(startHeightArr, GetFullTerrainHeights(terrainObj)), Is.False, "Brush didn't make changes to terrain heightmap");
         }
+
+        class DummyGUIContext : IOnInspectorGUI
+        {
+            public void ShowBrushesGUI(int spacing = 5, BrushGUIEditFlags flags = BrushGUIEditFlags.All,
+                int textureResolutionPerTile = 0)
+            {
+            }
+
+            public void Repaint(RepaintFlags flags = RepaintFlags.UI)
+            {
+            }
+        }
         
         [UnityTest]
         [TestCase("DetailScatterHistory", ExpectedResult = null)]
@@ -270,9 +283,9 @@ namespace UnityEditor.TerrainTools
             tData.detailPrototypes = prototypes;
 
             var detailScatterTool = DetailScatterTool.instance;
+            detailScatterTool.SetSelectedTerrain(terrainObj);
             detailScatterTool.UpdateDetailUIData(terrainObj);
 
-            
             bool[] detailShouldBeFound = {false, true, true};
             for (int i = 0; i < detailShouldBeFound.Length; i++)
                 detailScatterTool.detailDataList[i].isSelected = detailShouldBeFound[i];

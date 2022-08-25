@@ -8,6 +8,10 @@ For information about how to install Terrain Tools and Asset Samples, see [Insta
 
 Terrain Tools adds fourteen new tools to the Paint Terrain drop-down menu, which include several [Sculpting](sculpt.md), [Erosion](erosion.md), and [Transform](transform.md) tools, [Mesh Stamping](mesh-stamp.md), and upgraded [Texture Painting](paint-texture.md) and [Terrain Stamping](stamp-terrain.md) experiences.
 
+## Paint Details
+
+Terrain Tools adds updates to the Paint Detail tool. These updates include the addition of enhanced [brush controls](brush-controls-shortcut-keys.md), the ability to scatter multiple details simultaneously, and a new Layer filtering mode. 
+
 ## Brushes
 
 Terrain Tools adds updates to [Brush controls](brush-controls-shortcut-keys.md) and [Brush Mask Filters](brush-mask-filters.md) to enhance Terrain brushes. The new Brush controls rename **Opacity** to **Brush Strength**, and add the ability to set **Brush Rotation**, **Brush Spacing**, and **Brush Scatter**. You can also modify the maximum and minimum values of each Brush.

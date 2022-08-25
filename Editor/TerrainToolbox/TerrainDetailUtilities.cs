@@ -7,6 +7,9 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.TerrainTools
 {
+    /// <summary>
+    ///     Functions for manipulating terrain details
+    /// </summary>
     public static class DetailUtility
     {
         /// <summary>
@@ -34,7 +37,8 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        ///     Saves a Texture2D representing the detail density in <terrain> to the asset folder <folder>
+        ///     Saves a Texture2D representing the detail density in <paramref name="terrain"/>
+        ///     to the asset folder <paramref name="folder"/>
         /// </summary>
         /// <param name="terrain">A terrain object to save</param>
         /// <param name="folder">An asset folder to receive saved assets</param>
@@ -48,7 +52,7 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        ///     Save a detail density map for every prototype in the supplied terrain to <folder>
+        ///     Save a detail density map for every prototype in the supplied terrain to <paramref name="folder"/>
         /// </summary>
         /// <param name="terrain"></param>
         /// <param name="folder"></param>
@@ -59,7 +63,7 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        ///     Save a detail density map for every prototype in the supplied terrain to <folder>
+        ///     Save a detail density map for every prototype in the supplied terrain to <paramref name="folder"/>
         /// </summary>
         /// <param name="terrain"></param>
         /// <param name="folderName">String path to the asset folder</param>
@@ -84,8 +88,8 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Loads a saved density map for <terrain> from <folder> into detail layer <detailLayer>
-        /// 
+        /// Loads a saved density map for <paramref name="terrain"/> from <paramref name="folder"/>
+        /// into detail layer <paramref name="detailLayer"/>
         /// </summary>
         /// <param name="terrain">Terrain object</param>
         /// <param name="folder">DefaultAsset or string folder path</param>
@@ -115,11 +119,11 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Loads a saved density map for <terrain> from <folderName> into detail layer <detailLayer>
-        /// 
+        /// Loads a saved density map for <paramref name="terrain"/> from <paramref name="folder"/>
+        /// into detail layer <paramref name="detailLayer"/>
         /// </summary>
         /// <param name="terrain">Terrain object</param>
-        /// <param name="folder">string folder path</param>
+        /// <param name="folderName">string folder path</param>
         /// <param name="detailLayer">integer detail layer</param>
         /// <returns> True if the expected texture asset exists and can be applied, or false otherwise.</returns>
         public static bool LoadDensityMap(Terrain terrain, string folderName, int detailLayer)
@@ -132,8 +136,8 @@ namespace UnityEditor.TerrainTools
         
         
         /// <summary>
-        ///     Given a DefaultAsset (folder) to seach, finds the density maps corresponding to
-        ///     <terrain> and loads them into the corresponding detail channels of <terrain>.
+        ///     Given a DefaultAsset <paramref name="folder"/> to seach, finds the density maps corresponding to
+        ///     <paramref name="terrain"/> and loads them into the corresponding detail channels of <paramref name="terrain"/>.
         /// </summary>
         /// <param name="terrain">a Terrain object</param>
         /// <param name="folder">a DefaultAsset corresponding to Asset folder containing textures</param>
@@ -158,10 +162,10 @@ namespace UnityEditor.TerrainTools
 
         /// <summary>
         ///     Given a the text path of an asset folder to seach, finds the detail maps corresponding
-        ///     to <terrain> and loads them into the corresponding detail channels of <terrain>.
+        ///     to <paramref name="terrain"/> and loads them into the corresponding detail channels of <paramref name="terrain"/>.
         /// </summary>
         /// <param name="terrain">a Terrain object</param>
-        /// <param name="folder">a DefaultAsset corresponding to Asset folder containing textures</param>
+        /// <param name="folderName">an Asset folder containing textures</param>
         public static void LoadDensityMaps(Terrain terrain, string folderName)
         {
             var folder = AssetDatabase.LoadAssetAtPath<DefaultAsset>(folderName);

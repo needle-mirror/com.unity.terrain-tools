@@ -18,10 +18,12 @@ namespace UnityEditor.TerrainTools
         bool m_ShowDetailControls = true;
         int m_PreviouslySelectedIndex;
         int m_MouseOnPatchIndex = -1;
-
         
         List<DetailUIData> m_DetailDataList = new List<DetailUIData>();
         internal List<DetailUIData> detailDataList => m_DetailDataList;
+
+        private const string k_MissingDetailPrototype = "Detail Prototype is missing.";
+        private const string k_MissingDetailTexture = "Detail Texture is missing.";
         
         Material m_Material = null;
         Material scatterMaterial
@@ -95,7 +97,7 @@ namespace UnityEditor.TerrainTools
             public ViewType viewType = ViewType.List;
             public readonly GUIContent viewTypesLabel = EditorGUIUtility.TrTextContent("View", "Choose between two different detail control views.");
             public readonly GUIContent listViewLabel = EditorGUIUtility.TrTextContent("List", "View the detail controls in a list. Allows for greater access to parameters.");
-            public readonly GUIContent gridViewLabel = EditorGUIUtility.TrTextContent("Grid", "View the detail controls in a list. Allows for a simpler UI.");
+            public readonly GUIContent gridViewLabel = EditorGUIUtility.TrTextContent("Grid", "View the detail controls in a grid. Allows for a simpler UI.");
             public readonly GUIContent detailSelectionWarning = EditorGUIUtility.TrTextContentWithIcon("Select the \"+\" button in order to add a Detail to scatter with.", MessageType.Info);
             
             //List View
@@ -403,10 +405,7 @@ namespace UnityEditor.TerrainTools
 
             var sliderBarPosition = GUILayoutUtility.GetRect(0, 30, GUILayout.ExpandWidth(true));
             var distributionElements = DistributionSliderGUI.CreateDistributionInfos(layers.Length, sliderBarPosition,
-               i => {
-                   DetailPrototype prototype = prototypes[layers[i]];
-                   return prototype.usePrototypeMesh ? prototype.prototype.name : prototype.prototypeTexture.name;
-                   },
+               i => GetPrototypeName(prototypes[layers[i]]),
                i => prototypes[layers[i]].targetCoverage,
                i => layers[i]);
 
@@ -651,9 +650,8 @@ namespace UnityEditor.TerrainTools
                 prototypeCardRect.y - 2,
                 prototypeRectOffset - k_ElementOptionsMenuXOffest,
                 EditorGUIUtility.singleLineHeight);
-
-            string name = prototypes[index].usePrototypeMesh ? prototypes[index].prototype.name : prototypes[index].prototypeTexture.name;
-            GUI.Label(prototypeNameRect, name);
+            
+            GUI.Label(prototypeNameRect, GetPrototypeName(prototypes[index]));
 
             //Prototype options menu
             Rect optionsMenuRect = new Rect(
@@ -922,9 +920,15 @@ namespace UnityEditor.TerrainTools
                 || GraphicsSettings.currentRenderPipeline.terrainDetailGrassBillboardShader != null
                 || GraphicsSettings.currentRenderPipeline.terrainDetailGrassShader != null;
 
+        // Used for internal unit tests only.
+        internal void SetSelectedTerrain(Terrain terrain)
+        {
+            m_SelectedTerrain = terrain;
+        }
+
         internal void UpdateDetailUIData(Terrain ctxTerrain)
         {
-            if (ctxTerrain == null)
+            if (ctxTerrain == null || m_SelectedTerrain == null)
                 return;
 
             int[] layers = m_DetailDataList.Select((v, i) => new { Value = v, Index = i })
@@ -973,6 +977,17 @@ namespace UnityEditor.TerrainTools
                 };
             }
             
+        }
+        
+        public static string GetPrototypeName(DetailPrototype prototype)
+        {
+            return prototype.usePrototypeMesh
+                ? prototype.prototype == null
+                    ? k_MissingDetailPrototype
+                    : prototype.prototype.name 
+                : prototype.prototypeTexture == null
+                    ? k_MissingDetailTexture
+                    : prototype.prototypeTexture.name;
         }
     }
 }

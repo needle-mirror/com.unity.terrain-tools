@@ -17,10 +17,15 @@ internal class SamplesLinkPackageManagerExtension : IPackageManagerExtension
 {
     VisualElement rootVisualElement;
     const string SAMPLEBUTTON_TEXT = "Download Asset Samples from Asset Store";
+    private const string SAMPLESCENEURPBUTTON_TEXT = "Download URP Demo Scene from Asset Store";
+    private const string SAMPLESCENEHDRPBUTTON_TEXT = "Download HDRP Demo Scene from Asset Store";
     const string ASSETSTORE_URL = "http://u3d.as/1wLg";
+    private const string URPSCENE_URL = "https://u3d.as/2L6J";
+    private const string HDRPSCENE_URL = "https://u3d.as/2L6K";
     const string TERRAIN_TOOLS_NAME = "com.unity.terrain-tools";
 
     private Button samplesButton;
+    private Button sampleSceneButton;
     private VisualElement parent;
 
     public VisualElement CreateExtensionUI()
@@ -29,7 +34,32 @@ internal class SamplesLinkPackageManagerExtension : IPackageManagerExtension
         samplesButton.text = SAMPLEBUTTON_TEXT;
         samplesButton.clickable.clicked += () => Application.OpenURL(ASSETSTORE_URL);
 
+        CreateDemoSceneButton();
+
         return samplesButton;
+    }
+
+    void CreateDemoSceneButton()
+    {
+        if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset == null)
+        {
+            return;
+        }
+
+        sampleSceneButton = new Button();
+
+        if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset.GetType().FullName
+                 == "UnityEngine.Rendering.HighDefinition.HDRenderPipelineAsset")
+        {
+            sampleSceneButton.text = SAMPLESCENEHDRPBUTTON_TEXT;
+            sampleSceneButton.clickable.clicked += () => Application.OpenURL(HDRPSCENE_URL);
+        }
+        else if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset.GetType().FullName
+                 == "UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset")
+        {
+            sampleSceneButton.text = SAMPLESCENEURPBUTTON_TEXT;
+            sampleSceneButton.clickable.clicked += () => Application.OpenURL(URPSCENE_URL);
+        }        
     }
 
     static SamplesLinkPackageManagerExtension()
@@ -47,10 +77,20 @@ internal class SamplesLinkPackageManagerExtension : IPackageManagerExtension
         if (!shouldRender)
         {
             samplesButton.RemoveFromHierarchy();
+
+            if (sampleSceneButton != null)
+            {
+                sampleSceneButton.RemoveFromHierarchy();
+            }
         }
         else
         {
             parent.Add(samplesButton);
+
+            if (sampleSceneButton != null)
+            {
+                parent.Add(sampleSceneButton);
+            }
         }
     }
 

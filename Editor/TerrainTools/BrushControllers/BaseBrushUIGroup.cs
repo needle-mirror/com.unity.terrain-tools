@@ -84,7 +84,7 @@ namespace UnityEditor.TerrainTools
         }
 
         FilterContext m_FilterContext;
-        private FilterContext filterContext
+        FilterContext filterContext
         {
             get
             {
@@ -162,7 +162,7 @@ namespace UnityEditor.TerrainTools
                         }
                         filterContext.rtHandleCollection.GatherRTHandles(heightContext.sourceRenderTexture.width, heightContext.sourceRenderTexture.height);
 
-                        // blit the gathererd rthandles
+                        // blit the gathered rthandles
                         foreach(LayerFilter layerFilter in layerFilters)
                         {
                             if (layerFilter.layerIndex >= terrainData.terrainLayers.Length)
