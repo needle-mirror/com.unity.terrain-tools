@@ -3,10 +3,19 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.0.2] - 2022-10-12
+### Fixed:
+- Replaced the old v4.0.0 What's new page with the new updated 5.0.2 one. 
+- Fixed null reference error when painting.
+- Removed faulty test from unit suite.
+
+### Changed:
+- Updated version number to 5.0.2.
+
 ## [5.0.1] - 2022-08-25
 ### Fixed:
--- Fixed some broken code examples in the documentation.
--- Button to link to example assets now shows in package manager if user is using URP or HDRP.
+- Fixed some broken code examples in the documentation.
+- Button to link to example assets now shows in package manager if user is using URP or HDRP.
 
 
 ## [5.0.0] - 2022-04-29

@@ -415,7 +415,12 @@ namespace UnityEditor.TerrainTools
 
         private Filter GetFilterAtIndex(int index)
         {
-            return m_FiltersProperty.GetArrayElementAtIndex(index).objectReferenceValue as Filter;
+            if (m_FiltersProperty.arraySize == 0) return null;
+            
+            var element = m_FiltersProperty.GetArrayElementAtIndex(index);
+            if (element == null) return null;
+
+            return element.objectReferenceValue as Filter;
         }
 
         private void MouseDragCB(ReorderableList list)

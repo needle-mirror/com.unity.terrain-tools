@@ -39,6 +39,7 @@ namespace UnityEditor.TerrainTools
         }
 
         [UnityTest]
+        [Ignore("Faulty test using core tool and reflection")]
         /// Tests whether the terrain inspector can survive having a missing detail prototype
         public IEnumerator MissingDetails()
         {

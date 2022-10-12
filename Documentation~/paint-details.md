@@ -4,9 +4,9 @@ Use the **Paint Details** tool to scatter Details onto your Terrain. A Detail re
 
 **Note:** This tool overrides the built-in [Paint Details](https://docs.unity3d.com/Manual/terrain-Grass.html) and adds newer features, such as simultaneously scattering multiple details, filter masking terrain layers, and target coverage distribution UI.
 
-## Select and configure the Paint Texture tool
+## Select and configure the Paint Details tool
 
-To select the Paint Texture tool:
+To select the Paint Details tool:
 1. Select a Terrain tile to bring up the Terrain Inspector.
 2. In the Terrain Inspector, click the Paint Details (grass) icon.
 
