@@ -1,4 +1,6 @@
+using System;
 using System.Text;
+using UnityEditor.TerrainTools.UI;
 using UnityEngine;
 using UnityEngine.TerrainTools;
 
@@ -15,7 +17,13 @@ namespace UnityEditor.TerrainTools
 
         private float m_defaultBrushSpacing;
         
-        public float brushSpacing => m_BrushSpacing;
+        public float brushSpacing {
+            get { return m_BrushSpacing; }
+            set
+            {
+                m_BrushSpacing = Mathf.Clamp(value, 0f, 100f);
+            }
+        }
         public bool allowPaint {
             get => m_AllowPaint; set => m_AllowPaint = value; }
 
@@ -66,10 +74,18 @@ namespace UnityEditor.TerrainTools
 
         }
 
+        // for updating condensed slider overlays 
+        public static event Action BrushSpacingChanged;
+        private float prevBrushSpacing; 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             base.OnInspectorGUI(terrain, editContext);
             m_BrushSpacing = TerrainToolGUIHelper.PercentSlider(styles.brushSpacing, m_BrushSpacing, 0.0f, 1.0f);
+            if (!Mathf.Approximately(m_BrushSpacing, prevBrushSpacing) && BrushSpacingChanged != null)
+            {
+                BrushSpacingChanged();
+                prevBrushSpacing = m_BrushSpacing;
+            }
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)

@@ -1,3 +1,4 @@
+using System; 
 using System.Text;
 using UnityEngine;
 using UnityEngine.TerrainTools;
@@ -29,8 +30,38 @@ namespace UnityEditor.TerrainTools
         static readonly Styles styles = new Styles();
 
         public float brushSize {
-            get { return m_JitterHandler.CalculateValue(m_BrushSize.value); }
-            set { m_BrushSize.value = Mathf.Clamp(value, kMinBrushSize, kMaxBrushSize); }
+            get
+            {
+                return m_JitterHandler.CalculateValue(m_BrushSize.value);
+            }
+            set { m_BrushSize.value = Mathf.Clamp(value, brushSizeMin, brushSizeMax); }
+
+        }
+
+        public float brushSizeVal
+        {
+            get
+            {
+                return m_BrushSize.value; 
+            }
+        }
+        
+        public float brushSizeMin
+        {
+            get { return m_BrushSize.minValue;  }
+            set { m_BrushSize.minValue = value;  }
+        }
+        
+        public float brushSizeMax
+        {
+            get { return m_BrushSize.maxValue;  }
+            set { m_BrushSize.maxValue = value;  }
+        }
+        
+        public float brushSizeJitter
+        {
+            get { return m_JitterHandler.jitter;  }
+            set { m_JitterHandler.jitter = value;  }
         }
 
         public BrushSizeVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache, float defaultValue = kDefaultBrushSize) : base(toolName, eventHandler, terrainCache)
@@ -133,12 +164,34 @@ namespace UnityEditor.TerrainTools
             return base.OnPaint(terrain, editContext);
         }
 
+        // for updating condensed slider overlays 
+        public static event Action BrushSizeChanged;
+        public static event Action BrushSizeMinChanged;
+        public static event Action BrushSizeMaxChanged; 
+        private float prevBrushSize = kDefaultBrushSize;
+        private float prevBrushSizeMin = kMinBrushSize;
+        private float prevBrushSizeMax = kMinBrushSize; 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             base.OnInspectorGUI(terrain, editContext);
 
             // If size randomization is on, we use the min-max slider, otherwise, just a normal one.
             m_BrushSize.DrawInspectorGUI();
+            if (!Mathf.Approximately(m_BrushSize.value, prevBrushSize) && BrushSizeChanged != null)
+            {
+                BrushSizeChanged();
+                prevBrushSize = m_BrushSize.value; 
+            }
+            if (!Mathf.Approximately(brushSizeMin, prevBrushSizeMin) && BrushSizeMinChanged != null)
+            {
+                BrushSizeMinChanged();
+                prevBrushSizeMin = brushSizeMin; 
+            }
+            if (!Mathf.Approximately(brushSizeMax, prevBrushSizeMax) && BrushSizeMaxChanged != null)
+            {
+                BrushSizeMaxChanged();
+                prevBrushSizeMax = brushSizeMax; 
+            }
             if (m_BrushSize.expanded)
             {
                 EditorGUI.indentLevel++;

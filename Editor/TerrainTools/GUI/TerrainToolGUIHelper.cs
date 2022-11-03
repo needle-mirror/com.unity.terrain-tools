@@ -592,7 +592,7 @@ internal static class TerrainToolGUIHelper
     }
 
     /// <summary>
-    /// Handles drawing a foldout in which the label can be disabled while still being selectable and separte from the foldout state.
+    /// Handles drawing a foldout in which the label can be disabled while still being selectable and separate from the foldout state.
     /// </summary>
     /// <param name="label">The <see cref="GUIContent"/> to display./param>
     /// <param name="state">The state of the foldout.</param>
@@ -878,65 +878,6 @@ internal static class TerrainToolGUIHelper
             }
 
             buttonPos.x += buttonSize.x;
-        }
-
-        return selection;
-    }
-
-    // assumes that an enum value of 0 = None and ~0 = Everything
-    private static int OLDHorizontalFlagToolbar(GUIContent[] toolbarContent, int[] enumValues, int selection, params GUILayoutOption[] options)
-    {
-        // TODO(wyatt): Change to use EditorGUIUtility.GetFlowLayoutedRects instead of Begin/EndHorizontal
-        Rect widthRect = GUILayoutUtility.GetRect(Screen.width, 17f);
-        // GetToolbarRect(true, toolbarContent, options);
-        // GUI.Box(widthRect, GUIContent.none);
-        Vector2 currPos = widthRect.position;
-        Rect totalRect = widthRect;
-        bool newLine = true;
-        //int skinID = 0; // left = 0, 1 = mid, 2 = right
-
-        for (int i = 0; i < toolbarContent.Length; ++i)
-        {
-            int enumVal = enumValues[i];
-            bool wasActive = (selection & enumVal) == enumVal && enumVal != 0;
-            GUIStyle skin = GetToolbarToggleStyle(wasActive);
-            Vector2 size = skin.CalcSize(toolbarContent[i]);
-            Rect buttonRect = new Rect(currPos.x, currPos.y, size.x, size.y);
-
-            currPos.x += size.x;
-
-            totalRect.yMax = Mathf.Max(currPos.y + size.y, totalRect.yMax);
-
-            if (currPos.x + size.x > widthRect.xMax)
-            {
-                currPos.x = widthRect.xMin;
-                currPos.y += size.y;
-                newLine = true;
-            }
-
-            if (newLine)
-            {
-                // reserve a rect for the line
-                Rect reservedRect = GUILayoutUtility.GetRect(widthRect.width, size.y);
-                // GUI.Box(reservedRect, GUIContent.none);
-                newLine = false;
-            }
-
-            if (GUI.Button(buttonRect, toolbarContent[i], skin))
-            {
-                if (enumVal == 0)
-                {
-                    selection = enumVal;
-                }
-                else if (enumVal == ~0)
-                {
-                    selection = wasActive ? ~enumVal : enumVal;
-                }
-                else
-                {
-                    selection = wasActive ? (selection & ~enumVal) : (selection | enumVal);
-                }
-            }
         }
 
         return selection;

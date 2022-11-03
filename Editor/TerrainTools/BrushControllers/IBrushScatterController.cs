@@ -10,7 +10,7 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         /// Gets the brush's scatter value.
         /// </summary>
-        float brushScatter { get; }
+        float brushScatter { get; set; }
 
         /// <summary>
         /// Randomizes the brush location for scattering.

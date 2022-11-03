@@ -1,10 +1,11 @@
 {
     "name": "Unity.TerrainTools.Editor.Tests",
+    "rootNamespace": "",
     "references": [
         "GUID:27619889b8ba8c24980f49ee34dbb44a",
         "GUID:0acc523941302664db1f4e527237feb3",
-        "GUID:99491abea1d2e7b47b99bc47c7d66616",
-        "GUID:870ce330d12521c41ba8a44d9ad3a5fc"
+        "GUID:f34b665134acb2346a78d532d0bdca31",
+        "GUID:80a73a91925646247bbed371a68aa7b5"
     ],
     "includePlatforms": [
         "Editor"

@@ -1,4 +1,4 @@
-
+using System; 
 using System.Text;
 using UnityEngine;
 using UnityEngine.TerrainTools;
@@ -38,12 +38,27 @@ namespace UnityEditor.TerrainTools
         static readonly Styles styles = new Styles();
 
         public float brushRotation {
-            get { return CalculateRotation(m_BrushRotation.value); }
+            get
+            {
+                return CalculateRotation(m_BrushRotation.value);
+            }
             set
             {
                 m_BrushRotation.value = Mathf.Clamp(value, kMinBrushRotation, kMaxBrushRotation);
                 m_PreviousRotation = m_BrushRotation.value;
             }
+        }
+        
+        public float brushRotationVal
+        {
+            get
+            { return m_BrushRotation.value;  }
+        }
+        
+        public float brushRotationJitter
+        {
+            get { return m_JitterHandler.jitter;  }
+            set { m_JitterHandler.jitter = value;  }
         }
 
         public float currentRotation => CalculateRotation(m_BrushRotation.value);
@@ -201,11 +216,20 @@ namespace UnityEditor.TerrainTools
             return false;
         }
 
+        // for updating condensed slider overlays 
+        public static event Action BrushRotationChanged;
+        private float prevBrushRotation = kDefaultBrushRotation; 
+        
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             base.OnInspectorGUI(terrain, editContext);
 
             m_BrushRotation.DrawInspectorGUI();
+            if (!Mathf.Approximately(m_BrushRotation.value, prevBrushRotation) && BrushRotationChanged != null)
+            {
+                BrushRotationChanged();
+                prevBrushRotation = m_BrushRotation.value; 
+            }
             if (m_BrushRotation.expanded)
             {
                 EditorGUI.indentLevel++;

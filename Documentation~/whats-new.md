@@ -30,6 +30,5 @@ The main updates in this release include:
 - Fixed null layers causing index out of bounds exceptions and missing layers in PaintTextureTool and TerrainToolboxUtilities.
 - Updated the preview splatmaps shaders in Terrain Tools to use the Universal Rendering Pipeline rather than the old Lightweight Render Pipeline.
 - Fixed a bug where Split tool doesn't transfer Light Layer Mask settings correctly.
-- Fixed occasional null reference error when selecting paint tool.
 
 For a full list of changes and updates in this version, see the Terrain Tools package [changelog](../changelog/CHANGELOG.html).

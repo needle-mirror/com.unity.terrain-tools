@@ -319,11 +319,10 @@ namespace UnityEditor.TerrainTools.Erosion
                 EditorGUILayout.BeginVertical("GroupBox");
                 m_SimulationScale.DrawInspectorGUI();
                 m_WindSpeed.DrawInspectorGUI();
-
-                EditorGUI.indentLevel++;
                 m_ShowAdvancedUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Advanced"), m_ShowAdvancedUI);
                 if (m_ShowAdvancedUI)
                 {
+                    EditorGUI.indentLevel++;
                     m_dt.DrawInspectorGUI();
                     m_Iterations.DrawInspectorGUI();
 
@@ -338,14 +337,16 @@ namespace UnityEditor.TerrainTools.Erosion
                     m_AbrasivenessCoefficient.DrawInspectorGUI();
 
                     m_Viscosity.DrawInspectorGUI();
-                    EditorGUI.indentLevel++;
                     m_ShowThermalUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Thermal Smoothing"), m_ShowThermalUI, 1);
                     if (m_ShowThermalUI)
                     {
+                        EditorGUI.indentLevel++;
                         m_ThermalIterations = EditorGUILayout.IntSlider("# Iterations", m_ThermalIterations, 0, 100);
                         m_ThermalTimeDelta.DrawInspectorGUI();
                         m_AngleOfRepose = EditorGUILayout.Slider(Erosion.Styles.m_AngleOfRepose, m_AngleOfRepose, 0.0f, 89.0f);
+                        EditorGUI.indentLevel--; 
                     }
+                    EditorGUI.indentLevel--; 
                 }
                 EditorGUILayout.EndVertical();
             }

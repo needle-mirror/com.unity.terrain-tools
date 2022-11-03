@@ -148,32 +148,26 @@ namespace UnityEditor.TerrainTools.Erosion
             {
                 EditorGUILayout.BeginVertical("GroupBox");
                 m_ErosionSettings.m_SimScale.DrawInspectorGUI();
-
-                EditorGUI.indentLevel++;
                 m_ShowAdvancedUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Advanced"), m_ShowAdvancedUI);
 
                 if (m_ShowAdvancedUI)
                 {
-                    //m_ErosionSettings.m_IterationBlendScalar.DrawInspectorGUI();
+                    EditorGUI.indentLevel++;
                     m_ErosionSettings.m_HydroTimeDelta.DrawInspectorGUI();
                     m_ErosionSettings.m_HydroIterations.DrawInspectorGUI();
-
-                    //m_ErosionSettings.m_GravitationalConstant = EditorGUILayout.Slider(Erosion.Styles.m_GravitationConstant, m_ErosionSettings.m_GravitationalConstant, 0.0f, -100.0f);
-
-                    EditorGUI.indentLevel++;
                     m_ShowThermalUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Thermal Smoothing"), m_ShowThermalUI, 1);
                     if (m_ShowThermalUI)
                     {
-                        //m_ErosionSettings.m_DoThermal = EditorGUILayout.Toggle(Erosion.Styles.m_DoThermal, m_ErosionSettings.m_DoThermal);
+                        EditorGUI.indentLevel++;
                         m_ErosionSettings.m_ThermalTimeDelta = EditorGUILayout.Slider(Erosion.Styles.m_ThermalDTScalar, m_ErosionSettings.m_ThermalTimeDelta, 0.0001f, 10.0f);
                         m_ErosionSettings.m_ThermalIterations = EditorGUILayout.IntSlider(Erosion.Styles.m_NumIterations, m_ErosionSettings.m_ThermalIterations, 0, 100);
                         m_ErosionSettings.m_ThermalReposeAngle = EditorGUILayout.IntSlider(Erosion.Styles.m_AngleOfRepose, m_ErosionSettings.m_ThermalReposeAngle, 0, 90);
+                        EditorGUI.indentLevel--; 
                     }
 
                     m_ShowWaterUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Water Transport"), m_ShowWaterUI, 1);
                     if (m_ShowWaterUI)
                     {
-                        //m_ErosionSettings.m_WaterLevelScale = EditorGUILayout.Slider(Erosion.Styles.m_WaterLevelScale, m_ErosionSettings.m_WaterLevelScale, 0.0f, 100.0f);
                         m_ErosionSettings.m_PrecipRate.DrawInspectorGUI();
                         m_ErosionSettings.m_EvaporationRate.DrawInspectorGUI();
                         m_ErosionSettings.m_FlowRate.DrawInspectorGUI();
@@ -182,7 +176,6 @@ namespace UnityEditor.TerrainTools.Erosion
                     m_ShowSedimentUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Sediment Transport"), m_ShowSedimentUI, 1);
                     if (m_ShowSedimentUI)
                     {
-                        //m_ErosionSettings.m_SedimentScale = EditorGUILayout.Slider(Erosion.Styles.m_SedimentScale, m_ErosionSettings.m_SedimentScale, 0.0f, 10.0f);
                         m_ErosionSettings.m_SedimentCapacity.DrawInspectorGUI();
                         m_ErosionSettings.m_SedimentDepositRate.DrawInspectorGUI();
                         m_ErosionSettings.m_SedimentDissolveRate.DrawInspectorGUI();
@@ -196,6 +189,8 @@ namespace UnityEditor.TerrainTools.Erosion
                         m_ErosionSettings.m_RiverBedDepositRate.DrawInspectorGUI();
                         m_ErosionSettings.m_RiverBedDissolveRate.DrawInspectorGUI();
                     }
+
+                    EditorGUI.indentLevel--; 
                 }
 
                 EditorGUILayout.EndVertical();

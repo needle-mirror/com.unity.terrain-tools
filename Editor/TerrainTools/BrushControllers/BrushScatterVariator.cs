@@ -1,3 +1,4 @@
+using System; 
 using System.Text;
 using UnityEngine;
 using UnityEngine.TerrainTools;
@@ -8,7 +9,14 @@ namespace UnityEditor.TerrainTools
     {
 
         private float m_BrushScatter;
-        public float brushScatter => m_BrushScatter;
+        
+        public float brushScatter {
+            get { return m_BrushScatter; }
+            set
+            {
+                m_BrushScatter = Mathf.Clamp(value, 0f, 100f);
+            }
+        }
 
         private bool m_UseNewRandomValue;
         private Vector2 m_RandomValues;
@@ -56,18 +64,26 @@ namespace UnityEditor.TerrainTools
         {
             if (m_UseNewRandomValue)
             {
-                m_RandomValues = Random.insideUnitCircle;
+                m_RandomValues = UnityEngine.Random.insideUnitCircle;
                 m_UseNewRandomValue = false;
             }
 
             base.OnSceneGUI(currentEvent, controlId, terrain, editContext);
         }
 
+        // for updating condensed slider overlays 
+        public static event Action BrushScatterChanged;
+        private float prevBrushScatter; 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             base.OnInspectorGUI(terrain, editContext);
 
             m_BrushScatter = TerrainToolGUIHelper.PercentSlider(styles.brushScatter, m_BrushScatter, 0.0f, 1.0f);
+            if (!Mathf.Approximately(m_BrushScatter, prevBrushScatter) && BrushScatterChanged != null)
+            {
+                BrushScatterChanged();
+                prevBrushScatter = m_BrushScatter; 
+            }
         }
 
         public override void AppendBrushInfo(Terrain terrain, IOnSceneGUI editContext, StringBuilder builder)

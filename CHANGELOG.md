@@ -3,11 +3,17 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.1.0-pre.1] - 2022-11-03
+### Added:
+- All terrain tools now support overlays in the Scene view.
+
+## [5.0.3] - 2022-11-3
+### Fixed:
+- Prevent a null reference error in BaseBrushUIGroup and NoiseHeightTool
+
 ## [5.0.2] - 2022-10-12
 ### Fixed:
 - Replaced the old v4.0.0 What's new page with the new updated 5.0.2 one. 
-- Fixed null reference error when painting.
-- Removed faulty test from unit suite.
 
 ### Changed:
 - Updated version number to 5.0.2.

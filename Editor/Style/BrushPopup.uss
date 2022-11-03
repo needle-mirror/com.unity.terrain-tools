@@ -1,0 +1,10 @@
+.unity-base-field__label
+{
+    flex-shrink: 1;
+    min-width: 55px;
+}
+.unity-base-text-field
+{
+    width: 35px;
+}
+

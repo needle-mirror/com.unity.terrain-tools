@@ -25,4 +25,4 @@ The Terrain Tools package provides the following 13 additional tools, and improv
 * [__Smooth Height__](smooth-height.md) is similar to the built-in Smooth Height tool, but includes two new parameters, **Verticality** and **Blur Radius**, which provide finer control when smoothing your Terrain.
 * [__Stamp Terrain__](stamp-terrain.md) is similar to the built-in Stamp Terrain tool, but with added functionality such as **Min** and **Max** operations that provide finer control over Terrain. It now also includes the Mesh Stamp tool, which projects the shape of a mesh into the Terrain's heightmap.
 
-You can also create your own custom Terrain painting tools. For more information, see [TerrainAPI.TerrainPaintTool](https://docs.unity3d.com/ScriptReference/Experimental.TerrainAPI.TerrainPaintTool_1.html) and [Create a custom Terrain tool](create-custom-tools.md).
+You can also create your own custom Terrain painting tools. For more information, see [TerrainAPI.TerrainPaintTool](ScriptRef:TerrainTools.TerrainPaintTool_1) and [Create a custom Terrain tool](create-custom-tools.md).

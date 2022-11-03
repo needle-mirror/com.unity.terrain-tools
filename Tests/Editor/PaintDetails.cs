@@ -92,10 +92,15 @@ namespace UnityEditor.TerrainTools
             var terrainInspectorType = terrainInpspector.GetType();
             var selectPaintToolMethod =
                 terrainInspectorType.GetMethods().FirstOrDefault(x => x.Name == "SelectPaintTool");
+
+            // October 6 2022: In core (engine) the tool is called PaintDetailsTool. Package
+            // overrides that tool with one named DetailScatterTool
+            // October 6 2022: DetailScatterTool is in Assembly Unity.TerrainTools.Editor and
+            // just need _any_ public type in that Assembly in order to get ahold of DetailScatterTool.
             var paintDetailsType =
-                typeof(UnityEditor.TerrainTools.TerrainInspectorUtility).Assembly.GetType(
-                    "UnityEditor.TerrainTools.PaintDetailsTool");
-            
+                typeof(DetailUtility).Assembly.GetType(
+                    "UnityEditor.TerrainTools.DetailScatterTool");
+
             // select the paint tool.
             selectPaintToolMethod.Invoke(terrainInpspector, new object[] { paintDetailsType });
 

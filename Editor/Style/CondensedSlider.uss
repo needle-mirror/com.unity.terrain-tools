@@ -1,0 +1,136 @@
+.condensed-slider__slider--horizontal
+{
+    margin: 0;
+    flex-grow: 1;
+    padding-left: 0;
+    width: 100px;
+    height: auto;
+}
+.condensed-slider__slider--vertical
+{
+    margin: 0;
+    flex-grow: 1;
+    padding-left: 0;
+    height: 60px;
+    width: auto;
+}
+
+.condensed-slider__slider-tracker
+{
+    background-color: var(--unity-theme-background-color-2);
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+#unity-drag-container:active > .condensed-slider__slider-tracker
+{
+    background-color: var(--unity-colors-button-background-pressed);
+}
+
+.condensed-slider__dropdown--horizontal
+{
+    margin-bottom: 0;
+    margin-top: 0;
+    margin-left: 3px;
+    margin-right: 3px;
+    min-height: 0;
+}
+.condensed-slider__dropdown--vertical
+{
+    margin-bottom: 3px;
+    margin-top: 3px;
+    margin-left: 0;
+    margin-right: 0;
+    min-width: 0;
+}
+.condensed-slider__content--horizontal
+{
+    position: absolute;
+    flex-direction: row;
+    top: 1px;
+    left: 0;
+}
+.condensed-slider__content--vertical
+{
+    position: absolute;
+    flex-direction: column;
+    top: 0;
+}
+.condensed-slider__image
+{
+    width: 16px;
+    height: 16px;
+}
+.condensed-slider__image--horizontal
+{
+    margin-left: 3px;
+}
+.condensed-slider__image--vertical
+{
+    margin-top: 15px;
+    align-self: center;
+}
+.condensed-slider__label
+{
+    flex-shrink: 1;
+    flex-grow: 1;
+    overflow: hidden;
+}
+.condensed-slider__label--horizontal
+{
+    margin-left: 3px;
+    -unity-text-align: middle-left;
+}
+.condensed-slider__label--vertical
+{
+    margin-top: 3px;
+    -unity-text-align: middle-center;
+}
+.condensed-slider__content-textfield--horizontal
+{
+    position: absolute;
+    width: 100%;
+}
+.condensed-slider__content-textfield--vertical
+{
+    position: absolute;
+    height: 100%;
+    width: 100%;
+}
+.condensed-slider__textfield--horizontal
+{
+    margin-top: 0;
+}
+.condensed-slider__textfield--vertical
+{
+    margin-top: 23px;
+    margin-left: 0;
+    margin-right: 0;
+}
+.condensed-slider
+{
+    border-radius: 3px;
+    border-width: 1px;
+    border-color: var(--unity-colors-button-background);
+    background-color: transparent;
+    margin: 3px;
+    -unity-text-align: middle-center;
+}
+.condensed-slider--horizontal
+{
+    margin: 0;
+    margin-left: 3px;
+    margin-right: 3px;
+    padding: 0;
+    height: 19px;
+    flex-direction: row;
+}
+.condensed-slider--vertical
+{
+    margin: 0;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    padding: 0;
+    width: 37px;
+    flex-direction: column;
+}

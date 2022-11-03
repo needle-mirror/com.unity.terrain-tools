@@ -74,6 +74,7 @@ namespace UnityEditor.TerrainTools
         {
             // delete test resources
             defaultBrushUiGroupMock?.brushMaskFilterStack?.Clear(true);
+            DetailScatterToolOvl.instance?.detailDataList?.Clear();
             PaintContext.ApplyDelayedActions();
             if (terrainObj != null)
             {
@@ -157,6 +158,25 @@ namespace UnityEditor.TerrainTools
                 paintTool.OnPaint(terrainObj, paintContext);
             }
         }
+        private void RunPainting<T>(string recordingFilePath, TerrainToolsPaintTool<T> paintTool) where T : TerrainToolsPaintTool<T>
+        {
+            var onPaintHistory = LoadDataFile(recordingFilePath);
+            while (onPaintHistory.Count > 0)
+            {
+                var paintOccurrence = onPaintHistory.Dequeue();
+                var paintPosition = new Vector2(paintOccurrence.xPos, paintOccurrence.yPos);
+                Vector3 rayOrigin = new Vector3(
+                    Mathf.Lerp(terrainBounds.min.x, terrainBounds.max.x, paintOccurrence.xPos),
+                    1000,
+                    Mathf.Lerp(terrainBounds.min.z, terrainBounds.max.z, paintOccurrence.yPos)
+                );
+                Physics.Raycast(new Ray(rayOrigin, Vector3.down), out RaycastHit raycastHit);
+                defaultBrushUiGroupMock.SetRaycastHit(raycastHit);
+                OnPaintContextMock paintContext = new OnPaintContextMock(GetBrushTexture(), paintPosition, paintOccurrence.brushStrength, paintOccurrence.brushSize, true, raycastHit);
+                paintTool.OnPaint(terrainObj, paintContext);
+            }
+        }
+
         private float[,] GetFullTerrainHeights(Terrain terrain)
         {
             int terrainWidth = terrain.terrainData.heightmapResolution;
@@ -210,7 +230,7 @@ namespace UnityEditor.TerrainTools
             var startHeightArr = GetFullTerrainHeights(terrainObj);
 
             // test load up the terrain paint height brush
-            var paintHeightTool = PaintHeightTool.instance;
+            var paintHeightTool = PaintHeightToolOvl.instance;
 
             // need a way to override the common UI on the different tools so
             // that I can bypass some of their behaviors
@@ -232,7 +252,7 @@ namespace UnityEditor.TerrainTools
             var startHeightArr = GetFullTerrainHeights(terrainObj);
 
             // test load up the terrain paint height brush
-            var setHeightTool = SetHeightTool.instance;
+            var setHeightTool = SetHeightToolOvl.instance;
             setHeightTool.SetTargetHeight(targetHeight);
             // need a way to override the common UI on the different tools so
             // that I can bypass some of their behaviors
@@ -282,7 +302,7 @@ namespace UnityEditor.TerrainTools
             TerrainData tData = terrainObj.terrainData;
             tData.detailPrototypes = prototypes;
 
-            var detailScatterTool = DetailScatterTool.instance;
+            var detailScatterTool = DetailScatterToolOvl.instance;
             detailScatterTool.SetSelectedTerrain(terrainObj);
             detailScatterTool.UpdateDetailUIData(terrainObj);
 
@@ -329,7 +349,7 @@ namespace UnityEditor.TerrainTools
             var startHeightArr = GetFullTerrainHeights(terrainObj);
 
             // test load up the terrain paint height brush
-            var stampTool = StampTool.instance;
+            var stampTool = StampToolOvl.instance;
             stampTool.ChangeCommonUI(defaultBrushUiGroupMock);
             stampTool.SetStampHeight(stampHeight);
             defaultBrushUiGroupMock.SetTerrain(terrainObj);
@@ -348,7 +368,7 @@ namespace UnityEditor.TerrainTools
             var startHeightArr = GetFullTerrainHeights(terrainObj);
 
             // test load up the terrain paint height brush
-            var stampTool = NoiseHeightTool.instance;
+            var stampTool = NoiseHeightToolOvl.instance;
             stampTool.ChangeCommonUI(defaultBrushUiGroupMock);
             defaultBrushUiGroupMock.SetTerrain(terrainObj);
 
@@ -366,7 +386,7 @@ namespace UnityEditor.TerrainTools
         public IEnumerator Test_PaintTexture_Playback(string recordingFilePath, string targetTerrainName) {
             yield return null;
             SetupTerrain();
-            var textureTool = PaintTextureTool.instance;
+            var textureTool = PaintTextureToolOvl.instance;
             textureTool.ChangeCommonUI(defaultBrushUiGroupMock);
             defaultBrushUiGroupMock.SetTerrain(terrainObj);
 
@@ -396,7 +416,7 @@ namespace UnityEditor.TerrainTools
             var startHeightArr = GetFullTerrainHeights(terrainObj);
 
             // test load up the terrain paint height brush
-            var paintHeightTool = PaintHeightTool.instance;
+            var paintHeightTool = PaintHeightToolOvl.instance;
 
             // need a way to override the common UI on the different tools so
             // that I can bypass some of their behaviors
@@ -419,7 +439,7 @@ namespace UnityEditor.TerrainTools
         public IEnumerator Test_SetHeight_FlattenTile()
         {
             yield return null;
-            var setHeightTool = SetHeightTool.instance;
+            var setHeightTool = SetHeightToolOvl.instance;
             setHeightTool.ChangeCommonUI(defaultBrushUiGroupMock);
             defaultBrushUiGroupMock.SetTerrain(terrainObj);
 

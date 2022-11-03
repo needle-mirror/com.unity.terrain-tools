@@ -2,6 +2,8 @@
 using System.Text;
 using UnityEngine;
 using UnityEngine.TerrainTools;
+using System;
+
 
 namespace UnityEditor.TerrainTools
 {
@@ -30,9 +32,38 @@ namespace UnityEditor.TerrainTools
         private RaycastHit m_LastRaycastHit;
 
         public float brushStrength {
-            get { return m_JitterHandler.CalculateValue(m_BrushStrength.value); }
-            set { m_BrushStrength.value = Mathf.Clamp(value, kMinBrushStrength, kMaxBrushStrength); }
+            get
+            {
+                return m_JitterHandler.CalculateValue(m_BrushStrength.value);
+            }
+            set { m_BrushStrength.value = Mathf.Clamp(value, brushStrengthMin, brushStrengthMax); }
         }
+        
+        public float brushStrengthVal
+        {
+            get
+            { return m_BrushStrength.value; }
+        }
+
+        public float brushStrengthMin
+        {
+            get { return m_BrushStrength.minValue;  }
+            set { m_BrushStrength.minValue = value;  }
+        }
+        
+        public float brushStrengthMax
+        {
+            get { return m_BrushStrength.maxValue;  }
+            set { m_BrushStrength.maxValue = value;  }
+        }
+        
+        public float brushStrengthJitter
+        {
+            get { return m_JitterHandler.jitter;  }
+            set { m_JitterHandler.jitter = value;  }
+        }
+
+        
         public float brushStrengthUI => Mathf.Clamp(m_BrushStrength.value, kMinBrushStrength, kMaxBrushStrength);
 
         public BrushStrengthVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache, float defaultValue = kDefaultBrushStrength) : base(toolName, eventHandler, terrainCache)
@@ -123,11 +154,34 @@ namespace UnityEditor.TerrainTools
             return base.OnPaint(terrain, editContext);
         }
 
+        // for updating condensed slider overlays 
+        public static event Action BrushStrengthChanged;
+        public static event Action BrushStrengthMinChanged;
+        public static event Action BrushStrengthMaxChanged; 
+        private float prevBrushStrength = kDefaultBrushStrength;
+        private float prevBrushStrengthMin = kMinBrushStrength;
+        private float prevBrushStrengthMax = kMaxBrushStrength; 
+        
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             base.OnInspectorGUI(terrain, editContext);
 
             m_BrushStrength.DrawInspectorGUI();
+            if (!Mathf.Approximately(m_BrushStrength.value, prevBrushStrength) && BrushStrengthChanged != null)
+            {
+                BrushStrengthChanged();
+                prevBrushStrength = m_BrushStrength.value; 
+            }
+            if (!Mathf.Approximately(brushStrengthMin, prevBrushStrengthMin) && BrushStrengthMinChanged != null)
+            {
+                BrushStrengthMinChanged();
+                prevBrushStrengthMin = brushStrengthMin; 
+            }
+            if (!Mathf.Approximately(brushStrengthMax, prevBrushStrengthMax) && BrushStrengthMaxChanged != null)
+            {
+                BrushStrengthMaxChanged();
+                prevBrushStrengthMax = brushStrengthMax; 
+            }
             if (m_BrushStrength.expanded)
             {
                 EditorGUI.indentLevel++;

@@ -15,24 +15,104 @@ namespace UnityEditor.TerrainTools
     public interface IBrushUIGroup
     {
         /// <summary>
+        /// Does the commonUI have a size controller? 
+        /// </summary>
+        bool hasBrushSize { get; }
+        
+        /// <summary>
+        /// Does the commonUI have a rotation controller? 
+        /// </summary>
+        bool hasBrushRotation { get; }
+        
+        /// <summary>
+        /// Does the commonUI have a strength controller? 
+        /// </summary>
+        bool hasBrushStrength { get; }
+        
+        /// <summary>
+        /// Does the commonUI have a spacing controller? 
+        /// </summary>
+        bool hasBrushSpacing { get; }
+        
+        /// <summary>
+        /// Does the commonUI have a scatter controller? 
+        /// </summary>
+        bool hasBrushScatter { get; }
+        
+        /// <summary>
         /// The normalized size of the brush.
         /// </summary>
-        float brushSize { get; }
+        float brushSize { get; set;  }
+        
+        /// <summary>
+        /// The size of the brush without jitter.
+        /// </summary>
+        float brushSizeVal { get; }
+        
+        /// <summary>
+        /// The min size of the brush when applied.
+        /// </summary>
+        float brushSizeMin { get; set; }
+        
+        /// <summary>
+        /// The max size of the brush when applied.
+        /// </summary>
+        float brushSizeMax { get; set; }
+        
+        /// <summary>
+        /// The jitter of the brush size when applied.
+        /// </summary>
+        float brushSizeJitter { get; set; }
 
         /// <summary>
         /// The rotation of the brush (in degrees).
         /// </summary>
-        float brushRotation { get; }
+        float brushRotation { get; set;  }
+        
+        /// <summary>
+        /// The rotation of the brush without jitter (in degrees).
+        /// </summary>
+        float brushRotationVal { get; }
+        
+        /// <summary>
+        /// The jitter of the brush rotation when applied.
+        /// </summary>
+        float brushRotationJitter { get; set;  }
 
         /// <summary>
         /// The normalized strength of the brush when applied.
         /// </summary>
-        float brushStrength { get; }
+        float brushStrength { get; set; }
+        
+        /// <summary>
+        /// The strength of the brush without jitter.
+        /// </summary>
+        float brushStrengthVal { get; }
+        
+        /// <summary>
+        /// The min strength of the brush when applied.
+        /// </summary>
+        float brushStrengthMin { get; set; }
+        
+        /// <summary>
+        /// The max strength of the brush when applied.
+        /// </summary>
+        float brushStrengthMax { get; set; }
+        
+        /// <summary>
+        /// The jitter of the brush strength when applied.
+        /// </summary>
+        float brushStrengthJitter { get; set; }
 
         /// <summary>
         /// The spacing used when applying certain brushes.
         /// </summary>
-        float brushSpacing { get; }
+        float brushSpacing { get; set; }
+        
+        /// <summary>
+        /// The scatter used when applying certain brushes.
+        /// </summary>
+        float brushScatter { get; set; }
 
         /// <summary>
         /// Gets and sets the message for validating terrain parameters.
@@ -90,8 +170,22 @@ namespace UnityEditor.TerrainTools
         /// <param name="terrain">The terrain in focus.</param>
         /// <param name="editContext">The editcontext used to show the brush GUI.</param>
         /// <param name="brushFlags">The brushflags to use when displaying the brush GUI.</param>
-        void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, BrushGUIEditFlags brushFlags = BrushGUIEditFlags.SelectAndInspect);
+        void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext,
+            BrushGUIEditFlags brushFlags = BrushGUIEditFlags.SelectAndInspect); 
 
+        /// <summary>
+        /// Renders the brush's GUI within the inspector view.
+        /// </summary>
+        /// <param name="terrain">The terrain in focus.</param>
+        /// <param name="editContext">The editcontext used to show the brush GUI.</param>
+        /// <param name="overlays">The bool to mark true when showing UI specific for overlays.</param>
+        /// <param name="brushFlags">The brushflags to use when displaying the brush GUI.</param>
+        /// <param name="brushOverlaysFlags">the overlays brushflags to use when displaying the GUI</param>
+        void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext,
+            bool overlays,
+            BrushGUIEditFlags brushFlags = BrushGUIEditFlags.SelectAndInspect,
+            BrushOverlaysGUIFlags brushOverlaysFlags = BrushOverlaysGUIFlags.All); 
+        
         /// <summary>
         /// Defines data when the brush is selected.
         /// </summary>

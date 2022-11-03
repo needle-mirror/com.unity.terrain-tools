@@ -37,23 +37,28 @@ namespace UnityEditor.TerrainTools
             //Scatter must be first.
             if ((feature & Feature.Scatter) != 0)
             {
+                m_HasBrushScatter = true; 
                 AddScatterController(new BrushScatterVariator(name, this, this, defaults?.Scatter?? brushScatter));
             }
 
             if ((feature & Feature.Size) != 0)
             {
+                m_HasBrushSize = true; 
                 AddSizeController(new BrushSizeVariator(name, this, this, defaults?.Size?? brushSize));
             }
             if ((feature & Feature.Rotation) != 0)
             {
+                m_HasBrushRotation = true; 
                 AddRotationController(new BrushRotationVariator(name, this, this, false, defaults?.Rotation?? brushRotation));
             }
             if ((feature & Feature.Strength) != 0)
             {
+                m_HasBrushStrength = true; 
                 AddStrengthController(new BrushStrengthVariator(name, this, this, defaults?.Strength?? brushStrength));
             }
             if ((feature & Feature.Spacing) != 0)
             {
+                m_HasBrushSpacing = true; 
                 AddSpacingController(new BrushSpacingVariator(name, this, this, defaults?.Spacing?? brushSpacing));
             }
 

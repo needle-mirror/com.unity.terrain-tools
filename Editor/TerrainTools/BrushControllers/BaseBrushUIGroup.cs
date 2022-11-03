@@ -4,9 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using UnityEditor.EditorTools;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
+using UnityEditor.Overlays;
+using UnityEngine.UIElements;
+using Cursor = UnityEngine.Cursor;
 using UnityEngine.TerrainTools;
 
 namespace UnityEditor.TerrainTools
@@ -32,6 +36,12 @@ namespace UnityEditor.TerrainTools
         private IBrushScatterController m_BrushScatterController = null;
         private IBrushModifierKeyController m_BrushModifierKeyController = null;
         private IBrushSmoothController m_BrushSmoothController = null;
+        
+        internal bool m_HasBrushSize; // tells you which of the controllers are null or not 
+        internal bool m_HasBrushRotation;
+        internal bool m_HasBrushStrength;
+        internal bool m_HasBrushSpacing;
+        internal bool m_HasBrushScatter; 
 
         [ SerializeField ]
         private FilterStack m_BrushMaskFilterStack = null;
@@ -49,7 +59,8 @@ namespace UnityEditor.TerrainTools
                     {
                         m_BrushMaskFilterStack = LoadFilterStack();
                     }
-                    else
+                    // If there is no filter stack or if it failed to load
+                    if( m_BrushMaskFilterStack == null )
                     {
                         // create the first filterstack if this is the first time this tool is being used
                         // because a save file has not been made yet for the filterstack
@@ -257,6 +268,31 @@ namespace UnityEditor.TerrainTools
         /// Returns the brush name.
         /// </summary>
         public string brushName => m_Name;
+        
+        /// <summary>
+        /// Does the commonUI have a size controller? 
+        /// </summary>
+        public bool hasBrushSize => m_HasBrushSize;
+        
+        /// <summary>
+        /// Does the commonUI have a rotation controller? 
+        /// </summary>
+        public bool hasBrushRotation => m_HasBrushRotation;
+        
+        /// <summary>
+        /// Does the commonUI have a strength controller? 
+        /// </summary>
+        public bool hasBrushStrength => m_HasBrushStrength;
+        
+        /// <summary>
+        /// Does the commonUI have a spacing controller? 
+        /// </summary>
+        public bool hasBrushSpacing => m_HasBrushSpacing;
+
+        /// <summary>
+        /// Does the commonUI have a scatter controller? 
+        /// </summary>
+        public bool hasBrushScatter => m_HasBrushScatter; 
 
         /// <summary>
         /// Gets and sets the brush size.
@@ -267,38 +303,143 @@ namespace UnityEditor.TerrainTools
             get { return m_BrushSizeController?.brushSize ?? 100.0f; }
             set { m_BrushSizeController.brushSize = value; }
         }
+        
+        /// <summary>
+        /// The size of the brush without jitter.
+        /// </summary>
+        /// <remarks>Gets a value of 100 if the brush size controller isn't initialized.</remarks>
+        public float brushSizeVal
+        {
+            get { return m_BrushSizeController?.brushSizeVal ?? 100.0f; }
+        }
+        
+        /// <summary>
+        /// Gets and sets the brush min size.
+        /// </summary>
+        /// <remarks>Gets a value of 0 if the brush size controller isn't initialized.</remarks>
+        public float brushSizeMin
+        {
+            get { return m_BrushSizeController?.brushSizeMin ?? 0.0f; }
+            set { m_BrushSizeController.brushSizeMin = value; }
+        }
+        
+        /// <summary>
+        /// Gets and sets the brush max size.
+        /// </summary>
+        /// <remarks>Gets a value of 1 if the brush size controller isn't initialized.</remarks>
+        public float brushSizeMax
+        {
+            get { return m_BrushSizeController?.brushSizeMax ?? 1.0f; }
+            set { m_BrushSizeController.brushSizeMax = value; }
+        }
+        
+        /// <summary>
+        /// Gets and sets the brush size jitter.
+        /// </summary>
+        /// <remarks>Gets a value of 0 if the brush size controller isn't initialized.</remarks>
+        public float brushSizeJitter
+        {
+            get { return m_BrushSizeController?.brushSizeJitter ?? 0.0f; }
+            set { m_BrushSizeController.brushSizeJitter = value; }
+        }
 
         /// <summary>
         /// Gets and sets the brush rotation.
         /// </summary>
-        /// <remarks>Gets a value of 0 if the brush size controller isn't initialized.</remarks>
+        /// <remarks>Gets a value of 0 if the brush rotation controller isn't initialized.</remarks>
         public float brushRotation
         {
             get { return m_BrushRotationController?.brushRotation ?? 0.0f; }
             set { m_BrushRotationController.brushRotation = value; }
         }
+        
+        /// <summary>
+        /// The strength of the brush without jitter.
+        /// </summary>
+        /// <remarks>Gets a value of 0 if the brush rotation controller isn't initialized.</remarks>
+        public float brushRotationVal
+        {
+            get { return m_BrushRotationController?.brushRotationVal ?? 0.0f; }
+        }
+        
+        /// <summary>
+        /// Gets and sets the brush rotation jitter.
+        /// </summary>
+        /// <remarks>Gets a value of 0 if the brush rotation controller isn't initialized.</remarks>
+        public float brushRotationJitter
+        {
+            get { return m_BrushRotationController?.brushRotationJitter ?? 0.0f; }
+            set { m_BrushRotationController.brushRotationJitter = value; }
+        }
 
         /// <summary>
         /// Gets and sets the brush strength.
         /// </summary>
-        /// <remarks>Gets a value of 1 if the brush size controller isn't initialized.</remarks>
+        /// <remarks>Gets a value of 1 if the brush strength controller isn't initialized.</remarks>
         public float brushStrength
         {
             get { return m_BrushStrengthController?.brushStrength ?? 1.0f; }
             set { m_BrushStrengthController.brushStrength = value; }
         }
+        
+        /// <summary>
+        /// The strength of the brush without jitter.
+        /// </summary>
+        /// <remarks>Gets a value of 1 if the brush strength controller isn't initialized.</remarks>
+        public float brushStrengthVal
+        {
+            get { return m_BrushStrengthController?.brushStrengthVal ?? 1.0f; }
+        }
+        
+        /// <summary>
+        /// Gets and sets the brush min strength.
+        /// </summary>
+        /// <remarks>Gets a value of 0 if the brush strength controller isn't initialized.</remarks>
+        public float brushStrengthMin
+        {
+            get { return m_BrushStrengthController?.brushStrengthMin ?? 0.0f; }
+            set { m_BrushStrengthController.brushStrengthMin = value; }
+        }
+        
+        /// <summary>
+        /// Gets and sets the brush max strength.
+        /// </summary>
+        /// <remarks>Gets a value of 1 if the brush strength controller isn't initialized.</remarks>
+        public float brushStrengthMax
+        {
+            get { return m_BrushStrengthController?.brushStrengthMax ?? 1.0f; }
+            set { m_BrushStrengthController.brushStrengthMax = value; }
+        }
+        
+        /// <summary>
+        /// Gets and sets the brush strength jitter.
+        /// </summary>
+        /// <remarks>Gets a value of 0 if the brush strength controller isn't initialized.</remarks>
+        public float brushStrengthJitter
+        {
+            get { return m_BrushStrengthController?.brushStrengthJitter ?? 0.0f; }
+            set { m_BrushStrengthController.brushStrengthJitter = value; }
+        }
 
         /// <summary>
         /// Returns the brush spacing.
         /// </summary>
-        /// <remarks>Returns a value of 0 if the brush size controller isn't initialized.</remarks>
-        public float brushSpacing => m_BrushSpacingController?.brushSpacing ?? 0.0f;
+        /// <remarks>Returns a value of 0 if the brush spacing controller isn't initialized.</remarks>
+        public float brushSpacing
+        {
+            get { return m_BrushSpacingController?.brushSpacing ?? 0.0f; }
+            set { m_BrushSpacingController.brushSpacing = value; }
+        }
 
         /// <summary>
         /// Returns the brush scatter.
         /// </summary>
-        /// <remarks>Returns a value of 0 if the brush size controller isn't initialized.</remarks>
-        public float brushScatter => m_BrushScatterController?.brushScatter ?? 0.0f;
+        /// <remarks>Returns a value of 0 if the brush scattering controller isn't initialized.</remarks>
+        public float brushScatter
+        {
+            get { return m_BrushScatterController?.brushScatter ?? 0.0f; }
+            set { m_BrushScatterController.brushScatter = value; }
+        }
 
         private bool isSmoothing
         {
@@ -534,52 +675,108 @@ namespace UnityEditor.TerrainTools
         /// <param name="terrain">The terrain in focus.</param>
         /// <param name="editContext">The editcontext used to show the brush GUI.</param>
         /// <param name="brushFlags">The brushflags to use when displaying the brush GUI.</param>
-        public virtual void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, BrushGUIEditFlags brushFlags = BrushGUIEditFlags.SelectAndInspect)
+        public virtual void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext,
+            BrushGUIEditFlags brushFlags = BrushGUIEditFlags.SelectAndInspect)
         {
-            if (brushFlags != BrushGUIEditFlags.None)
+            OnInspectorGUI(terrain, editContext, false);
+        }
+
+        /// <summary>
+        /// Renders the brush's GUI within the inspector view.
+        /// </summary>
+        /// <param name="terrain">The terrain in focus.</param>
+        /// <param name="editContext">The editcontext used to show the brush GUI.</param>
+        /// <param name="overlays">The bool to mark true when showing UI specific for overlays.</param>
+        /// <param name="brushFlags">The brushflags to use when displaying the brush GUI.</param>
+        /// <param name="brushOverlaysFlags"></param>
+        public virtual void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays,
+            BrushGUIEditFlags brushFlags = BrushGUIEditFlags.SelectAndInspect,
+            BrushOverlaysGUIFlags brushOverlaysFlags = BrushOverlaysGUIFlags.All)
+        {
+            // get flag booleans for overlays 
+            bool showNone = brushOverlaysFlags.Equals(BrushOverlaysGUIFlags.None); 
+            bool showFilter = (brushOverlaysFlags & BrushOverlaysGUIFlags.Filter) != 0; 
+            bool showStrength = (brushOverlaysFlags & BrushOverlaysGUIFlags.Strength) != 0; 
+            bool showSize = (brushOverlaysFlags & BrushOverlaysGUIFlags.Size) != 0; 
+            bool showRotation = (brushOverlaysFlags & BrushOverlaysGUIFlags.Rotation) != 0; 
+            bool showSpacing = (brushOverlaysFlags & BrushOverlaysGUIFlags.Spacing) != 0; 
+            bool showScatter = (brushOverlaysFlags & BrushOverlaysGUIFlags.Scatter) != 0;
+
+            if (overlays && showNone) return; // if show nothing for overlays, then return 
+
+            if (brushFlags != BrushGUIEditFlags.None && !overlays)
             {
                 editContext.ShowBrushesGUI(0, brushFlags);
             }
 
             EditorGUI.BeginChangeCheck();
-            
-            m_ShowBrushMaskFilters = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.brushMask, m_ShowBrushMaskFilters);
-            if (m_ShowBrushMaskFilters)
-            {
-                brushMaskFilterStackView.OnGUI();
-            }
 
-            m_ShowModifierControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.stroke, m_ShowModifierControls);
+            if (showFilter)
+            {
+                // only show drop down for not overlays 
+                if (!overlays) m_ShowBrushMaskFilters = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.brushMask, m_ShowBrushMaskFilters);
+                if (m_ShowBrushMaskFilters)
+                {
+                    brushMaskFilterStackView.OnGUI();
+                }
+            }
+            
+            // only show drop down for not overlays 
+            if (!overlays) m_ShowModifierControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.stroke, m_ShowModifierControls);
+            
             if (m_ShowModifierControls)
             {
-                if(m_BrushStrengthController != null)
+                if(m_BrushStrengthController != null && showStrength)
                 {
                     EditorGUILayout.BeginVertical(Styles.kGroupBox);
                     m_BrushStrengthController.OnInspectorGUI(terrain, editContext);
                     EditorGUILayout.EndVertical();
                 }
 
-                if(m_BrushSizeController != null)
+                if(m_BrushSizeController != null && showSize)
                 {
                     EditorGUILayout.BeginVertical(Styles.kGroupBox);
                     m_BrushSizeController.OnInspectorGUI(terrain, editContext);
                     EditorGUILayout.EndVertical();
                 }
 
-                if(m_BrushRotationController != null)
+                if(m_BrushRotationController != null && showRotation)
                 {
                     EditorGUILayout.BeginVertical(Styles.kGroupBox);
                     m_BrushRotationController?.OnInspectorGUI(terrain, editContext);
                     EditorGUILayout.EndVertical();
                 }
-
-                if((m_BrushSpacingController != null) || (m_BrushScatterController != null))
+                
+                // if NOT overlays then draw spacing and scatter together. else draw scatter and spacing separately 
+                if (overlays)
                 {
-                    EditorGUILayout.BeginVertical(Styles.kGroupBox);
-                    m_BrushSpacingController?.OnInspectorGUI(terrain, editContext);
-                    m_BrushScatterController?.OnInspectorGUI(terrain, editContext);
-                    EditorGUILayout.EndVertical();
+                    if (((m_BrushSpacingController != null) || (m_BrushScatterController != null)) && showSpacing)
+                    {
+                        EditorGUILayout.BeginVertical(Styles.kGroupBox);
+                        m_BrushSpacingController?.OnInspectorGUI(terrain, editContext);
+                        EditorGUILayout.EndVertical();
+                    }
+                    
+                    if (((m_BrushSpacingController != null) || (m_BrushScatterController != null)) && showScatter)
+                    {
+                        EditorGUILayout.BeginVertical(Styles.kGroupBox);
+                        m_BrushScatterController?.OnInspectorGUI(terrain, editContext);
+                        EditorGUILayout.EndVertical();
+                    }
+
                 }
+                else
+                {
+                    if((m_BrushSpacingController != null) || (m_BrushScatterController != null))
+                    {
+                        EditorGUILayout.BeginVertical(Styles.kGroupBox);
+                        m_BrushSpacingController?.OnInspectorGUI(terrain, editContext);
+                        m_BrushScatterController?.OnInspectorGUI(terrain, editContext);
+                        EditorGUILayout.EndVertical();
+                    }
+                }
+
+                
             }
 
             if (EditorGUI.EndChangeCheck())
@@ -770,6 +967,7 @@ namespace UnityEditor.TerrainTools
         /// <param name="terrain">The terrain in focus.</param>
         /// <param name="editContext">The editcontext to reference.</param>
         /// <seealso cref="OnSceneGUI(Terrain, IOnSceneGUI)"/>
+        private static string brushInfo = ""; // adding this to grab brush info 
         public virtual void OnSceneGUI2D(Terrain terrain, IOnSceneGUI editContext)
         {
             StringBuilder builder = new StringBuilder();
@@ -779,11 +977,69 @@ namespace UnityEditor.TerrainTools
                 AppendBrushInfo(terrain, editContext, builder);
                 string text = builder.ToString();
                 string trimmedText = text.Trim('\n', '\r', ' ', '\t');
-                GUILayout.Box(trimmedText, Styles.Box, GUILayout.ExpandWidth(false));
+                brushInfo = trimmedText;
+                BrushInfoIsAccessed(); 
                 Handles.EndGUI();
             }
         }
+        
+        // adding this to grab brush info 
+        public static string getBrushInfoText()
+        {
+            return brushInfo; 
+        }
+        
+        public static event Action brushInfoAccessed;
+        internal static void BrushInfoIsAccessed()
+        {
+            if (brushInfoAccessed == null)
+                return;
+            brushInfoAccessed();
+        }
+        
+        [Overlay(typeof(SceneView), k_Id, "Brush Info")]
+        class BrushInfoOverlay : Overlay, ITransientOverlay
+        {
+            const string k_Id = "brush-info-overlay";
+            private Label m_Label;
+            
+            public bool visible
+            {
+                get
+                {
+                    var currTool = BrushesOverlay.ActiveTerrainTool as TerrainPaintToolWithOverlaysBase;
+                    if (currTool == null)
+                        return false;
+                    return currTool.HasBrushAttributes && BrushesOverlay.IsSelectedObjectTerrain();
+                }
+            }
 
+            void UpdateText()
+            {
+                if (m_Label != null) m_Label.text = getBrushInfoText();
+            }
+
+            void EmptyText()
+            {
+                if (m_Label != null) m_Label.text = "";
+            }
+            
+            public override VisualElement CreatePanelContent()
+            {
+                brushInfoAccessed += UpdateText;
+                Selection.selectionChanged += EmptyText; 
+                
+                return m_Label = new Label(getBrushInfoText()); 
+            }
+            
+            public override void OnWillBeDestroyed()
+            {
+                base.OnWillBeDestroyed();
+                brushInfoAccessed -= UpdateText;
+                Selection.selectionChanged -= EmptyText; 
+            }
+        }
+        
         /// <summary>
         /// Triggers events to render objects and displays within Scene view.
         /// </summary>
