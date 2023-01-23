@@ -2,20 +2,21 @@
 
 Create a new script in your project. Give the script the same file name and class name as the Terrain Tool you want to create. The basis for all Terrain tools is the `TerrainPaintTool` class in the `UnityEditor.TerrainTools` namespace. `TerrainPaintTool` is an abstract generic class.
 
-You must override a few methods to make a functional tool. There are also two functions you must implement, and those are:
+You must override a few methods to make a functional tool.
 
-| Function    | Returns                                                      |
-| ----------- | ------------------------------------------------------------ |
-| **GetName** | `string` Name of the Terrain Tool. Appears in the tool UI.   |
-| **GetDesc** | `string` Description for the Terrain Tool. Appears in the tool UI. |
+There are two functions that you must override to create a tool; they are `GetName` and `GetDescription`:
+
+| Function           | Returns                                                      |
+|--------------------| ------------------------------------------------------------ |
+| **GetName**        | `string` Name of the Terrain Tool. Appears in the tool UI.   |
+| **GetDescription** | `string` Description for the Terrain Tool. Appears in the tool UI. |
 
 Here is an example Terrain tool without any additional functionality.
 
 ```
-using UnityEngine;
 using UnityEditor.TerrainTools;
 
-internal class BasicTerrainTool : TerrainPaintTool<BasicTerrainTool>
+class BasicTerrainTool : TerrainPaintTool<BasicTerrainTool>
 {
     // Name of the Terrain Tool. This appears in the tool UI.
     public override string GetName()
@@ -24,24 +25,9 @@ internal class BasicTerrainTool : TerrainPaintTool<BasicTerrainTool>
     }
 
     // Description for the Terrain Tool. This appears in the tool UI.
-    public override string GetDesc()
+    public override string GetDescription()
     {
         return "This is a very basic Terrain Tool that doesn't do anything aside from appear in the list of Paint Terrain tools.";
-    }
-
-    public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-    {
-
-    }
-
-    public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)
-    {
-        
-    }
-
-    public override bool OnPaint(Terrain terrain, IOnPaint editContext)
-    {
-        return true;
     }
 }
 ```
@@ -52,4 +38,4 @@ If you want to specify a category in the dropdown menu, you can add categories a
 
 The image below shows an **Examples** category, which contains the **Basic Custom Terrain Tool**.
 
-![](images/1-21-Paint-Tool-Dropdown-Example-01.png)
+![The new custom tool appears on the tools list](images/1-21-Paint-Tool-Dropdown-Example-01.png)

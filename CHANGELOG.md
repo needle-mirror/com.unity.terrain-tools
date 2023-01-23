@@ -3,6 +3,10 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.0.3] - 2023-01-23
+### Changed:
+- Fixed the example code in the documentation to work with the latest version of terrain tools. 
+
 ## [5.0.2] - 2022-10-12
 ### Fixed:
 - Replaced the old v4.0.0 What's new page with the new updated 5.0.2 one. 

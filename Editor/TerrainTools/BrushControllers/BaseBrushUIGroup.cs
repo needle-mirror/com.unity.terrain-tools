@@ -49,10 +49,11 @@ namespace UnityEditor.TerrainTools
                     {
                         m_BrushMaskFilterStack = LoadFilterStack();
                     }
-                    else
+                    if( m_BrushMaskFilterStack == null )
                     {
                         // create the first filterstack if this is the first time this tool is being used
-                        // because a save file has not been made yet for the filterstack
+                        // because a save file has not been made yet for the filterstack, or if the filterstack will
+                        // not deserialize for some reason.
                         m_BrushMaskFilterStack = ScriptableObject.CreateInstance< FilterStack >();
                     }
                 }

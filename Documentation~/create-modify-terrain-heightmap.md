@@ -7,11 +7,11 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.TerrainTools;
 
-internal class CustomTerrainTool : TerrainPaintTool<CustomTerrainTool>
+class CustomTerrainTool : TerrainPaintTool<CustomTerrainTool>
 {
-    private float m_BrushOpacity;
-    private float m_BrushSize;
-    private float m_BrushRotation;
+    private float m_BrushOpacity = 0.1f;
+    private float m_BrushSize = 25f;
+    private float m_BrushRotation = 0f;
 
     // Name of the Terrain Tool. This appears in the tool UI.
     public override string GetName()
@@ -25,9 +25,9 @@ internal class CustomTerrainTool : TerrainPaintTool<CustomTerrainTool>
         return "This is a custom Terrain Tool that modifies the Terrain heightmap.";
     }
 
+    // Override this function to add UI elements to the inspector
     public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
     {
-        editContext.ShowBrushesGUI(5, BrushGUIEditFlags.Select);
         m_BrushOpacity = EditorGUILayout.Slider("Opacity", m_BrushOpacity, 0, 1);
         m_BrushSize = EditorGUILayout.Slider("Size", m_BrushSize, .001f, 100f);
         m_BrushRotation = EditorGUILayout.Slider("Rotation", m_BrushRotation, 0, 360);
@@ -95,4 +95,5 @@ internal class CustomTerrainTool : TerrainPaintTool<CustomTerrainTool>
         return true;
     }
 }
+
 ```
