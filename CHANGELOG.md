@@ -3,6 +3,11 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [4.0.5] - 2023-02-02
+### Fixed:
+- Fixed empty array access and null reference errors in console related to Brush Mask Filters.
+- Corrected broken example code in the documentation.
+
 ## [4.0.3] - 2021-09-29
 ### Fixed:
 - Fixed different line endings in NoiseLib.cs.
