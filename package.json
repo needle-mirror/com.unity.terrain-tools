@@ -1,9 +1,9 @@
 {
   "name": "com.unity.terrain-tools",
   "displayName": "Terrain Tools",
-  "version": "5.1.0-pre.1",
+  "version": "5.1.0",
   "unity": "2023.1",
-  "unityRelease": "0a18",
+  "unityRelease": "0a25",
   "description": "The Terrain Tools package adds additional Terrain sculpting brushes and tools to Unity. This add-on toolset is suitable if you require more control over the appearance of your Terrain, and want to streamline Terrain workflows. It’s also useful when you want to make more complex-looking Terrain, or author Terrain Texture data in external digital content creation tools.",
   "dependencies": {
     "com.unity.modules.terrain": "1.0.0",
@@ -17,12 +17,16 @@
     "Filter",
     "Noise"
   ],
-  "upmCi": {
-    "footprint": "88984c9ec20fa1c464af1285082c93b8e68dbb31"
+  "_upm": {
+    "changelog": "### Changed:\n- Documentation updates for filterstacks, creating custom tools, brush controls, and brush mask filters\n- Reverted some breaking API changes to OnInspector and OnToolSettings\n\n## Added:\n- HasBrushAttribute properties in example code\n\n## Fixed:\n- Memory leak on CondensedSlider"
   },
+  "upmCi": {
+    "footprint": "649245526d5e130c6c377ca4ffe618b9626dc9b5"
+  },
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.terrain-tools@5.1/manual/index.html",
   "repository": {
     "url": "https://github.com/Unity-Technologies/TerrainTools.git",
     "type": "git",
-    "revision": "68b934726776a410c49ff71398d2b57cbe00dbd9"
+    "revision": "cf308d1839c90e92f613ab06cebfb2ebee581553"
   }
 }

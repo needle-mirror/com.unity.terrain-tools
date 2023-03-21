@@ -2,7 +2,7 @@
 
 The **General** settings include basic information you need to create a new Terrain, such as Terrain width, length, height, and number of tiles.
 
-![](images/4-11-toolbox-create-settings.png)
+![General terrain settings](images/4-11-toolbox-create-settings.png)
 
 | **Property**       | **Description**                                              |
 | ------------------ | ------------------------------------------------------------ |
@@ -17,7 +17,7 @@ The **General** settings include basic information you need to create a new Terr
 
 **Group Settings** let you apply the same settings to new Terrain tiles in a group. Often, a group of Terrain tiles share the same Grouping ID, heightmap resolution, and Material.
 
-![](images/4-11-toolbox-create-groupsettings.png)
+![Group terrain settings](images/4-11-toolbox-create-groupsettings.png)
 
 | **Property**               | **Description**                                              |
 | -------------------------- | ------------------------------------------------------------ |

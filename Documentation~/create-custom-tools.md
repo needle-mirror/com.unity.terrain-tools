@@ -12,3 +12,12 @@ Additionally, if you want to override an existing tool, look up the string value
 - [Custom Terrain Tool shaders](create-use-custom-shaders.md)
 - [Filter Stacks, Filters, and procedural masks](create-filterstacks-and-filters.md)
 - [Shortcut handlers](create-shortcut-handlers.md)
+
+## A note on tool changes between 5.0 and 5.1
+To create a new terrain tool that fully supports overlays, derive the new class from `TerrainPaintToolWithOverlays`.
+
+**Note:** Terrain paint tools that derive from `TerrainPaintTool` are still supported. However, they don't have a custom icon on the toolbar, and you can't control which category they fall under.
+
+### Upgrade a tool to support overlays
+In most cases, you can derive from `TerrainPaintToolWithOverlays` rather than`TerrainPaintTool` and then implement the functions you need to specify the tool icon.
+**Note:** Although `TerrainPaintTool` inherited from `ScriptableSingleton`, `TerrainPaintToolWithOverlays` inherits from `EditorTools.EditorTool`. If your class relied on some `ScriptableSingleton` behavior, you must replicate that manually.

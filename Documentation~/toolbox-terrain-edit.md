@@ -2,7 +2,7 @@
 
 The **Terrain Edit** section contains three tools — **Duplicate**, **Clean Remove**, and **Split**.
 
-![](images/4-31-toolbox-terrain-edit-01.png)
+![Terrain edit options](images/4-31-toolbox-terrain-edit-01.png)
 
 ## Duplicate
 
@@ -20,7 +20,7 @@ To start the clean remove process, select your target Terrain in the Scene or Hi
 
 The **Split** tool lets you divide Terrain into smaller tiles while properly preserving Terrain height, Terrain Layers, and other details. 
 
-![](images/4-31-toolbox-terrain-edit-02.png)
+![Split options](images/4-31-toolbox-terrain-edit-02.png)
 
 | **Property**                     | **Description**                                              |
 | -------------------------------- | ------------------------------------------------------------ |

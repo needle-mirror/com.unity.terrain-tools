@@ -121,15 +121,10 @@ namespace UnityEditor.TerrainTools
             commonUI.OnSceneGUI(terrain, editContext);
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             EditorGUI.BeginChangeCheck();
             commonUI.OnInspectorGUI(terrain, editContext);
-        }
-        
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            OnInspectorGUI(terrain, editContext, false);
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)

@@ -293,41 +293,53 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
+
             // Only render preview if this is a repaint.  losing performance if we do
             if (Event.current.type == EventType.Repaint)
             {
                 Texture brushTexture = editContext.brushTexture;
 
-                using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PaintTextureTool", brushTexture))
+                using (IBrushRenderPreviewUnderCursor brushRender =
+                    new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PaintTextureTool", brushTexture))
                 {
-                
-                    if (brushRender.CalculateBrushTransform(out BrushTransform brushTransform)) 
+
+                    if (brushRender.CalculateBrushTransform(out BrushTransform brushTransform))
                     {
                         RenderTexture tmpRT = RenderTexture.active;
                         Rect brushBounds = brushTransform.GetBrushXYBounds();
                         PaintContext heightmapContext = brushRender.AcquireHeightmap(false, brushBounds, 1);
                         var previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
 
-                        var texelCtx = Utility.CollectTexelValidity(heightmapContext.originTerrain, brushTransform.GetBrushXYBounds());
-                        Utility.SetupMaterialForPaintingWithTexelValidityContext(heightmapContext, texelCtx, brushTransform, previewMaterial);
+                        var texelCtx = Utility.CollectTexelValidity(heightmapContext.originTerrain,
+                            brushTransform.GetBrushXYBounds());
+                        Utility.SetupMaterialForPaintingWithTexelValidityContext(heightmapContext, texelCtx,
+                            brushTransform, previewMaterial);
 
-                        var filterRT = RTUtils.GetTempHandle(heightmapContext.sourceRenderTexture.width, heightmapContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
-                        Utility.GenerateAndSetFilterRT(commonUI, heightmapContext.sourceRenderTexture, filterRT, previewMaterial);
-                    
-                        brushRender.RenderBrushPreview(heightmapContext, TerrainBrushPreviewMode.SourceRenderTexture, brushTransform, previewMaterial, 0);
+                        var filterRT = RTUtils.GetTempHandle(heightmapContext.sourceRenderTexture.width,
+                            heightmapContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
+                        Utility.GenerateAndSetFilterRT(commonUI, heightmapContext.sourceRenderTexture, filterRT,
+                            previewMaterial);
+
+                        brushRender.RenderBrushPreview(heightmapContext, TerrainBrushPreviewMode.SourceRenderTexture,
+                            brushTransform, previewMaterial, 0);
                         texelCtx.Cleanup();
                         RTUtils.Release(filterRT);
                         brushRender.Release(heightmapContext);
                     }
                 }
             }
-            
+
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
         }
 
+
         public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        {
+            TextureToolSettingsGUI(terrain, editContext, true);
+        }
+
+        private void TextureToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
             m_TargetStrength = EditorGUILayout.Slider(Styles.targetStrengthTxt, m_TargetStrength, 0.0f, 1.0f);
 
@@ -374,23 +386,18 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
 
-            OnToolSettingsGUI(terrain, editContext, overlays);
+            TextureToolSettingsGUI(terrain, editContext, false);
 
             if (EditorGUI.EndChangeCheck())
             {
                 TerrainToolsAnalytics.OnParameterChange();
             }
-        }
-        
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            OnInspectorGUI(terrain, editContext, false);
         }
 
         private static class Styles

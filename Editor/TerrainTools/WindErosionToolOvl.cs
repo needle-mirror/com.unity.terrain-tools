@@ -142,29 +142,24 @@ namespace UnityEditor.TerrainTools
 
         }
 
-        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             m_Eroder.OnInspectorGUI();
 
             commonUI.validationMessage = TerrainToolGUIHelper.ValidateAndGenerateSceneGUIMessage(terrain);
 
         }
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
-            OnToolSettingsGUI(terrain, editContext, overlays);
+            OnToolSettingsGUI(terrain, editContext);
            
             if (EditorGUI.EndChangeCheck()) {
                 TerrainToolsAnalytics.OnParameterChange();
             }
 
-        }
-        
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            OnInspectorGUI(terrain, editContext, false);
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)

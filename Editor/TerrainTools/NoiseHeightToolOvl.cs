@@ -199,7 +199,7 @@ namespace UnityEditor.TerrainTools
         private double m_ScrollTime;
 
         // GUI
-        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             m_showToolGUI = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.noiseToolSettings, m_showToolGUI);
 
@@ -249,7 +249,7 @@ namespace UnityEditor.TerrainTools
             }
             
         }
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             EditorGUI.BeginChangeCheck();
             {
@@ -257,7 +257,7 @@ namespace UnityEditor.TerrainTools
 
                 // brush GUI
                 commonUI.OnInspectorGUI(terrain, editContext);
-                OnToolSettingsGUI(terrain, editContext, overlays);
+                OnToolSettingsGUI(terrain, editContext);
             }
 
             if (EditorGUI.EndChangeCheck())
@@ -267,10 +267,6 @@ namespace UnityEditor.TerrainTools
             }
         }
         
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            OnInspectorGUI(terrain, editContext, false);
-        }
 
         private void DoSimulationControls()
         {

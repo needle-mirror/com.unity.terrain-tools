@@ -2,7 +2,7 @@
 
 The **Export Splatmaps** tool lets you export splatmaps into textures in either the TGA or PNG format. This allows you to use the splatmap textures elsewhere, or edit them using external graphics editing software. Later on, you can use the **Replace Splatmaps** tool to import any edited splatmaps.
 
-![](images/4-34-toolbox-export-splatmaps.png)
+![Export splatmaps tool](images/4-34-toolbox-export-splatmaps.png)
 
 | **Property**           | **Description**                                              |
 | ---------------------- | ------------------------------------------------------------ |

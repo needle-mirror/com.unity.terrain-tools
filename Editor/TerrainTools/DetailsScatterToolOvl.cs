@@ -221,6 +221,11 @@ namespace UnityEditor.TerrainTools
 
         public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
+            DetailScatterGUI(terrain, editContext, true);
+        }
+
+        private void DetailScatterGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        {
             if (s_Styles == null)
                 s_Styles = new Styles();
             
@@ -245,7 +250,7 @@ namespace UnityEditor.TerrainTools
             m_SelectedTerrain = terrain;
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             if (m_commonUI == null)
                 return;
@@ -255,12 +260,7 @@ namespace UnityEditor.TerrainTools
 
             //Brush selector
             m_commonUI.OnInspectorGUI(terrain, editContext);
-            OnToolSettingsGUI(terrain, editContext, overlays);
-        }
-        
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            OnInspectorGUI(terrain, editContext, false);
+            DetailScatterGUI(terrain, editContext, false);
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)

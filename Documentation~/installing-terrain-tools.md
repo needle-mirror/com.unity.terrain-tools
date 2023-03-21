@@ -8,6 +8,15 @@ In the Unity Editor, go to **Window** > **Package Manager**. In the top navigati
 
 Select the **Terrain Tools** package, and then click **Install** in the bottom right corner.
 
+### Terrain Tools version compatibility
+Each version of the Terrain Tools package has a minimum version of the Unity Editor. The following table displays the version requirements:
+
+| Terrain Tools Version | Minimum Unity Version Requires |
+|-----------------------|--------------------------------|
+| 4.0.3                 | 2021.2                         |
+| 5.0.1                 | 2022.2                         |
+| 5.1.0                 | 2023.1                         |
+
 ## Terrain Tools Sample Asset Pack
 
 The Terrain Tools Sample Assets Pack includes many high-quality Terrain Brushes and Textures to help you begin working on Terrain.

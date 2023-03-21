@@ -1,6 +1,6 @@
 # Terrain Tools
 
-![](images/TerrainTools_FrontPage.png)
+![The terrain sample scene](images/TerrainTools_FrontPage.png)
 
 The Terrain Tools package improves the workflow for creating Terrain ecosystems in Unity. You can download this package through the Package Manager in 2019.1 and newer versions of Unity. However, be aware that older versions of the package no longer receive bug fixes and feature maintenance. To work with an actively supported version of Terrain Tools, use Unity version 2021.2 or higher.
 

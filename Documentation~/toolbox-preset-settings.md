@@ -2,7 +2,7 @@
 
 Similar to **Preset** in the Create New Terrain wizard, you can save the current settings or load settings using a preset asset file. Preset files make it easy to share settings with other team members.
 
-![](images/4-22-toolbox-preset-settings.png)
+![Settings preset](images/4-22-toolbox-preset-settings.png)
 
 | **Property**               | **Description**                                              |
 | -------------------------- | ------------------------------------------------------------ |

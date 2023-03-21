@@ -2,7 +2,11 @@
 
 Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Erosion** > **Wind** from the list of Terrain tools.
 
-![img](images/2-33-Wind-Erosion-01.png)
+![Wind erosion tool being selected from the inspector](images/2-33-Wind-Erosion-01.png)
+
+Alternatively, select the terrain, and select the wind erosion icon on the terrain toolbar.
+
+![Wind Icon](images/Icons/WindErosion.png) 
 
 The Wind Erosion Tool simulates the effect of wind transporting and redistributing sediment. 
 
@@ -12,7 +16,7 @@ The erosion effect depends on the Terrain size and heightmap resolution. For hig
 
 ## Parameters
 
-![img](images/2-33-Wind-Erosion-02.png)
+![Wind erosion tool control parameters](images/2-33-Wind-Erosion-02.png)
 
 | **Property** |      | **Description** |
 | ---- | ---- | ---- |

@@ -147,7 +147,7 @@ namespace UnityEditor.TerrainTools
             commonUI.OnExitToolMode();
         }
 
-        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controlHeader, m_ShowControls, cloneToolProperties.SetDefaults);
 
@@ -175,11 +175,11 @@ namespace UnityEditor.TerrainTools
 
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             EditorGUI.BeginChangeCheck();
             commonUI.OnInspectorGUI(terrain, editContext);
-            OnToolSettingsGUI(terrain, editContext, overlays);
+            OnToolSettingsGUI(terrain, editContext);
             if (EditorGUI.EndChangeCheck())
             {
                 // intentionally do not reset HasDoneFirstPaint here because then changing the brush mask will corrupt the clone position
@@ -190,10 +190,6 @@ namespace UnityEditor.TerrainTools
             
         }
         
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            OnInspectorGUI(terrain, editContext, false);
-        }
 
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
         {

@@ -2,7 +2,7 @@
 
 The Terrain Toolbox includes the following options.
 
-![](images/4-15-toolbox-options.png)
+![Terrain Toolbox options](images/4-15-toolbox-options.png)
 
 | **Property**                      | **Description**                                              |
 | --------------------------------- | ------------------------------------------------------------ |
@@ -15,6 +15,6 @@ The Terrain Toolbox includes the following options.
 
 When you are ready to create a Terrain, click the **Create** button. There is an information box above the button that displays basic settings of the new Terrain.
 
-![](images/4-15-toolbox-create-02.png)
+![Create terrain button](images/4-15-toolbox-create-02.png)
 
 The initial part of the creation process runs validations against the Terrain settings, and reports any issues that need to be resolved in order to proceed.

@@ -6,13 +6,17 @@ Next, you can add a Filter Stack to your Terrain Tool. You can use Filter Stacks
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.TerrainTools;
+using UnityEngine.TerrainTools;
 
-internal class CustomTerrainToolWithMaskFilters : TerrainPaintTool<CustomTerrainToolWithMaskFilters>
+class CustomTerrainToolWithMaskFilters : TerrainPaintToolWithOverlays<CustomTerrainToolWithMaskFilters>
 {
-    private float m_BrushOpacity;
-    private float m_BrushSize;
-    private float m_BrushRotation;
+    // Set up the default values. If you don't do this, the brush preview is zero pixels
+    // in size.
+    private float m_BrushOpacity = 0.2f;
+    private float m_BrushSize = 100.0f;
+    private float m_BrushRotation = 0.0f;
 
+    // Creates the material used to apply the effect to the heightmap.
     Material m_Material;
     Material material
     {
@@ -25,7 +29,7 @@ internal class CustomTerrainToolWithMaskFilters : TerrainPaintTool<CustomTerrain
         }
     }
 
-    // Create the FilterStack
+    // Create the FilterStack - stores the filters in use with this tool.
     FilterStack m_FilterStack;
     FilterStack filterStack
     {
@@ -46,7 +50,7 @@ internal class CustomTerrainToolWithMaskFilters : TerrainPaintTool<CustomTerrain
         {
             if(m_FilterStackView != null && m_FilterStackView.serializedFilterStack.targetObject != null)
                 return m_FilterStackView;
-            
+
             m_FilterStackView = new FilterStackView(new GUIContent("Brush Mask Filters"), new SerializedObject( filterStack ) );
             m_FilterStackView.FilterContext = filterContext;
 
@@ -61,7 +65,7 @@ internal class CustomTerrainToolWithMaskFilters : TerrainPaintTool<CustomTerrain
         get
         {
             if (m_FilterContext != null) return m_FilterContext;
-            
+
             m_FilterContext = new FilterContext(FilterUtility.defaultFormat, Vector3.zero, 1f, 0f);
             return m_FilterContext;
         }
@@ -72,14 +76,14 @@ internal class CustomTerrainToolWithMaskFilters : TerrainPaintTool<CustomTerrain
         return "Examples/Custom Terrain Tool With Mask Filters";
     }
 
-    public override string GetDesc()
+    public override string GetDescription()
     {
         return "My custom Terrain Tool is amazing!";
     }
 
-    public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+    // Override this function to add UI elements to the tool settings
+    public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
     {
-        editContext.ShowBrushesGUI(5, BrushGUIEditFlags.Select);
         m_BrushOpacity = EditorGUILayout.Slider("Opacity", m_BrushOpacity, 0, 1);
         m_BrushSize = EditorGUILayout.Slider("Size", m_BrushSize, .001f, 100f);
         m_BrushRotation = EditorGUILayout.Slider("Rotation", m_BrushRotation, 0, 360);
@@ -88,12 +92,17 @@ internal class CustomTerrainToolWithMaskFilters : TerrainPaintTool<CustomTerrain
         filterStackView.OnGUI();
     }
 
+    // Override this function to add UI elements to the inspector UI. If the UI is the same between the Inspector
+    // and Tool Settings overlay, you can call one from the other.
+    public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+    {
+        OnInspectorGUI(terrain, editContext);
+    }
+
     void BlitFilterStackTexture(Terrain terrain, RenderTexture source, RenderTexture dest, Vector3 brushPos)
     {
         // Prepare the FilterContext
-        filterContext.brushPos = brushPos;
-        filterContext.brushSize = m_BrushSize;
-        filterContext.brushRotation = m_BrushRotation;
+        var filterContext = new FilterContext(FilterUtility.defaultFormat, brushPos, m_BrushSize, m_BrushRotation);
 
         using(new ActiveRenderTextureScope(null))
         {
@@ -108,52 +117,53 @@ internal class CustomTerrainToolWithMaskFilters : TerrainPaintTool<CustomTerrain
             Graphics.Blit(source, filterContext.rtHandleCollection[FilterContext.Keywords.Heightmap]);
             filterStack.Eval(filterContext, source, dest);
         }
-        
+
         filterContext.ReleaseRTHandles();
     }
-    
+
     private void RenderIntoPaintContext(Terrain terrain, UnityEngine.TerrainTools.PaintContext paintContext, Texture brushTexture, UnityEngine.TerrainTools.BrushTransform brushXform, Vector3 brushPos)
     {
-        Material mat = material;
-
-        // Get the output FilterStack RenderTexture       
+        // Generates a mask rendertexture that is used to modulate the brush texture when rendering the effect
         RTHandle filterTexture = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
         BlitFilterStackTexture(terrain, paintContext.sourceRenderTexture, filterTexture, brushPos);
-        // Bind the FilterStack RenderTexture to the tool Material
-        mat.SetTexture("_FilterTex", filterTexture);
 
-        mat.SetTexture("_BrushTex", brushTexture);
+        // Set up the material properties for rendering the effect
+        material.SetTexture("_FilterTex", filterTexture);
+        material.SetTexture("_BrushTex", brushTexture);
         var opacity = Event.current.control ? -m_BrushOpacity : m_BrushOpacity;
-        mat.SetVector("_BrushParams", new Vector4(opacity, 0.0f, 0.0f, 0.0f));
-        UnityEngine.TerrainTools.TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
-        Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)UnityEngine.TerrainTools.TerrainPaintUtility.BuiltinPaintMaterialPasses.RaiseLowerHeight);
-        
+        material.SetVector("_BrushParams", new Vector4(opacity, 0.0f, 0.0f, 0.0f));
+        UnityEngine.TerrainTools.TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, material);
+
+        // Draw over the heightmap using the effect material
+        Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, material, (int)TerrainBuiltinPaintMaterialPasses.RaiseLowerHeight);
+
         // Release the RenderTexture for the FilterStack
         RTUtils.Release(filterTexture);
     }
 
     public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)
     {
+        // Only render the preview if you're in a repaint event and are over a terrain
         if (Event.current.type != EventType.Repaint) return;
         if (!editContext.hitValidTerrain) return;
 
+        // Get the transform for the brush, so you can understand where to paint
         UnityEngine.TerrainTools.BrushTransform brushXform = UnityEngine.TerrainTools.TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.raycastHit.textureCoord, m_BrushSize, m_BrushRotation);
         UnityEngine.TerrainTools.PaintContext paintContext = UnityEngine.TerrainTools.TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
-        Material previewMaterial = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
 
         // Continue rendering the brush preview
-        TerrainPaintUtilityEditor.BrushPreview previewTexture = TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture;
-        TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, previewTexture, editContext.brushTexture, brushXform, previewMaterial, 0);
+        Material previewMaterial = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
+        TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.SourceRenderTexture, editContext.brushTexture, brushXform, previewMaterial, 0);
         RenderIntoPaintContext(terrain, paintContext, editContext.brushTexture, brushXform, editContext.raycastHit.point);
         RenderTexture.active = paintContext.oldRenderTexture;
         previewMaterial.SetTexture("_HeightmapOrig", paintContext.sourceRenderTexture);
-        previewTexture = TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture;
-        TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, previewTexture, editContext.brushTexture, brushXform, previewMaterial, 1);
+        TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.DestinationRenderTexture, editContext.brushTexture, brushXform, previewMaterial, 1);
         UnityEngine.TerrainTools.TerrainPaintUtility.ReleaseContextResources(paintContext);
     }
 
     public override bool OnPaint(Terrain terrain, IOnPaint editContext)
     {
+        // Get the transform for the brush, so you can understand where to paint
         UnityEngine.TerrainTools.BrushTransform brushXform = UnityEngine.TerrainTools.TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.uv, m_BrushSize, m_BrushRotation);
         UnityEngine.TerrainTools.PaintContext paintContext = UnityEngine.TerrainTools.TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds());
 
@@ -162,12 +172,32 @@ internal class CustomTerrainToolWithMaskFilters : TerrainPaintTool<CustomTerrain
 
         return true;
     }
+    
+    // Return true for this property to display the brush attributes overlay
+    public override bool HasBrushAttributes => true;
+
+    // Return true for this property to display the brush selector overlay
+    public override bool HasBrushMask => true;
+
+    // Return true for this property to display the tool settings overlay
+    public override bool HasToolSettings => true;
+
+    // File names of the light theme icons - prepend d_ to the file name to generate dark theme variants.
+    // Override these if you want to specify your own icon.
+    // public override string OnIcon => "Assets/Icon_on.png";
+    // public override string OffIcon => "Assets/Icon_off.png";
+
+    // The toolbar category the icon appears under.
+    public override TerrainCategory Category => TerrainCategory.CustomBrushes;
+
+    // Where in the icon list the icon appears.
+    public override int IconIndex => 100;
 }
-``
+```
 
 Here is the Shader for the tool that is using a procedural texture from the FilterStack:
 
-``
+```
 Shader "TerrainTool/BrushMaskFilterExample"
 {
     Properties { _MainTex ("Texture", any) = "" {} }

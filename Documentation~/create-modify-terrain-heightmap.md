@@ -7,11 +7,11 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.TerrainTools;
 
-internal class CustomTerrainTool : TerrainPaintTool<CustomTerrainTool>
+class CustomTerrainTool : TerrainPaintToolWithOverlays<CustomTerrainTool>
 {
-    private float m_BrushOpacity;
-    private float m_BrushSize;
-    private float m_BrushRotation;
+    private float m_BrushOpacity = 1f;
+    private float m_BrushSize = 25f;
+    private float m_BrushRotation = 0f;
 
     // Name of the Terrain Tool. This appears in the tool UI.
     public override string GetName()
@@ -25,12 +25,19 @@ internal class CustomTerrainTool : TerrainPaintTool<CustomTerrainTool>
         return "This is a custom Terrain Tool that modifies the Terrain heightmap.";
     }
 
-    public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+    // Override this function to add UI elements to the tool settings
+    public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
     {
-        editContext.ShowBrushesGUI(5, BrushGUIEditFlags.Select);
         m_BrushOpacity = EditorGUILayout.Slider("Opacity", m_BrushOpacity, 0, 1);
         m_BrushSize = EditorGUILayout.Slider("Size", m_BrushSize, .001f, 100f);
         m_BrushRotation = EditorGUILayout.Slider("Rotation", m_BrushRotation, 0, 360);
+    }
+
+    // Override this function to add UI elements to the inspector UI. If the UI is the same between the Inspector
+    // and Tool Settings overlay, you can call one from the other.
+    public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+    {
+        OnToolSettingsGUI(terrain, editContext);
     }
 
     // Ease of use function for rendering modified Terrain Texture data into a PaintContext. This is used in both OnRenderBrushPreview and OnPaint.
@@ -94,5 +101,25 @@ internal class CustomTerrainTool : TerrainPaintTool<CustomTerrainTool>
         // Return whether or not Trees and Details should be hidden while painting with this Terrain Tool
         return true;
     }
+    
+    // Return true for this property to display the brush attributes overlay
+    public override bool HasBrushAttributes => true;
+
+    // Return true for this property to display the brush selector overlay
+    public override bool HasBrushMask => true;
+
+    // Return true for this property to display the tool settings overlay
+    public override bool HasToolSettings => true;
+
+    // File names of the light theme icons - prepend d_ to the file name to generate dark theme variants.
+    // Override these to specify your own icon.
+    // public override string OnIcon => "Assets/Icon_on.png";
+    // public override string OffIcon => "Assets/Icon_off.png";
+
+    // The toolbar category the icon appears under.
+    public override TerrainCategory Category => TerrainCategory.CustomBrushes;
+
+    // Where in the icon list the icon appears.
+    public override int IconIndex => 100;
 }
 ```

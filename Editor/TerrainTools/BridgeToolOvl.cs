@@ -148,7 +148,7 @@ namespace UnityEditor.TerrainTools
 
         bool m_ShowBridgeControls = true;
 
-        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             m_ShowBridgeControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controlHeader, m_ShowBridgeControls, bridgeToolProperties.SetDefaults);
 
@@ -162,11 +162,11 @@ namespace UnityEditor.TerrainTools
 
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             EditorGUI.BeginChangeCheck();
             commonUI.OnInspectorGUI(terrain, editContext);
-            OnToolSettingsGUI(terrain, editContext, overlays);
+            OnToolSettingsGUI(terrain, editContext);
             if (EditorGUI.EndChangeCheck())
             {
                 SaveSetting();
@@ -175,11 +175,6 @@ namespace UnityEditor.TerrainTools
             }
         }
         
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            OnInspectorGUI(terrain, editContext, false);
-        }
-
         private Vector2 transformToWorld(Terrain t, Vector2 uvs)
         {
             Vector3 tilePos = t.GetPosition();

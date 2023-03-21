@@ -4,7 +4,7 @@ The **Noise Editor** allows you to author and manage Noise Settings Assets, whic
 
 To open the Noise Editor, select **Window** > **Terrain** > **Edit Noise** from the menu.
 
-![](images/NoiseEditor_01.png)
+![The noise editor panel](images/NoiseEditor_01.png)
 
 ## Parameters
 

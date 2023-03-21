@@ -86,14 +86,9 @@ namespace UnityEditor.TerrainTools
             commonUI.OnExitToolMode();
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
-        {
-            commonUI.OnInspectorGUI(terrain, editContext);
-        }
-        
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            OnInspectorGUI(terrain, editContext, false);
+            commonUI.OnInspectorGUI(terrain, editContext);
         }
 
         private void ApplyBrushInternal(Terrain terrain, IPaintContextRender renderer, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushTransform)

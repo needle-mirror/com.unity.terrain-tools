@@ -23,7 +23,7 @@ namespace UnityEditor.TerrainTools.UI
     }
     
     // brush filters 
-    [Overlay(typeof(SceneView), "Brush Filters")]
+    [Overlay(typeof(SceneView), "Brush Filters", defaultDockPosition = DockPosition.Top, defaultDockZone = DockZone.LeftToolbar, defaultDockIndex = 1) ]
     [Icon("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/FrameFilters.png")]
     internal class BrushFilterOverlay : Overlay, ITransientOverlay 
     {

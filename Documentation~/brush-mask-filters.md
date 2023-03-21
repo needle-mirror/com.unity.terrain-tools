@@ -2,7 +2,7 @@
 
 A Brush Mask is a Grayscale Texture that Unity uses to control the strength of Terrain editing in specific areas. While black values on a mask do not impact the Terrain, white values have full impact on the Terrain.
 
-![](images/3-2-brush-masks-01.png)
+![Brush mask filters in the Inspector](images/3-2-brush-masks-01.png)
 
 By default, all Brush assets have a Mask Texture, which defines the shape and strength of a Brush. You can change the **Remap** and **Falloff** values to alter this Mask.
 
@@ -38,11 +38,11 @@ To add a new Brush Mask Filter, click the **Add (+)** button on the bottom right
 
 Since Unity applies filters starting from the topmost one, you might need to reorder the list of filters. Click and hold the **handle (=)** to the left of a filter, and drag that filter to a new position in the list.
 
-![](images/3-2-brush-masks-filters.png)
+![Add a filter to the filter stack](images/3-2-brush-masks-filters.png)
 
 Filters modify the base Brush Mask Texture, and specify which Terrain regions your paint operations affect. Unity highlights these designated areas in orange.
 
-![](images/Brush_Mask_Orange.png)
+![Orange areas indicate where the filter applies](images/Brush_Mask_Orange.png)
 
 Terrain-based filters give the best results when you use them to paint Terrain Layers (Textures) on the Terrain. This is because the heightmap remains constant as you paint Textures.
 

@@ -3,11 +3,49 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.1.0] - 2023-03-21
+### Changed:
+- Documentation updates for filterstacks, creating custom tools, brush controls, and brush mask filters
+- Reverted some breaking API changes to OnInspector and OnToolSettings
+
+## Added:
+- HasBrushAttribute properties in example code
+
+## Fixed:
+- Memory leak on CondensedSlider
+
+## [5.1.0-pre.2] - 2023-02-14
+### Fixed:
+- Fixed CondensedSlider memory leaks by registering and unregistering callbacks.
+
+## [5.1.0-pre.2] - 2023-01-23
+### Fixed:
+- BrushAttributes overlay should work with custom tools by accessing the BrushAttributes overlay from core.
+
+## [5.1.0-pre.2] - 2022-12-16
+### Changed:
+- Switched to non-deprecated method calls for overlay and inspector rendering.
+- Minimum Unity version changed to 2023.1.0a25.
+
+## [5.1.0-pre.2] - 2022-08-12
+### Added:
+
+- Added missing image alt tags to documentation.
+
+### Fixed:
+
+- Fixed code examples to work with latest package version.
+
+### Changed:
+
+- Updated documentation to include overlays support.
+- Updated code examples to include overlays support.
+
 ## [5.1.0-pre.1] - 2022-11-03
 ### Added:
 - All terrain tools now support overlays in the Scene view.
 
-## [5.0.3] - 2022-11-3
+## [5.0.3] - 2022-11-03
 ### Fixed:
 - Prevent a null reference error in BaseBrushUIGroup and NoiseHeightTool
 

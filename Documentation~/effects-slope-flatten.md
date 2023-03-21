@@ -4,4 +4,8 @@ Use the Slope Flatten Tool to flatten areas while keeping the average slope of a
 
 To access the Slope Flatten tool, select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Effects** > **Slope Flatten** from the list of Terrain tools.
 
-![](images/2-23-Slope-01.png)
+![Selection of the slope flatten tool from the Inspector](images/2-23-Slope-01.png)
+
+Alternatively, select the terrain, and select the slope flatten icon on the terrain toolbar.
+
+![slope flatten icon](images/Icons/FlattenSlope.png)

@@ -9,7 +9,11 @@ To select the Paint Texture tool:
 2. In the Terrain Inspector, click the Paint Terrain (brush) icon.
 3. Select Paint Texture from the drop-down menu.
 
-![](images/2-60-paint-texture-01.png)
+![The paint texture tool being selected from the Inspector](images/2-60-paint-texture-01.png)
+
+Alternatively, select the terrain, and select the paint texture icon on the terrain toolbar.
+
+ ![Paint Texture Icon](images/Icons/PaintTexture.png)
 
 To configure the tool, create a new Terrain Layer, or download an example from the Asset Store, such as the free [Terrain Tools Sample Asset Pack](https://assetstore.unity.com/packages/2d/textures-materials/nature/terrain-tools-sample-asset-pack-145808).
 
@@ -17,17 +21,17 @@ To create a new Terrain Layer, go to the **Layers** section, and type the name o
 
 To modify this newly created Terrain Layer, you must either select the Terrain Layer asset in your Project window, or expand the Terrain Layer Editor that appears in the Paint Texture tool UI. If you select **Add Layer**, you can add an existing Terrain Layer to your Terrain. You can also use the object picker (circle icon) next to each layer name in the **Layer Palette** to change the assigned Terrain Layer. These actions open a dialog box that lets you select a Terrain Layer, as shown below.
 
-![](images/2-60-paint-texture-02.png)
+![dialog box for selecting a terrain layer](images/2-60-paint-texture-02.png)
 
 For more detailed information about Terrain Layers, see [Terrain Layers](https://docs.unity3d.com/Manual/class-TerrainLayer.html).
 
 The Terrain Layer Eyedropper tool lets you select a Terrain Layer directly from the Terrain. To use the Eyedropper tool, hold down **Shift + A**, and click on an area of the Terrain to select its Terrain Layer. See[ Common Brush controls and shortcut keys](brush-controls-shortcut-keys.md) for more information about shortcut keys.
 
-![](images/2-60-paint-texture-03.png)
+![Terrain layer eyedropper in action](images/2-60-paint-texture-03.png)
 
 ## Layers
 
-![](images/2-60-paint-texture-04.png)
+![The layer palette](images/2-60-paint-texture-04.png)
 
 The **Layer Palette Profile** lets you save and load Terrain Layer Palettes using a preset asset file. This allows you to recreate the same Layer Palette from a prior one, and you can share preset files with other team members to expedite Terrain creation.
 

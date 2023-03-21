@@ -2,13 +2,17 @@
 
 Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Erosion** > **Thermal** from the list of Terrain tools.
 
-![](images/2-32-Thermal-Erosion-01.png)
+![Select the thermal erosion tool from the Inspector](images/2-32-Thermal-Erosion-01.png)
+
+Alternatively, select the terrain, and select the thermal erosion icon on the terrain toolbar.
+
+![Thermal icon](images/Icons/ThermalErosion.png)
 
 The Thermal Erosion Tool simulates the effect of sediment settling on a Terrain. Different sediment types naturally settle at specific slope angles, known as the *angle of repose* or *talus angle*. This Tool enforces such an angle on the Terrain height field, resulting in natural-looking slopes.
 
 ## Parameters
 
-![](images/2-32-Thermal-Erosion-02.png)
+![Thermal erosion tool control parameters](images/2-32-Thermal-Erosion-02.png)
 
 | **Property**                  |                          | **Description**                                              |
 | ----------------------------- | ------------------------ | ------------------------------------------------------------ |

@@ -446,7 +446,7 @@ namespace UnityEditor.TerrainTools
 
         bool m_ShowControls = true;
 
-        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             m_ShowControls = TerrainToolGUIHelper.DrawHeaderFoldoutForBrush(Styles.controls, m_ShowControls, s_StampToolProperties.SetDefaults);
 
@@ -519,11 +519,11 @@ namespace UnityEditor.TerrainTools
                 EditorGUILayout.EndVertical();
             }
         }
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             EditorGUI.BeginChangeCheck();
             commonUI.OnInspectorGUI(terrain, editContext);
-            OnToolSettingsGUI(terrain, editContext, overlays);
+            OnToolSettingsGUI(terrain, editContext);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -532,11 +532,6 @@ namespace UnityEditor.TerrainTools
             }
 
             base.OnInspectorGUI(terrain, editContext);
-        }
-        
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            OnInspectorGUI(terrain, editContext, false);
         }
 
         private void SaveSettings()

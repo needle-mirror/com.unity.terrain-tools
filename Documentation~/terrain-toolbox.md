@@ -6,8 +6,8 @@ The Terrain Toolbox is a tool that you can open in the Editor, which contains us
 
 To launch the Terrain Toolbox, select **Window** > **Terrain** > **Terrain Toolbox**.
 
-![](images/4-00-toolbox-01.png)
+![Launch the terrain toolbox](images/4-00-toolbox-01.png)
 
 The Toolbox window is a dockable window in the Editor, just like the Inspector. It comes with three tool wizards: **Create New Terrain**, **Terrain Settings**, and **Terrain Utilities**. It also includes the **Terrain Visualization** menu that lets you analyze the Terrain.
 
-![](images/4-00-toolbox-02.png)
+![The terrain toolbox panel](images/4-00-toolbox-02.png)

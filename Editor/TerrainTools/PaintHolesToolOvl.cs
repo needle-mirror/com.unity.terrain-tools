@@ -75,15 +75,11 @@ namespace UnityEditor.TerrainTools
             commonUI.OnExitToolMode();
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             commonUI.OnInspectorGUI(terrain, editContext);
         }
         
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            OnInspectorGUI(terrain, editContext, false);
-        }
 
         //Returns a negative value if ctrl is not held down (which will add holes), returns a positive value if ctrl is held down (which will remove holes)
         float GetBrushStrength()

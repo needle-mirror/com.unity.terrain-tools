@@ -9,11 +9,15 @@ To select the Stamp Terrain tool:
 2. In the **Terrain Inspector**, click the **Paint Terrain** icon.
 3. Select **Stamp Terrain** from the drop-down menu.
 
-![](images/2-70-stamp-terrain-01.png)
+![Select the Stamp Terrain tool from the Inspector](images/2-70-stamp-terrain-01.png)
+
+Alternatively, select the terrain, and select the stamp terrain icon on the terrain toolbar.
+
+![Stamp terrain icon](images/Icons/Stamp.png) 
 
 Select the **Stamp Terrain** tool, set the **Stamp Mode**, and then click on the Terrain. When you click an area with the **Stamp Terrain** tool, it applies the shape of the selected Brush Mask or mesh to the Terrain's heightmap. 
 
-![](images/2-70-stamp-terrain-02.png)
+![The stamp terrain tool in use](images/2-70-stamp-terrain-02.png)
 
 You can use the Stamp Terrain tool’s **Stamp Height** property to make adjustments to how the Stamp Terrain tool applies the Brush Mask or mesh. The Stamp Terrain tool raises or lowers the Terrain by the amount you specify in the **Stamp Height** field. Set a positive **Stamp Height** value to raise the Terrain relative to the height under the cursor, and set a negative value to lower it. If you hold down the C key while in **Mesh Stamp Mode**, an interactive gizmo appears, which you can use to rotate and scale the mesh in Scene view.
 
@@ -21,7 +25,7 @@ Shapes with holes or a lot of concave details don't work well as mesh stamps. Th
 
 ## Parameters
 
-![](images/2-70-stamp-terrain-03.png)
+![Stamp terrain control paramaters](images/2-70-stamp-terrain-03.png)
 
 | **Property**            |               | **Description**                                                             |
 | ----------------------- | ------------- | ----------------------------------------------------------------------------|

@@ -2,15 +2,17 @@
 
 The Twist Tool rotates Terrain features around the center of the Brush, along the path of the Brush stroke.
 
-![](images/2-43-twist-03.png)
+![The twist tool in action](images/2-43-twist-03.png)
 
 Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Transform > Twist** from the list of Terrain tools.
 
-![](images/2-43-twist-01.png)
+![Select the twist tool from the inspector](images/2-43-twist-01.png)
+
+Alternatively, select the terrain, and select the twist icon ![Twist icon](images/Icons/Twist.png) on the terrain toolbar.
 
 ## Parameters
 
-![](images/2-43-twist-02.png)
+![Twist tool control parameters](images/2-43-twist-02.png)
 
 | **Property**     | **Description**                                              |
 | ---------------- | ------------------------------------------------------------ |

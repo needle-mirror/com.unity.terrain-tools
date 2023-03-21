@@ -7,9 +7,26 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.TerrainTools;
 
-internal class CustomTerrainToolWithBrushUI : TerrainPaintTool<CustomTerrainToolWithBrushUI>
+class CustomTerrainToolWithBrushUI : TerrainPaintToolWithOverlays<CustomTerrainToolWithBrushUI>
 {
     private float m_BrushRotation;
+
+    // Override this function to add UI elements to the tool settings
+    public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
+    {
+        EditorGUILayout.HelpBox("Rotation is specific to this tool", MessageType.Info);
+        m_BrushRotation = EditorGUILayout.Slider("Rotation", m_BrushRotation, 0, 360);
+    }
+
+    // You can call the tool settings here to duplicate the tool settings UI in the inspector.
+    public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+    {
+        // This example only draws the brushes in the inspector code. The overlay has its own window for the
+        // brushes, which is why the OnToolsSettingsGUI method doesn't contain this.
+        editContext.ShowBrushesGUI(5, BrushGUIEditFlags.Select | BrushGUIEditFlags.Opacity | BrushGUIEditFlags.Size);
+
+        OnToolSettingsGUI(terrain, editContext);
+    }
 
     // Name of the Terrain Tool. This appears in the tool UI.
     public override string GetName()
@@ -18,27 +35,33 @@ internal class CustomTerrainToolWithBrushUI : TerrainPaintTool<CustomTerrainTool
     }
 
     // Description for the Terrain Tool. This appears in the tool UI.
-    public override string GetDesc()
+    public override string GetDescription()
     {
-        return "This is a very basic Terrain Tool that doesn't do anything aside from appear in the list of Paint Terrain tools.";
+        return "This terrain tool shows how to add custom UI to a tool.";
     }
+    
+    // Return true for this property to display the brush attributes overlay
+    public override bool HasBrushAttributes => true;
 
-    public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-    {
-        editContext.ShowBrushesGUI(5, BrushGUIEditFlags.Select | BrushGUIEditFlags.Opacity | BrushGUIEditFlags.Size);
-        m_BrushRotation = EditorGUILayout.Slider("Rotation", m_BrushRotation, 0, 360);
-    }
+    // Return true for this property to display the brush selector overlay
+    public override bool HasBrushMask => true;
 
-    public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)
-    {
+    // Return true for this property to display the tool settings overlay
+    public override bool HasToolSettings => true;
 
-    }
+    // File names of the light theme icons - prepend d_ for the file name of dark theme variants.
+    // Override these if you want to specify your own icon.
+    // public override string OnIcon => "Assets/Icon_on.png";   // Will use dark icon at 'Assets/d_Icons_on.png' if available.
+    // public override string OffIcon => "Assets/Icon_off.png"; // Will use dark icon at 'Assets/d_Icons_off.png' if available.
 
-    public override bool OnPaint(Terrain terrain, IOnPaint editContext)
-    {
-        return true;
-    }
+    // The toolbar category the icon appears under.
+    public override TerrainCategory Category => TerrainCategory.CustomBrushes;
+
+    // Where in the icon list the icon appears.
+    public override int IconIndex => 100;
 }
 ```
 
-This example still doesn't do much, but it does give some useful information about the Brush.
+When you create UI for your tool, you can specify both the UI that can appear in the tool settings overlay and the UI that appears in the inspector. Most of the time, these are identical, so we recommend that you implement your UI in `OnToolSettingsGUI` and call it from `OnInspectorGUI`. 
+
+**Note**: For the Tools Settings overlay to appear, you must override the `HasToolSettings` property to return true.

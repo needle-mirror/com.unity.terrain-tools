@@ -2,15 +2,19 @@
 
 Use the Contrast Tool to apply a contrast filter to the Terrain height.
 
-![](images/2-21-contrast-03.png)
+![The effect when you apply the contrast tool](images/2-21-contrast-03.png)
 
 Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Effects** > **Contrast** from the list of Terrain tools.
 
-![](images/2-21-contrast-01.png)
+![The contrast tool when you select it from the Inspector](images/2-21-contrast-01.png)
+
+Alternatively, select the terrain, and select the contrast icon on the terrain toolbar.
+
+![contrast icon](images/Icons/Contrast.png) 
 
 ## Parameters
 
-![](images/2-21-contrast-02.png)
+![Contrast tool control parameters](images/2-21-contrast-02.png)
 
 | **Property**     | **Description**                                              |
 | ---------------- | ------------------------------------------------------------ |

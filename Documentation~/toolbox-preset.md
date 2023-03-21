@@ -2,7 +2,7 @@
 
 The **Create New Terrain** wizard lets you save and load settings by using a preset asset file. This lets you recreate the same Terrain from a prior one, and you can share the preset file with other team members to expedite Terrain creation.
 
-![](images/4-13-toolbox-preset.png)
+![Settings preset](images/4-13-toolbox-preset.png)
 
 | **Property** | **Description**                                              |
 | ------------ | ------------------------------------------------------------ |

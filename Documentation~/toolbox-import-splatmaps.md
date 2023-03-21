@@ -2,7 +2,7 @@
 
 The **Terrain Splatmaps** tool lets you import, preview, and adjust splatmaps on multiple Terrain tiles.
 
-![](images/4-33-toolbox-import-splatmap-01.png)
+![Import splatmaps for terrain](images/4-33-toolbox-import-splatmap-01.png)
 
 ## Splatmap list
 
@@ -14,7 +14,7 @@ Use the **Import from Selected Terrain** button to import splatmaps from a selec
 
 **Preview Splatmap** lets you view splatmaps on Terrain tiles.
 
-![](images/4-33-toolbox-import-splatmap-02.png)
+![Preview splatmap settings](images/4-33-toolbox-import-splatmap-02.png)
 
 | **Property**             | **Description**                                              |
 | ------------------------ | ------------------------------------------------------------ |

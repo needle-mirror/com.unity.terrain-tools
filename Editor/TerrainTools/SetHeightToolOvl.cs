@@ -272,7 +272,7 @@ namespace UnityEditor.TerrainTools
             m_TargetHeight = targetHeight;
         }
 
-        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             EditorGUI.BeginChangeCheck();
 
@@ -323,15 +323,10 @@ namespace UnityEditor.TerrainTools
                 EditorGUILayout.EndVertical();
             }
         }
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
-        {
-            commonUI.OnInspectorGUI(terrain, editContext);
-            OnToolSettingsGUI(terrain, editContext, overlays);
-        }
-        
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            OnInspectorGUI(terrain, editContext, false);
+            commonUI.OnInspectorGUI(terrain, editContext);
+            OnToolSettingsGUI(terrain, editContext);
         }
 
         private void SaveSetting()

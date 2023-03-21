@@ -2,7 +2,7 @@
 
 The **Export Heightmaps** tool lets you export height data from multiple Terrain into textures, and provides some additional settings.
 
-![](images/4-35-toolbox-export-heightmaps.png)
+![Export heightmaps tool](images/4-35-toolbox-export-heightmaps.png)
 
 | **Property**             | **Description**                                              |
 | ------------------------ | ------------------------------------------------------------ |

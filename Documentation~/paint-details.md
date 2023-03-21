@@ -10,7 +10,11 @@ To select the Paint Details tool:
 1. Select a Terrain tile to bring up the Terrain Inspector.
 2. In the Terrain Inspector, click the Paint Details (grass) icon.
 
-![](images/Paint_Details_01.png)
+![Paint details selected in the Inspector](images/Paint_Details_01.png)
+
+Alternatively, select the terrain, and select the paint details icon on the terrain toolbar.
+
+![Paint Details Icon](images/Icons/PaintDetails.png) 
 
 To configure the tool, add a new Detail to the Details Control. You can download preset details from the Asset Store, such as the free [Terrain Tools Sample Asset Pack](https://assetstore.unity.com/packages/2d/textures-materials/nature/terrain-tools-sample-asset-pack-145808).
 
@@ -26,7 +30,7 @@ To add a new Terrain Detail, do the following:
 1. Alter the detail settings.
 1. Click **Add**.
 
-![](images/Paint_Details_02.png)
+![The Add Detail Mesh dialog](images/Paint_Details_02.png)
 
 ## Modify Details
 
@@ -58,11 +62,11 @@ For more detailed information about Terrain Details, see [Grass and Other Detail
 
 While painting Details, you can hold Shift and click to remove all details under the brush. Hold Ctrl and click to remove only the Details you select.
 
-![](images/Paint_Details_03.png)
+![Remove details](images/Paint_Details_03.png)
 
 ## View Details and their settings
 
-![](images/Paint_Details_04.png)
+![Paint details controls section in the Inspector](images/Paint_Details_04.png)
 
 With the View selection, you can choose a layout for the Detail selection UI. The two layout options are:
 
@@ -78,16 +82,17 @@ To paint, do the following:
 
 Select multiple Details to scatter them simultaneously. 
 
-![](images/Paint_Details_05.png)
+![Select multiple details](images/Paint_Details_05.png)
 
 You can use the **Target Density Distribution** slider to gauge the distribution of selected Details' target density. You can also use the slider to adjust the **Target Density** from within the **Grid** view.
+
 To modify a Detail's **Target Density**, click and drag the Detail's slider. 
 
-![](images/Paint_Details_06.png)
+![Details density distribution slider](images/Paint_Details_06.png)
 
 ## Control Detail location with the Layer Filter
 
-![](images/Paint_Details_07.png)
+![The layer filter in use](images/Paint_Details_07.png)
 
 In addition to the Paint Details tool, you can use the Brush Mask Filter to mask layers. Layer filtering gives finer control over the location of scattered Details. The filter works as a mask and keeps the Details from being scattered outside of the selected terrain layers.
 
@@ -95,4 +100,4 @@ To use the **Layer Filter**, do the following:
 1. Add the filter to the **Filter Mask** list.
 1. In the **Layer Filter** UI, select the terrain layer you'd like to scatter on.
 
-![](images/Paint_Details_08.png)
+![Layer textures in use as a brush mask filter.](images/Paint_Details_08.png)

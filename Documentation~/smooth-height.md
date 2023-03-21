@@ -9,13 +9,17 @@ To select the Stamp Terrain tool:
 2. In the **Terrain Inspector**, click the **Paint Terrain** icon.
 3. Select **Smooth Height** from the drop-down menu.
 
-![](images/2-80-smooth-height-01.png)
+![Select the smooth height tool from the Inspector](images/2-80-smooth-height-01.png)
+
+Alternatively, select the terrain, and select the smooth height icon on the terrain toolbar.
+
+![Smooth height icon](images/Icons/Smooth.png)
 
 To use the Smooth Height tool, select it and then drag the mouse across Terrain areas that you’d like to smooth. Smoothing the Terrain averages out nearby areas, softening the landscape and reducing the appearance of abrupt changes.
 
 ## Parameters
 
-![](images/2-80-smooth-height-02.png)
+![The smooth height control parameters](images/2-80-smooth-height-02.png)
 
 | **Property**    | **Description** |
 | --------------- | --------------- |

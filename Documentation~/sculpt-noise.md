@@ -1,16 +1,20 @@
 # Noise Height Tool
 
-![img](images/NoiseTool_00.png)
+![A terrain tile created with the Noise tool](images/NoiseTool_00.png)
 
 The **Noise Height Tool** is a paint-and-fill tool that allows you to use different Noise Types and Fractal Types to modify the height of your Terrain. It uses the shaders that the Noise Library generates, and the Tool Shader Generator for the Noise Height Tool.
 
 Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspector, click the **Paint Terrain** icon, and select **Sculpt > Noise** from the list of Terrain tools.
 
-![img](images/NoiseTool_01.png)
+![Select the Noise tool from the Inspector](images/NoiseTool_01.png)
+
+Alternatively, select the terrain, and select the noise icon on the terrain toolbar.
+
+![Noise icon](images/Icons/Noise.png) 
 
 **Noise Height Tool Settings** are located at the bottom of the Noise Height Tool window.
 
-![img](images/NoiseTool_02.png)
+![noise tool settings](images/NoiseTool_02.png)
 
 ## Parameters
 

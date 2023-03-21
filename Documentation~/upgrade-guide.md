@@ -1,14 +1,3 @@
-# Upgrade Terrain Tools from 3.0.2 to 4.0.0
-In the Terrain Tools package, some features work differently between versions. This document helps you upgrade Terrain Tools from 3.0.2 to 4.0.0.
+# Upgrade Terrain Tools from 5.0.1 to 5.1.0
 
-## Experimental API upgrade
-From 4.0.0, Terrain APIs are no longer experimental. The namespaces were changed to reflect this.
-
-| Old namespace                  | New namespace          |
-| ----------------------------------- | ---------------------- |
-| UnityEditor.Experimental.TerrainAPI | UnityEditor.TerrainAPI |
-| UnityEngine.Experimental.TerrainAPI | UnityEngine.TerrainAPI |
-
-## API scope
-A portion of the Terrain Tools API access modifiers were changed from public to internal.
-
+No work is required to upgrade from Terrain Tools 5.0.1 to 5.1.0. However, if you author your own custom terrain tools, see the documentation in [Create Custom Tools](create-custom-tools.md) about overlays features, such as tool icons.
