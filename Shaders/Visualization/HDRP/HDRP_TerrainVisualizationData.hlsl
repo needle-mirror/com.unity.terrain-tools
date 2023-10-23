@@ -159,6 +159,8 @@ void GetSurfaceAndBuiltinData(inout FragInputs input, float3 V, inout PositionIn
     InitializeTerrainLitSurfaceData(terrainLitSurfaceData);
     TerrainLitShade(input.texCoord0.xy, terrainLitSurfaceData);
 
+    ZERO_INITIALIZE(SurfaceData, surfaceData);
+
 #ifdef ENABLE_TERRAIN_PERPIXEL_NORMAL
     #ifdef TERRAIN_PERPIXEL_NORMAL_OVERRIDE
         float3 normalWS = terrainLitSurfaceData.normalData.xyz; // normalData directly contains normal in world space.
@@ -192,29 +194,15 @@ void GetSurfaceAndBuiltinData(inout FragInputs input, float3 V, inout PositionIn
 	surfaceData.baseColor = terrainLitSurfaceData.albedo;
 #endif
 
+    // Init non-zero surface parameters
     surfaceData.perceptualSmoothness = terrainLitSurfaceData.smoothness;
     surfaceData.metallic = terrainLitSurfaceData.metallic;
     surfaceData.ambientOcclusion = terrainLitSurfaceData.ao;
-
-    surfaceData.subsurfaceMask = 0;
     surfaceData.thickness = 1;
-    surfaceData.diffusionProfileHash = 0;
-
     surfaceData.materialFeatures = MATERIALFEATUREFLAGS_LIT_STANDARD;
-
-    // Init other parameters
-    surfaceData.anisotropy = 0.0;
-    surfaceData.specularColor = float3(0.0, 0.0, 0.0);
-    surfaceData.coatMask = 0.0;
-    surfaceData.iridescenceThickness = 0.0;
-    surfaceData.iridescenceMask = 0.0;
-
-    // Transparency parameters
-    // Use thickness from SSS
     surfaceData.ior = 1.0;
     surfaceData.transmittanceColor = float3(1.0, 1.0, 1.0);
     surfaceData.atDistance = 1000000.0;
-    surfaceData.transmittanceMask = 0.0;
 
     float3 bentNormalWS = surfaceData.normalWS;
 
