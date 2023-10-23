@@ -121,7 +121,7 @@ Shader "Hidden/HDRP_TerrainVisualization"
 			#pragma multi_compile _ SHADOWS_SHADOWMASK
 			// Setup DECALS_OFF so the shader stripper can remove variants
 			#pragma multi_compile DECALS_OFF DECALS_3RT DECALS_4RT
-			#pragma multi_compile _ LIGHT_LAYERS
+			#pragma multi_compile_fragment _ RENDERING_LAYERS
 
 			#define SHADERPASS SHADERPASS_GBUFFER
 			#include "Packages/com.unity.terrain-tools/Shaders/Visualization/HDRP/HDRP_TerrainVisualizationTemplate.hlsl"			
