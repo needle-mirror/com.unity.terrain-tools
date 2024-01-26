@@ -53,7 +53,9 @@ namespace UnityEditor.TerrainTools
                 return false;
             }
 
+#pragma warning disable 0618
             if (!SystemInfo.IsFormatSupported(filterContext.targetFormat, FormatUsage.LoadStore))
+#pragma warning restore 0618
             {
                 message = $"The current Graphics API does not support UAV resource access for GraphicsFormat.{filterContext.targetFormat}.";
                 return false;

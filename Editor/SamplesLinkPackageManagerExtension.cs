@@ -41,20 +41,20 @@ internal class SamplesLinkPackageManagerExtension : IPackageManagerExtension
 
     void CreateDemoSceneButton()
     {
-        if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset == null)
+        if (UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline == null)
         {
             return;
         }
 
         sampleSceneButton = new Button();
 
-        if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset.GetType().FullName
+        if (UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline.GetType().FullName
                  == "UnityEngine.Rendering.HighDefinition.HDRenderPipelineAsset")
         {
             sampleSceneButton.text = SAMPLESCENEHDRPBUTTON_TEXT;
             sampleSceneButton.clickable.clicked += () => Application.OpenURL(HDRPSCENE_URL);
         }
-        else if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset.GetType().FullName
+        else if (UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline.GetType().FullName
                  == "UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset")
         {
             sampleSceneButton.text = SAMPLESCENEURPBUTTON_TEXT;

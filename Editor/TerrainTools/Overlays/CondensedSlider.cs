@@ -275,7 +275,9 @@ namespace UnityEditor.TerrainTools.UI
             if (e.button == (int)MouseButton.RightMouse)
             {
                 e.StopPropagation();
+#pragma warning disable 0618
                 e.PreventDefault();
+#pragma warning restore 0618
 
                 var textField = m_Slider.Q("textField") as FloatField;
                 var contentTextField = m_Slider.Q("contentTextField");
@@ -296,7 +298,9 @@ namespace UnityEditor.TerrainTools.UI
             if (e.button == (int)MouseButton.RightMouse)
             {
                 e.StopPropagation();
+#pragma warning disable 0618
                 e.PreventDefault();
+#pragma warning restore 0618
             }
         }
 

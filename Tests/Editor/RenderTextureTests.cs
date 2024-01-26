@@ -12,7 +12,9 @@ namespace UnityEditor.TerrainTools
     {
         static RenderTextureTestOnload()
         {
+#pragma warning disable 0618
             var ignoreTests = !SystemInfo.IsFormatSupported(RenderTextureTests.testFormat, FormatUsage.LoadStore);
+#pragma warning restore 0618
 
             ConditionalIgnoreAttribute.AddConditionalIgnoreMapping("IgnoreTest", ignoreTests);
         }
@@ -23,7 +25,9 @@ namespace UnityEditor.TerrainTools
     public class RenderTextureTests
     {
         internal static GraphicsFormat testFormat =>
+#pragma warning disable 0618
             SystemInfo.IsFormatSupported(GraphicsFormat.R16_SFloat, FormatUsage.Render) &&
+#pragma warning restore 0618
             SystemInfo.graphicsDeviceType != GraphicsDeviceType.Vulkan &&
             SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES3 &&
             SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2

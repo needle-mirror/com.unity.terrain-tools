@@ -8,7 +8,6 @@ namespace UnityEditor.TerrainTools
 {
     internal class TerrainToolboxSettings
     {
-        List<Terrain> m_Terrains = new List<Terrain>();
         Terrain m_SelectedTerrain = null;
         TerrainSettings m_Settings = ScriptableObject.CreateInstance<TerrainSettings>();
         TerrainSettings m_SelectedPreset = null;
@@ -75,16 +74,6 @@ namespace UnityEditor.TerrainTools
             // apply button
             public static readonly GUIContent ApplySettingsBtn = EditorGUIUtility.TrTextContent("Apply to Selected Terrain(s)", "Start applying enabled settings to selected terrain(s).");
             public static readonly GUIContent ApplySettingsToAllBtn = EditorGUIUtility.TrTextContent("Apply to All Terrain(s) in Scene", "Start applying enabled settings to all terrain(s) in scene.");
-        }
-
-        public void OnEnable()
-        {
-            m_Terrains.AddRange(GameObject.FindObjectsOfType<Terrain>());
-        }
-
-        void Refresh()
-        {
-            m_Terrains.AddRange(GameObject.FindObjectsOfType<Terrain>());
         }
 
         bool GetSelectedTerrain()
@@ -337,7 +326,7 @@ namespace UnityEditor.TerrainTools
 
         void ApplySettingsToAllTerrains(string errorContext)
         {
-            var terrains = Object.FindObjectsOfType<Terrain>();
+            var terrains = ToolboxHelper.GetAllTerrainsInScene();
             if (terrains != null && terrains.Length > 0)
             {
                 ApplySettingsToTerrains(terrains, errorContext);

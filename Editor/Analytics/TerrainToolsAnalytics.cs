@@ -96,8 +96,10 @@ namespace UnityEditor.TerrainTools
             if (s_EventRegistered)
                 return EditorAnalytics.enabled;
 
+#pragma warning disable 0618
             AnalyticsResult result = EditorAnalytics.RegisterEventWithLimit(k_EventName, k_MaxEventsPerHour,
                 k_MaxNumberOfElements, k_VendorKey);
+#pragma warning restore 0618
 
             if (result == AnalyticsResult.Ok)
                 s_EventRegistered = true;
@@ -136,7 +138,9 @@ namespace UnityEditor.TerrainTools
                 return;
 
             m_Data.duration = s_PaintingDuration;
+#pragma warning disable 0618
             EditorAnalytics.SendEventWithLimit(k_EventName, m_Data);
+#pragma warning restore 0618
 
             //Clear data
             s_ModifiedBrushParameters.Clear();

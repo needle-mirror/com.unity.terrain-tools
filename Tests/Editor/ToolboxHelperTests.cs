@@ -39,11 +39,18 @@ namespace UnityEditor.TerrainTools
         [Test]
         public void IsPowerOfTwo()
         {
-            // confirm for the first 100 powers of two
-            for (int i = 0; i < 100; i++)
+            // confirm for the first 31 powers of two
+            for (int i = 0; i < 31; i++)
             {
                 Assert.That(ToolboxHelper.IsPowerOfTwo((int)Mathf.Pow(2, i)), Is.True);
             }
+            
+            // Negative cases
+            Assert.IsFalse(ToolboxHelper.IsPowerOfTwo((int)Mathf.Pow(2, 31)));
+            Assert.IsFalse(ToolboxHelper.IsPowerOfTwo(0));
+            Assert.IsFalse(ToolboxHelper.IsPowerOfTwo(6));
+            Assert.IsFalse(ToolboxHelper.IsPowerOfTwo(-1234));
+            Assert.IsFalse(ToolboxHelper.IsPowerOfTwo(7777));
         }
         
         [Test]

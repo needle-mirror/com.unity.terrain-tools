@@ -756,7 +756,7 @@ namespace UnityEditor.TerrainTools
         {
             if (GroupExists(groupID))
             {
-                TerrainGroup[] terrainGroups = UnityEngine.Object.FindObjectsOfType<TerrainGroup>().Where(g => g.GroupID == groupID).ToArray();
+                TerrainGroup[] terrainGroups = UnityEngine.Object.FindObjectsByType<TerrainGroup>(FindObjectsSortMode.None).Where(g => g.GroupID == groupID).ToArray();
                 foreach (var group in terrainGroups)
                 {
                     Terrain[] childTerrains = group.GetComponentsInChildren<Terrain>();
@@ -795,6 +795,7 @@ namespace UnityEditor.TerrainTools
             }
 
             // check lighting auto bake
+#pragma warning disable 0618
             if (m_Settings.EnableLightingAutoBake)
             {
                 UnityEditor.Lightmapping.giWorkflowMode = UnityEditor.Lightmapping.GIWorkflowMode.Iterative;
@@ -803,6 +804,7 @@ namespace UnityEditor.TerrainTools
             {
                 UnityEditor.Lightmapping.giWorkflowMode = UnityEditor.Lightmapping.GIWorkflowMode.OnDemand;
             }
+#pragma warning restore 0618
 
             if (m_Settings.EnableClearExistingData)
             {
@@ -980,7 +982,7 @@ namespace UnityEditor.TerrainTools
 
         bool GroupExists(int id)
         {
-            var groups = UnityEngine.Object.FindObjectsOfType<TerrainGroup>();
+            var groups = UnityEngine.Object.FindObjectsByType<TerrainGroup>(FindObjectsSortMode.None);
 
             foreach (var group in groups)
             {

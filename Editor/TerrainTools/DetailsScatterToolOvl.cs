@@ -219,6 +219,7 @@ namespace UnityEditor.TerrainTools
             PaintDetailsToolUtility.DrawClampedDetailPatchGUI(m_MouseOnPatchIndex, clampedDetailPatchIconScreenPositions, detailMinMaxHeight, terrain, editContext);
         }
 
+        [Obsolete]
         public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
             DetailScatterGUI(terrain, editContext, true);

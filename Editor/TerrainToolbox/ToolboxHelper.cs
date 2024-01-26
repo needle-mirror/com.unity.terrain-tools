@@ -44,7 +44,7 @@ namespace UnityEditor.TerrainTools
 
         public static bool IsPowerOfTwo(int x)
         {
-            return (x != 0) && ((x & (x - 1)) == 0);
+            return (x > 0) && ((x & (x - 1)) == 0);
         }
 
         public static bool IsInteger(double x)
@@ -93,7 +93,7 @@ namespace UnityEditor.TerrainTools
 
         public static Terrain[] GetAllTerrainsInScene()
         {
-            return GameObject.FindObjectsOfType<Terrain>();
+            return GameObject.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
         }
 
         public static void CalculateAdjacencies(Terrain[] terrains, int tilesX, int tilesZ)
@@ -513,21 +513,21 @@ namespace UnityEditor.TerrainTools
 
         public static RenderPipeline GetRenderPipeline()
         {
-            if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset == null)
+            if (UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline == null)
             {
                 return RenderPipeline.Default;
             }
-            else if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset.GetType().FullName
+            else if (UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline.GetType().FullName
                 == "UnityEngine.Rendering.HighDefinition.HDRenderPipelineAsset")
             {
                 return RenderPipeline.HD;
             }
-            else if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset.GetType().FullName
+            else if (UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline.GetType().FullName
                 == "UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset")
             {
                 return RenderPipeline.Universal;
             }
-            else if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset.GetType().FullName
+            else if (UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline.GetType().FullName
                 == "UnityEngine.Rendering.LWRP.LightweightRenderPipelineAsset")
             {
                 return RenderPipeline.LW;

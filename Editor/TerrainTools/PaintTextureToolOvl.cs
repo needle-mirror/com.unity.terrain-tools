@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using System.IO;
 using System.Linq;
@@ -333,7 +334,7 @@ namespace UnityEditor.TerrainTools
             commonUI.OnSceneGUI(terrain, editContext);
         }
 
-
+        [Obsolete]
         public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
             TextureToolSettingsGUI(terrain, editContext, true);

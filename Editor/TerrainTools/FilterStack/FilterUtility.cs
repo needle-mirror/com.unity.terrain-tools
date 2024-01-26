@@ -80,10 +80,11 @@ namespace UnityEditor.TerrainTools
         /// supported by the active Graphics API. If it is not supported, for example on Vulkan, OpenGLES3, and OpenGLES2,
         /// GraphicsFormat.R8G8_UNorm is returned instead.</remarks>
         public static GraphicsFormat defaultFormat =>
+#pragma warning disable 0618
             SystemInfo.IsFormatSupported(GraphicsFormat.R16_SFloat, FormatUsage.Render) &&
+#pragma warning restore 0618
             SystemInfo.graphicsDeviceType != GraphicsDeviceType.Vulkan &&
-            SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES3 &&
-            SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2
+            SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES3
                 ? GraphicsFormat.R16_SFloat
                 : Terrain.heightmapFormat;
 

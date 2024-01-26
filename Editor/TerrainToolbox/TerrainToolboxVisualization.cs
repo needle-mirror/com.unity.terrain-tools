@@ -89,17 +89,18 @@ namespace UnityEditor.TerrainTools
 
         public void ToggleVisualization()
         {
-            if (GameObject.FindObjectOfType<Terrain>() == null)
+            var terrainList = ToolboxHelper.GetAllTerrainsInScene();
+            if (terrainList.Length == 0)
             {
                 m_selectedMode = VISUALIZERMODE.None;
                 m_Settings.ModeWarning = true;
                 return;
             }
 
-            if (m_Terrains == null || GameObject.FindObjectsOfType<Terrain>().Length != m_Terrains.Count || m_Terrains[0] == null)
+            if (m_Terrains == null || terrainList.Length != m_Terrains.Count || m_Terrains[0] == null)
             {
                 m_Terrains.Clear();
-                m_Terrains.AddRange(ToolboxHelper.GetAllTerrainsInScene());
+                m_Terrains.AddRange(terrainList);
                 m_Settings.TerrainMaxHeight = m_Terrains[0].terrainData.size.y;
             }
 
