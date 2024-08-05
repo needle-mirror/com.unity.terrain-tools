@@ -3,6 +3,10 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.0.5] - 2024-08-05
+### Changed:
+- Updated version number to 5.0.5.
+
 ## [5.0.4] - 2023-10-23
 ### Fixed:
 - Fixed the altitude heatmap visualization shader for more recent versions of HDRP.
