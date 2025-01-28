@@ -44,7 +44,7 @@ namespace UnityEditor.TerrainTools
 
         public static bool IsPowerOfTwo(int x)
         {
-            return (x != 0) && ((x & (x - 1)) == 0);
+            return (x > 0) && ((x & (x - 1)) == 0);
         }
 
         public static bool IsInteger(double x)

@@ -16,6 +16,12 @@ namespace UnityEditor.TerrainTools
             Texture3D,
         }
 
+        enum GraphicsFormatBridge
+        {
+            R16_UNorm = GraphicsFormat.R16_UNorm,
+            R16_SFloat = GraphicsFormat.R16_SFloat
+        }
+
         private NoiseSettings m_noise;
         private ExportMode m_exportMode = ExportMode.Texture2D;
         private Vector2Int dims2D = new Vector2Int(512,512);
@@ -68,7 +74,8 @@ namespace UnityEditor.TerrainTools
             }
             EditorGUILayout.EndHorizontal();
 
-            m_format = (GraphicsFormat)EditorGUILayout.EnumPopup(Styles.format, m_format);
+            var bridgedFormat = (GraphicsFormatBridge)m_format;
+            m_format = (GraphicsFormat)EditorGUILayout.EnumPopup(Styles.format, bridgedFormat);
 
             GUILayout.Space(16);
 

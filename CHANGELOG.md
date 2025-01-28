@@ -3,6 +3,12 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.0.6] - 2025-01-28
+### Fixed:
+- Fixed an issue where `IsPowerOfTwo` returns true for negative ints.
+- Fixed an error when render pipeline was selected but Terrain Toolbox preview material had been disposed.
+- Fixed display of available GraphicsFormats when exporting noise textures
+
 ## [5.0.5] - 2024-08-05
 ### Changed:
 - Updated version number to 5.0.5.
