@@ -414,7 +414,6 @@ namespace UnityEditor.TerrainTools
     {
         static Material m_DefaultPreviewMat = null;
 
-
         /// <summary>
         /// Retrieves the default preview <see cref="Material"/> for painting on Terrains.
         /// </summary>

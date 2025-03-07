@@ -10,7 +10,7 @@ namespace UnityEditor.TerrainTools
 {
 
     [TestFixture]
-    public class PaintDetails
+    internal class PaintDetails
     {
         private TerrainData mData;
         private GameObject mTerrainGO;

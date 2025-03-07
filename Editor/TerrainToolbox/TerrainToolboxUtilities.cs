@@ -2093,7 +2093,7 @@ namespace UnityEditor.TerrainTools
             UpdateCachedTerrainMaterials();
 
             ToolboxHelper.RenderPipeline currentPipeline = ToolboxHelper.GetRenderPipeline();
-            if (m_ActiveRenderPipeline == currentPipeline)
+            if (m_ActiveRenderPipeline == currentPipeline && m_PreviewMaterial != null)
                 return;
 
             m_ActiveRenderPipeline = currentPipeline;

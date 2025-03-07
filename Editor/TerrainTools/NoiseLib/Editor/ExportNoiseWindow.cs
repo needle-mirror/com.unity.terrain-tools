@@ -19,6 +19,12 @@ namespace UnityEditor.TerrainTools
             wnd.Show();
         }
 
+        enum GraphicsFormatBridge
+        {
+            R16_UNorm = GraphicsFormat.R16_UNorm,
+            R16_SFloat = GraphicsFormat.R16_SFloat
+        }
+
         private enum ExportMode
         {
             Texture2D = 0,
@@ -69,7 +75,7 @@ namespace UnityEditor.TerrainTools
             }
             EditorGUILayout.EndHorizontal();
 
-            m_format = (GraphicsFormat)EditorGUILayout.EnumPopup(Styles.format, m_format);
+            m_format = (GraphicsFormat)EditorGUILayout.EnumPopup(Styles.format, (GraphicsFormatBridge)m_format);
 
             GUILayout.Space(16);
 

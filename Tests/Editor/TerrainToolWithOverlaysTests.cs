@@ -13,7 +13,7 @@ using UnityEditor.EditorTools;
 using UnityEngine.SceneManagement;
 
 [TestFixture]
-public class TerrainToolWithOverlaysTests
+internal class TerrainToolWithOverlaysTests
 {
     GameObject m_Terrain;
     SceneView m_SceneView;

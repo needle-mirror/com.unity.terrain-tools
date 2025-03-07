@@ -8,7 +8,7 @@ using UnityEngine;
 namespace UnityEditor.TerrainTools
 {
     [TestFixture]
-    public class BrushSizeTest
+    internal class BrushSizeTest
     {
         // check enforcing brush sizes 
         [Test]

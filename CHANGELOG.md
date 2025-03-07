@@ -3,6 +3,31 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.2.1] - 2025-03-07
+### Fixed:
+- Fixed issue where new tests were not set to be internal, causing internal checks to fail.
+- Fixed incorrect line endings on some shaders that caused internal checks to fail.
+
+## [5.2.0] - 2025-02-06
+### Added:
+- isSmoothing public API to BaseBrushUIGroup for use in terrain tools to determine if the user is actively using the smooth shortcut
+
+### Changed:
+- Control + Shift + Mouse Wheel is now the shortcut for changing the stamp height when using the Stamp Height Tool
+
+### Fixed:
+- Event.Use() warning spam upon pressing the 'F' or focus key with the SceneView focused
+- Holding the shortcut for smooth while using the Stamp Height Tool no longer applies the height stamp. It correctly applies just the smoothing of the heightfield.
+- Noise Height Tool sculpting to max height resulted in the height range wrapping around to negative height values. This has been fixed and the Noise Height Tool correctly accumulates height to the max height range set by the Terrain settings
+- Control shortcut does nothing for the Stamp height tool despite the description stating that Control can be used to invert the stamp operation. Control now correctly inverts the stamp operation
+- The pinned brush preview when using the CloneSculpt tool swaps Terrain locations when using a shortcut to change brush settings like size and opacity. The brush preview now remains correctly pinned relative to the originally hovered Terrain
+- When using the smoothing shortcut with the CloneSculpt tool active, both brush previews would render. Now only only one brush preview is rendered when using the smooth shortcut with the CloneSculpt tool active.
+- The brush info Overlay now correctly hides when using a Terrain Tool that supports Overlays.
+- Increasing max and min brush size no longer resets or changes the currently set brush size as the values in the input fields are changing. The values only affect the current brush size upon committing the values by pressing Enter or Return or when the popup for the Min and Max Brush Size loses focus.
+- Format options for exporting Noise in the Export Noise popup window no longer shows all the available GraphicsFormat options. It now only shows options for R16_UNorm and R16_SFloat, which matches the options shown in the NoiseEditor Window.
+- Height of Stamp tool when using the shortcut (Control + Shift + Mouse Wheel) is now clamped to the same range of height that is used for the height stamp slider in the Stamp tools settings
+- Fixed an error that appeared when render pipeline was selected, but Terrain Toolbox preview material had been disposed.
+
 ## [5.1.2] - 2024-01-26
 ### Changed:
 - Updated version to 5.1.2
@@ -10,7 +35,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 ### Fixed:
 - Removed unecessary .meta file
 - Fixed warnings about deprecated APIs.
-- Fix issue where IsPowerOfTwo returns true for negative ints
+- Fixed an issue where IsPowerOfTwo returns true for negative ints
 - Test for IsPowerOfTwo is updated to check up to 2^30 and includes negative cases
 
 ## [5.1.1] - 2023-10-23
@@ -22,10 +47,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 - Documentation updates for filterstacks, creating custom tools, brush controls, and brush mask filters
 - Reverted some breaking API changes to OnInspector and OnToolSettings
 
-## Added:
+### Added:
 - HasBrushAttribute properties in example code
 
-## Fixed:
+### Fixed:
 - Memory leak on CondensedSlider
 
 ## [5.1.0-pre.2] - 2023-02-14

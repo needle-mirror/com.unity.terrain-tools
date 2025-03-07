@@ -4,7 +4,7 @@ using UnityEngine;
 namespace UnityEditor.TerrainTools
 {
     [TestFixture]
-    public class ToolboxUtilitiesSplatmapTests
+    internal class ToolboxUtilitiesSplatmapTests
     {
         [Test]
         public void SplatmapsAreCopiedOnImport()

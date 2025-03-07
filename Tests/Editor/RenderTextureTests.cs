@@ -8,7 +8,7 @@ using UnityEngine.TestTools;
 namespace UnityEditor.TerrainTools
 {
     [InitializeOnLoad]
-    public class RenderTextureTestOnload
+    internal class RenderTextureTestOnload
     {
         static RenderTextureTestOnload()
         {
@@ -22,7 +22,7 @@ namespace UnityEditor.TerrainTools
 
 
     [TestFixture(Category = "RTUtils")]
-    public class RenderTextureTests
+    internal class RenderTextureTests
     {
         internal static GraphicsFormat testFormat =>
 #pragma warning disable 0618

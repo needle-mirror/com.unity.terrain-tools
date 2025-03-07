@@ -7,7 +7,7 @@ using UObject = UnityEngine.Object;
 namespace UnityEditor.TerrainTools
 {
     [TestFixture(Category = "Filters")]
-    public class FilterTests : BaseTests
+    internal class FilterTests : BaseTests
     {
         private FilterContext m_Context;
         private FilterStack m_Stack;

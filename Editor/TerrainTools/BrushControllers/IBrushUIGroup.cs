@@ -133,6 +133,11 @@ namespace UnityEditor.TerrainTools
         /// Checks if the brush is in use.
         /// </summary>
         bool isInUse { get; }
+        
+        /// <summary>
+        /// Whether the brush is currently using the smooth shortcut.
+        /// </summary>
+        bool isSmoothing { get; }
 
         /// <summary>
         /// Gets the brush mask's Filter stack view.

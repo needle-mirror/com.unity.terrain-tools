@@ -351,7 +351,8 @@ namespace UnityEditor.TerrainTools
             // test load up the terrain paint height brush
             var stampTool = StampToolOvl.instance;
             stampTool.ChangeCommonUI(defaultBrushUiGroupMock);
-            stampTool.SetStampHeight(stampHeight);
+            stampTool.SetStampHeight_TESTSONLY(terrainObj, stampHeight);
+            stampTool.SetStampMode_TESTSONLY(StampToolOvl.StampToolMode.Brush);
             defaultBrushUiGroupMock.SetTerrain(terrainObj);
             
             RunPainting(recordingFilePath, stampTool);

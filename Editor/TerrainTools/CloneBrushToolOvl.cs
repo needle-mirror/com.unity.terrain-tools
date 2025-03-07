@@ -212,13 +212,11 @@ namespace UnityEditor.TerrainTools
             // Only render preview if this is a repaint. losing performance if we do
             if (Event.current.type == EventType.Repaint)
             {
-                DrawBrushPreviews(terrain, editContext);
+                DrawBrushPreviews(m_commonUI.terrainUnderCursor, editContext);
             }
             
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
-
-            
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
@@ -303,7 +301,7 @@ namespace UnityEditor.TerrainTools
                     m_SampleLocation.Set(m_SnapbackLocation.terrain, m_SnapbackLocation.pos);
                 }
             }
-            else if (!m_wasPainting && m_isPainting) // first frame of user painting
+            else if (!m_commonUI.isSmoothing && !m_wasPainting && m_isPainting) // first frame of user painting
             {
                 m_HasDoneFirstPaint = true;
                 // check if the user just started painting. do this so a delta pos
@@ -312,10 +310,10 @@ namespace UnityEditor.TerrainTools
             }
 
             bool updateClone = (m_isPainting && cloneToolProperties.m_MovementBehavior != MovementBehavior.Fixed) ||
-                                (m_isPainting && cloneToolProperties.m_MovementBehavior == MovementBehavior.FollowOnPaint) ||
-                                (m_HasDoneFirstPaint && cloneToolProperties.m_MovementBehavior == MovementBehavior.FollowAlways);
+                               (m_isPainting && cloneToolProperties.m_MovementBehavior == MovementBehavior.FollowOnPaint) ||
+                               (m_HasDoneFirstPaint && cloneToolProperties.m_MovementBehavior == MovementBehavior.FollowAlways);
 
-            if (updateClone)
+            if (m_HasDoneFirstPaint || !m_commonUI.isSmoothing && updateClone)
             {
                 HandleBrushCrossingSeams(ref m_SampleLocation, editContext.raycastHit.point, m_PrevBrushLocation.pos);
             }
@@ -353,7 +351,7 @@ namespace UnityEditor.TerrainTools
             BrushTransform sampleXform;
             PaintContext sampleContext = null;
             // draw sample location brush and create context data to be used when drawing target brush previews
-            if (m_SampleLocation.terrain != null)
+            if (!m_commonUI.isSmoothing && m_SampleLocation.terrain != null)
             {
                 Material previewMat = Utility.GetDefaultPreviewMaterial();
                 sampleUV = TerrainUVFromBrushLocation(m_SampleLocation.terrain, m_SampleLocation.pos);

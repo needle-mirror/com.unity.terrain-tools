@@ -7,7 +7,7 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 [TestFixture]
-public class BrushRotationVariatorTests
+internal class BrushRotationVariatorTests
 {
     private class BrushEventHandler : IBrushEventHandler
     {

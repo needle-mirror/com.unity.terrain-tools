@@ -16,6 +16,7 @@
             #include "UnityCG.cginc"
             #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
 
+            #define kMaxHeight          (32766.0f/65535.0f)
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
@@ -73,7 +74,7 @@
                     float2 pos = TransformPosition( i.pcUV );
                     float n = noise_FbmPerlin( pos, GetDefaultFbmFractalInput() );
 
-                    return PackHeightmap( n );
+                    return PackHeightmap( clamp(n, 0, kMaxHeight) );
                 }
 
                 ENDHLSL

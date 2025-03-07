@@ -2,7 +2,7 @@
 using UnityEngine;
 
 [TestFixture]
-public class TerrainFloatMinMaxValueTests
+internal class TerrainFloatMinMaxValueTests
 {
     private TerrainFloatMinMaxValue m_minMaxFloat;
 

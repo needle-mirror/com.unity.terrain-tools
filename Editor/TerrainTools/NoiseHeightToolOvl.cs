@@ -457,14 +457,14 @@ namespace UnityEditor.TerrainTools
             // terrain.ApplyDelayedHeightmapModification();
         }
 
-        private void ApplyBrushInternal(Terrain terrain, PaintContext ctx, BrushTransform brushXform, Vector3 brushPosWS,
+        private void ApplyBrushInternal(PaintContext ctx, BrushTransform brushXform, Vector3 brushPosWS,
                                         float brushRotation, float brushStrength, float brushSize, Texture brushTexture)
         {
             var prevRT = RenderTexture.active;
 
-            var brushPositionOffset = brushPosWS - m_lastBrushPosition;
+            var brushPosDelta = brushPosWS - m_lastBrushPosition;
             m_lastBrushPosition = brushPosWS;
-            brushPositionOffset.y = 0;
+            brushPosDelta.y = 0;
 
             var rotationDelta = brushRotation - m_lastRotation;
             m_lastRotation = brushRotation;
@@ -487,7 +487,7 @@ namespace UnityEditor.TerrainTools
             // change pos and scale so they match the noiseSettings preview
             bool isWorldSpace = (m_toolSettings.coordSpace == CoordinateSpace.World);
             brushSize = isWorldSpace ? brushSize * previewSize : 1;
-            brushPositionOffset = isWorldSpace ? brushPositionOffset * previewSize : Vector3.zero;
+            brushPosDelta = isWorldSpace ? brushPosDelta * previewSize : Vector3.zero;
             var brushTransform = NoiseFilter.GetBrushTransform(rotationDelta, brushSize);
             var scaleMultiplier = new Vector2(
                 1.0f / (brushSize / brushTransform.GetBrushXYBounds().width),
@@ -496,7 +496,7 @@ namespace UnityEditor.TerrainTools
             // // override noise transform
             Quaternion rotQ = Quaternion.AngleAxis(-rotationDelta, Vector3.up);
             // accumulate transformation delta
-            m_noiseToWorld *= Matrix4x4.TRS(brushPositionOffset, rotQ, Vector3.one);
+            m_noiseToWorld *= Matrix4x4.TRS(brushPosDelta, rotQ, Vector3.one);
 
             matNoise.SetMatrix(NoiseSettings.ShaderStrings.transform, noiseSettings.trs * m_noiseToWorld * Matrix4x4.Scale(new Vector3(scaleMultiplier.x, 1.0f, scaleMultiplier.y) * brushSize));
 
@@ -565,7 +565,7 @@ namespace UnityEditor.TerrainTools
                     TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
                         editContext.brushTexture, brushXform, previewMaterial, 0);
                     
-                    ApplyBrushInternal(terrain, ctx, brushXform, brushPosWS, commonUI.brushRotation,
+                    ApplyBrushInternal(ctx, brushXform, brushPosWS, commonUI.brushRotation,
                                         brushStrength, brushSize, editContext.brushTexture);
                     TerrainPaintUtility.SetupTerrainToolMaterialProperties(ctx, brushXform, previewMaterial);
 
@@ -614,7 +614,7 @@ namespace UnityEditor.TerrainTools
 
                     Vector3 brushPosWS = WSPosFromTerrainUV(terrain, uv);
 
-                    ApplyBrushInternal(terrain, paintContext, brushXform, brushPosWS, commonUI.brushRotation,
+                    ApplyBrushInternal(paintContext, brushXform, brushPosWS, commonUI.brushRotation,
                                         brushStrength, commonUI.brushSize, editContext.brushTexture);
 
                     TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Noise");

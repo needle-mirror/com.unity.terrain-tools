@@ -5,7 +5,7 @@ using UnityEngine;
 namespace UnityEditor.TerrainTools
 {
     [TestFixture]
-    public class ToolboxHelperTests
+    internal class ToolboxHelperTests
     {
         [Test]
         public void FlipTexture()

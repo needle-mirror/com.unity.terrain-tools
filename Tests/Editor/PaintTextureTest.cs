@@ -5,7 +5,7 @@ using UnityEngine.TerrainTools;
 namespace UnityEditor.TerrainTools
 {
     [TestFixture]
-    public class PaintTextureTest
+    internal class PaintTextureTest
     {
         /// <summary>
         /// 

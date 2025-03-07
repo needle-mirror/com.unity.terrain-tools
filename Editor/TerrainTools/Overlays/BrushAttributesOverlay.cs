@@ -562,32 +562,32 @@ namespace UnityEditor.TerrainTools.UI
             var sizeJitterTextField = new FloatField();
             sizeJitterContainer.Add(sizeJitterTextField);
 
-            sizeMinField.RegisterValueChangedCallback(e =>
+            sizeMinField.RegisterCallback<FocusOutEvent>(e =>
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
                 if (commonUI == null) return;
-                commonUI.brushSizeMin = e.newValue;
+                commonUI.brushSizeMin = sizeMinField.value;
                 if (commonUI.brushSizeMin > commonUI.brushSizeMax)
                 {
-                    commonUI.brushSizeMax = e.newValue;
-                    sizeMaxField.value = e.newValue;
-                    SetHighValueWithoutNotify(e.newValue);
+                    commonUI.brushSizeMax = sizeMinField.value;
+                    sizeMaxField.value = sizeMinField.value;
+                    SetHighValueWithoutNotify(sizeMinField.value);
                 }
-                SetLowValueWithoutNotify(e.newValue);
+                SetLowValueWithoutNotify(sizeMinField.value);
             });
             
-            sizeMaxField.RegisterValueChangedCallback(e =>
+            sizeMaxField.RegisterCallback<FocusOutEvent>(e =>
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
                 if (commonUI == null) return;
-                commonUI.brushSizeMax = e.newValue; 
+                commonUI.brushSizeMax = sizeMaxField.value; 
                 if (commonUI.brushSizeMax < commonUI.brushSizeMin)
                 {
-                    commonUI.brushSizeMax = e.newValue;
-                    sizeMinField.value = e.newValue; 
-                    SetLowValueWithoutNotify(e.newValue);
+                    commonUI.brushSizeMax = sizeMaxField.value;
+                    sizeMinField.value = sizeMaxField.value; 
+                    SetLowValueWithoutNotify(sizeMaxField.value);
                 }
-                SetHighValueWithoutNotify(e.newValue);
+                SetHighValueWithoutNotify(sizeMaxField.value);
             });
             
             jitter.RegisterValueChangedCallback(e =>

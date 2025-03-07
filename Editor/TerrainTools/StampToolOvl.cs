@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.TerrainTools;
 using UnityEditor.ShortcutManagement;
@@ -35,8 +36,8 @@ namespace UnityEditor.TerrainTools
         static class Styles
         {
             public static readonly GUIContent controls = EditorGUIUtility.TrTextContent("Stamp Tool Controls");
-            public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to stamp the brush onto the terrain.\n\nHold control and mousewheel to adjust height.");
-            public static readonly GUIContent height = EditorGUIUtility.TrTextContent("Stamp Height", "You can set the Stamp Height manually or you can hold control and mouse wheel on the terrain to adjust it.");
+            public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to stamp the brush onto the terrain.\n\nHold control and shift while using the mousewheel to adjust height.");
+            public static readonly GUIContent height = EditorGUIUtility.TrTextContent("Stamp Height", "You can set the Stamp Height manually or you can hold control and shift while using mouse wheel on the terrain to adjust it.");
             public static readonly GUIContent blendAmount = EditorGUIUtility.TrTextContent("Blend Amount", "Blends between replacing and offsetting the existing heights under the stamp.");
             public static readonly GUIContent stampToolBehavior = EditorGUIUtility.TrTextContent("Behavior", "Stamping behavior.");
             public static readonly GUIContent minBehavior = EditorGUIUtility.TrTextContent("Min", "Stamp where the terrain's height is greater than the input height.");
@@ -227,16 +228,25 @@ namespace UnityEditor.TerrainTools
         public override bool HasBrushMask => true;
         public override bool HasBrushAttributes => true;
 
-        internal void SetStampHeight(float height)
+        // internal for tests
+        internal void SetStampHeight_TESTSONLY(Terrain terrain, float height)
         {
-            s_StampToolProperties.SetDefaults();
-            s_StampToolProperties.stampHeight = height;
+            SetStampHeight(terrain, height);
+        }
+
+        internal void SetStampMode_TESTSONLY(StampToolMode mode)
+        {
+            s_StampToolProperties.mode = mode;
+        }
+        
+        void SetStampHeight(Terrain terrain, float height)
+        {
+            s_StampToolProperties.stampHeight = Mathf.Clamp(height, -terrain.terrainData.size.y, terrain.terrainData.size.y);
         }
 
         private void ApplyBrushInternal(IPaintContextRender renderer, PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform, Terrain terrain)
         {
             Material mat = GetMaterial();
-
             float HeightUnderCursor = terrain.SampleHeight(commonUI.raycastHitUnderCursor.point)  / (terrain.terrainData.size.y * 2.0f);
             float height = s_StampToolProperties.stampHeight * brushStrength / (terrain.terrainData.size.y * 2f);
             Vector4 brushParams = new Vector4((int) s_StampToolProperties.behavior, HeightUnderCursor, height, s_StampToolProperties.blendAmount);
@@ -313,6 +323,7 @@ namespace UnityEditor.TerrainTools
             commonUI.OnPaint(terrain, editContext);
 
             // ignore mouse drags
+            if (commonUI.isSmoothing) return true;
             if (commonUI.allowPaint && Event.current == null || Event.current.type != EventType.MouseDrag)
             {
                 Texture brushTexture = editContext.brushTexture;
@@ -323,7 +334,12 @@ namespace UnityEditor.TerrainTools
                     {
                         PaintContext paintContext = brushRender.AcquireHeightmap(true, brushXform.GetBrushXYBounds());
 
-                        ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, brushTexture, brushXform, terrain);
+                        var brushStrength = commonUI.brushStrength;
+                        if (Event.current != null && Event.current.control && !Event.current.shift)
+                        {
+                            brushStrength = -commonUI.brushStrength;
+                        }
+                        ApplyBrushInternal(brushRender, paintContext, brushStrength, brushTexture, brushXform, terrain);
                     }
                 }
             }
@@ -362,16 +378,16 @@ namespace UnityEditor.TerrainTools
                 return;
             }
 
-            Event evt = Event.current;
-            if (evt.control && (evt.type == EventType.ScrollWheel))
+            var evt = Event.current;
+            if (evt.control && evt.shift && (evt.type == EventType.ScrollWheel))
             {
                 const float k_mouseWheelToHeightRatio = -0.004f;
-                s_StampToolProperties.stampHeight += Event.current.delta.y * k_mouseWheelToHeightRatio * editContext.raycastHit.distance;
+                SetStampHeight(terrain, s_StampToolProperties.stampHeight + Event.current.delta.y * k_mouseWheelToHeightRatio * editContext.raycastHit.distance);
                 evt.Use();
                 editContext.Repaint();
                 SaveSettings();
             }
-
+            
             // We're only doing painting operations, early out if it's not a repaint
             if (evt.type == EventType.Repaint && commonUI.isRaycastHitUnderCursorValid)
             {
@@ -393,7 +409,8 @@ namespace UnityEditor.TerrainTools
 
                         // draw result preview
                         {
-                            ApplyBrushInternal(brushRender, paintContext, commonUI.brushStrength, brushTexture, brushXform, terrain);
+                            var brushStrength = evt.control && !evt.shift ? -commonUI.brushStrength : commonUI.brushStrength;
+                            ApplyBrushInternal(brushRender, paintContext, brushStrength, brushTexture, brushXform, terrain);
 
                             // restore old render target
                             RenderTexture.active = paintContext.oldRenderTexture;
@@ -412,7 +429,6 @@ namespace UnityEditor.TerrainTools
             
             commonUI.OnSceneGUI(terrain, editContext);
             
-
             if (s_EditTransform && s_StampToolProperties.mode == StampToolMode.Mesh)
             {
                 EditorGUI.BeginChangeCheck();

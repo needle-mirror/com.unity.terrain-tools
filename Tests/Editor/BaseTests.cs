@@ -2,7 +2,8 @@
 
 namespace UnityEditor.TerrainTools
 {
-    public class BaseTests
+    [TestFixture]
+    internal class BaseTests
     {
         // private ulong m_PrevTextureMemory; // TODO
         private int m_PrevRTHandlesCount;

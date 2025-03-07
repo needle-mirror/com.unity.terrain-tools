@@ -11,6 +11,8 @@ Shader "Hidden/TerrainTools/NoiseHeightTool"
         #include "UnityCG.cginc"
         #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
 
+        #define kMaxHeight          (32766.0f/65535.0f)
+        
         sampler2D _MainTex;
         float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
@@ -83,7 +85,7 @@ Shader "Hidden/TerrainTools/NoiseHeightTool"
                 
                 // TODO(wyatt): remap noise values to match _WorldHeightRemap
 
-                return PackHeightmap( clamp( h + BRUSH_STRENGTH * b * n, 0, 0.5 ) );
+                return PackHeightmap( clamp( h + BRUSH_STRENGTH * b * n, 0, kMaxHeight ) );
             }
 
             ENDHLSL

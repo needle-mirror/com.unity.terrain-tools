@@ -821,7 +821,10 @@ namespace UnityEditor.TerrainTools
 
                         if(s_generatedMaterialMap[pair.Key][fractal.GetType()] == null)
                         {
-                            s_generatedMaterialMap[pair.Key][fractal.GetType()] = new Material(s);
+                            s_generatedMaterialMap[pair.Key][fractal.GetType()] = new Material(s)
+                            {
+                                hideFlags = HideFlags.HideAndDontSave
+                            };
                         }
                     }
                 }
@@ -850,7 +853,10 @@ namespace UnityEditor.TerrainTools
                     }
 
                     s_generatedShaderMap[pair.Key].Add(fractal.GetType(), s);
-                    s_generatedMaterialMap[pair.Key].Add(fractal.GetType(), new Material(s));
+                    s_generatedMaterialMap[pair.Key].Add(fractal.GetType(), new Material(s)
+                    {
+                        hideFlags = HideFlags.HideAndDontSave
+                    });
                 }
             }
         }

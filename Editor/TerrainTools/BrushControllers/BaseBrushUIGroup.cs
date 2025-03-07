@@ -441,7 +441,11 @@ namespace UnityEditor.TerrainTools
             set { m_BrushScatterController.brushScatter = value; }
         }
 
-        private bool isSmoothing
+        /// <summary>
+        /// Whether the shortcut for smoothing is currently active
+        /// </summary>
+        public bool isSmoothing
+
         {
             get
             {
@@ -1007,10 +1011,9 @@ namespace UnityEditor.TerrainTools
             {
                 get
                 {
-                    var currTool = BrushesOverlay.ActiveTerrainTool as TerrainPaintToolWithOverlaysBase;
-                    if (currTool == null)
-                        return false;
-                    return currTool.HasBrushAttributes && BrushesOverlay.IsSelectedObjectTerrain();
+                    if (!BrushesOverlay.IsSelectedObjectTerrain()) return false;
+                    var tool = BrushesOverlay.ActiveTerrainTool;
+                    return tool is not TerrainPaintToolWithOverlaysBase;
                 }
             }
 
@@ -1070,10 +1073,11 @@ namespace UnityEditor.TerrainTools
 
             brushMaskFilterStackView.OnSceneGUI(editContext.sceneView);
 
-            if( editContext.hitValidTerrain && Event.current.keyCode == KeyCode.F && Event.current.type != EventType.Layout )
+            var evt = Event.current;
+            if(editContext.hitValidTerrain && evt.keyCode == KeyCode.F && evt.type is EventType.KeyDown or EventType.KeyUp)
             {
                 SceneView.currentDrawingSceneView.Frame( new Bounds() { center = raycastHitUnderCursor.point, size = new Vector3( brushSize, 1, brushSize ) }, false );
-                Event.current.Use();
+                evt.Use();
             }
             
             filterContext.ReleaseRTHandles();
