@@ -149,14 +149,14 @@ namespace UnityEditor.TerrainTools
 
         public override string GetName()
         {
-            return k_toolName; 
+            return k_toolName;
         }
 
         public override string GetDescription()
         {
-            return Styles.description.text; 
+            return Styles.description.text;
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -474,7 +474,7 @@ namespace UnityEditor.TerrainTools
             }
             EditorGUILayout.EndHorizontal();
 
-            // Reorderable list view	            
+            // Reorderable list view
             EditorGUILayout.BeginVertical("Box");
             if (m_LayerList == null)
             {
@@ -488,7 +488,7 @@ namespace UnityEditor.TerrainTools
 
             if (!terrain.terrainData.terrainLayers.Equals(m_PaletteLayers))
             {
-                RemoveEmptyLayers(terrain); 
+                RemoveEmptyLayers(terrain);
                 UpdateLayerPalette(terrain);
                 m_SelectedTerrain = terrain;
             }
@@ -778,7 +778,7 @@ namespace UnityEditor.TerrainTools
         {
             return m_PaletteLayers.Count < m_MaxLayerCount;
         }
-        
+
         void RemoveEmptyLayers(Terrain terrain)
         {
             List<TerrainLayer> nonNullLayers = new List<TerrainLayer>();

@@ -166,14 +166,14 @@ namespace UnityEditor.TerrainTools
             ShowOptionsGUI();
 
             --EditorGUI.indentLevel;
-            // Create			
+            // Create
             m_HeightmapInputValid = RunCreateValidations();
 
             if(!m_HeightmapInputValid)
             {
                 EditorGUILayout.HelpBox("Fix the warnings above before creating a new terrain.", MessageType.Warning);
             }
-            
+
             EditorGUILayout.BeginHorizontal();
             EditorGUI.BeginDisabledGroup(!m_HeightmapInputValid);
             if (GUILayout.Button(Styles.CreateBtn, GUILayout.Height(40)))
@@ -268,7 +268,7 @@ namespace UnityEditor.TerrainTools
             {
                 if (m_Settings.HeightmapMode == Heightmap.Mode.Global)
                 {
-                    if ((!m_Settings.UseRawFile && m_HeightmapGlobal == null) || 
+                    if ((!m_Settings.UseRawFile && m_HeightmapGlobal == null) ||
                         (m_Settings.UseRawFile && !File.Exists(m_Settings.GlobalHeightmapPath)))
                     {
                         m_HeightmapWarningMessage = "Missing heightmap texture.";
@@ -343,7 +343,7 @@ namespace UnityEditor.TerrainTools
             EditorGUILayout.Space();
             ++EditorGUI.indentLevel;
             // Terrain Sizing
-            EditorGUI.BeginChangeCheck(); 
+            EditorGUI.BeginChangeCheck();
             m_Settings.TerrainWidth = Mathf.Clamp(EditorGUILayout.FloatField(Styles.TerrainWidth, m_Settings.TerrainWidth), kMinTerrainSize, kMaxTerrainSize);
             m_Settings.TerrainLength = Mathf.Clamp(EditorGUILayout.FloatField(Styles.TerrainLength, m_Settings.TerrainLength), kMinTerrainSize, kMaxTerrainSize);
             m_Settings.TerrainHeight = Mathf.Clamp(EditorGUILayout.FloatField(Styles.TerrainHeight, m_Settings.TerrainHeight), kMinTerrainSize, kMaxTerrainHeight);
@@ -396,10 +396,10 @@ namespace UnityEditor.TerrainTools
         void ShowImportHeightmapGUI()
         {
             // Heightmap Mode
-            bool modeChanged = false; 
+            bool modeChanged = false;
             if (EditorGUIUtility.currentViewWidth < 310)
             {
-                // if the window is small enough, compress the buttons so we can still see them 
+                // if the window is small enough, compress the buttons so we can still see them
                 EditorGUILayout.LabelField(Styles.HeightmapMode);
                 modeChanged = ToggleHeightmapMode();
             }
@@ -410,9 +410,9 @@ namespace UnityEditor.TerrainTools
                 modeChanged = ToggleHeightmapMode();
                 EditorGUILayout.EndHorizontal();
             }
-            
 
-            // Heightmap selector			
+
+            // Heightmap selector
             if (m_Settings.HeightmapMode == Heightmap.Mode.Global)
             {
                 m_Settings.UseRawFile = EditorGUILayout.Toggle(Styles.HeightmapFormatUseRaw, m_Settings.UseRawFile);

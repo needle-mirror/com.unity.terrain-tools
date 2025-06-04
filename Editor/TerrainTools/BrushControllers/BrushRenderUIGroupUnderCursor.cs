@@ -126,7 +126,7 @@ namespace UnityEditor.TerrainTools
             float brushSize = uiGroup.brushSize;
             float brushRotation = uiGroup.brushRotation;
 
-            // TODO: Remove this method and replace the preview with a radius effect and scatter at the correct position...            
+            // TODO: Remove this method and replace the preview with a radius effect and scatter at the correct position...
             brushTransform = TerrainPaintUtility.CalculateBrushTransform(terrain, uv, brushSize, brushRotation);
             return true;
         }

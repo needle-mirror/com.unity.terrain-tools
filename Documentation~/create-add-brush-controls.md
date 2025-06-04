@@ -39,7 +39,7 @@ class CustomTerrainToolWithBrushUI : TerrainPaintToolWithOverlays<CustomTerrainT
     {
         return "This terrain tool shows how to add custom UI to a tool.";
     }
-    
+
     // Return true for this property to display the brush attributes overlay
     public override bool HasBrushAttributes => true;
 
@@ -62,6 +62,6 @@ class CustomTerrainToolWithBrushUI : TerrainPaintToolWithOverlays<CustomTerrainT
 }
 ```
 
-When you create UI for your tool, you can specify both the UI that can appear in the tool settings overlay and the UI that appears in the inspector. Most of the time, these are identical, so we recommend that you implement your UI in `OnToolSettingsGUI` and call it from `OnInspectorGUI`. 
+When you create UI for your tool, you can specify both the UI that can appear in the tool settings overlay and the UI that appears in the inspector. Most of the time, these are identical, so we recommend that you implement your UI in `OnToolSettingsGUI` and call it from `OnInspectorGUI`.
 
 **Note**: For the Tools Settings overlay to appear, you must override the `HasToolSettings` property to return true.

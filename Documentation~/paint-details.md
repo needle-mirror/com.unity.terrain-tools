@@ -1,6 +1,6 @@
 # Scatter Paint Details on the terrain
 
-Use the **Paint Details** tool to scatter Details onto your Terrain. A Detail represents an instance of an object that you place on top of the terrain (such as rocks, grass, and bushes). 
+Use the **Paint Details** tool to scatter Details onto your Terrain. A Detail represents an instance of an object that you place on top of the terrain (such as rocks, grass, and bushes).
 
 **Note:** This tool overrides the built-in [Paint Details](https://docs.unity3d.com/Manual/terrain-Grass.html) and adds newer features, such as simultaneously scattering multiple details, filter masking terrain layers, and target coverage distribution UI.
 
@@ -14,7 +14,7 @@ To select the Paint Details tool:
 
 Alternatively, select the terrain, and select the paint details icon on the terrain toolbar.
 
-![Paint Details Icon](images/Icons/PaintDetails.png) 
+![Paint Details Icon](images/Icons/PaintDetails.png)
 
 To configure the tool, add a new Detail to the Details Control. You can download preset details from the Asset Store, such as the free [Terrain Tools Sample Asset Pack](https://assetstore.unity.com/packages/2d/textures-materials/nature/terrain-tools-sample-asset-pack-145808).
 
@@ -40,9 +40,9 @@ To modify a Detail, do the following:
 1. Click **Edit**.
 
  Alternatively, you can do the following:
- 
+
  1. Go to the List view.
- 1. Click the Detail's menu. 
+ 1. Click the Detail's menu.
  1. Click the dropdown menu to the left of the **Target Coverage** slider to expand the Detail.
 
 ## Remove Details
@@ -53,7 +53,7 @@ To remove a Detail, do the following:
 1. Click **Remove**.
 
  Alternatively, you can do the following:
- 
+
  1. Go to the List view.
  1. Select the Detail.
  1. Click **Add (-)**.
@@ -80,13 +80,13 @@ To paint, do the following:
 1. Click on the Detail's thumbnail to select it for painting.
 1. Click and drag to paint the Details.
 
-Select multiple Details to scatter them simultaneously. 
+Select multiple Details to scatter them simultaneously.
 
 ![Select multiple details](images/Paint_Details_05.png)
 
 You can use the **Target Density Distribution** slider to gauge the distribution of selected Details' target density. You can also use the slider to adjust the **Target Density** from within the **Grid** view.
 
-To modify a Detail's **Target Density**, click and drag the Detail's slider. 
+To modify a Detail's **Target Density**, click and drag the Detail's slider.
 
 ![Details density distribution slider](images/Paint_Details_06.png)
 

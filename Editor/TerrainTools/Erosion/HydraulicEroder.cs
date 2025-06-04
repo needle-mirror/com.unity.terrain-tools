@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Collections.Generic;
 using UnityEngine.TerrainTools;
@@ -162,7 +162,7 @@ namespace UnityEditor.TerrainTools.Erosion
                         m_ErosionSettings.m_ThermalTimeDelta = EditorGUILayout.Slider(Erosion.Styles.m_ThermalDTScalar, m_ErosionSettings.m_ThermalTimeDelta, 0.0001f, 10.0f);
                         m_ErosionSettings.m_ThermalIterations = EditorGUILayout.IntSlider(Erosion.Styles.m_NumIterations, m_ErosionSettings.m_ThermalIterations, 0, 100);
                         m_ErosionSettings.m_ThermalReposeAngle = EditorGUILayout.IntSlider(Erosion.Styles.m_AngleOfRepose, m_ErosionSettings.m_ThermalReposeAngle, 0, 90);
-                        EditorGUI.indentLevel--; 
+                        EditorGUI.indentLevel--;
                     }
 
                     m_ShowWaterUI = TerrainToolGUIHelper.DrawSimpleFoldout(new GUIContent("Water Transport"), m_ShowWaterUI, 1);
@@ -190,7 +190,7 @@ namespace UnityEditor.TerrainTools.Erosion
                         m_ErosionSettings.m_RiverBedDissolveRate.DrawInspectorGUI();
                     }
 
-                    EditorGUI.indentLevel--; 
+                    EditorGUI.indentLevel--;
                 }
 
                 EditorGUILayout.EndVertical();

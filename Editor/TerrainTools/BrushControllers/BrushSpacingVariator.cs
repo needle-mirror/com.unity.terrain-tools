@@ -16,7 +16,7 @@ namespace UnityEditor.TerrainTools
         private Vector3 m_LastBrushPos;
 
         private float m_defaultBrushSpacing;
-        
+
         public float brushSpacing {
             get { return m_BrushSpacing; }
             set
@@ -74,9 +74,9 @@ namespace UnityEditor.TerrainTools
 
         }
 
-        // for updating condensed slider overlays 
+        // for updating condensed slider overlays
         public static event Action BrushSpacingChanged;
-        private float prevBrushSpacing; 
+        private float prevBrushSpacing;
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             base.OnInspectorGUI(terrain, editContext);

@@ -10,7 +10,7 @@ Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspecto
 
 Alternatively, select the terrain, and select the noise icon on the terrain toolbar.
 
-![Noise icon](images/Icons/Noise.png) 
+![Noise icon](images/Icons/Noise.png)
 
 **Noise Height Tool Settings** are located at the bottom of the Noise Height Tool window.
 

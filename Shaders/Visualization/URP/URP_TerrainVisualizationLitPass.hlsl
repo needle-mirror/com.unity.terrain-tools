@@ -162,19 +162,19 @@ VertexOutput SplatmapVert(VertexInput v)
 half4 SplatmapFragment(VertexOutput IN) : SV_TARGET
 {
 #ifdef _HEATMAP
-	#ifdef LOCAL_SPACE
-		half height = UnpackHeightmap(SAMPLE_TEXTURE2D(_HeatHeightmap, sampler_HeatHeightmap, IN.uvMainAndLM.xy)) * 2;
-	#else
-		half height = ((IN.positionWS.y - _HeatmapData.z) - _HeatmapData.x) / (_HeatmapData.y - _HeatmapData.x);
-	#endif
-	half3 albedo = SAMPLE_TEXTURE2D(_HeatmapGradient, sampler_HeatmapGradient, height.xx).rgb;
-#elif _SPLATMAP_PREVIEW 
-	half3 albedo = SAMPLE_TEXTURE2D(_SplatmapTex, sampler_SplatmapTex, IN.uvMainAndLM.xy).rgb;
+    #ifdef LOCAL_SPACE
+        half height = UnpackHeightmap(SAMPLE_TEXTURE2D(_HeatHeightmap, sampler_HeatHeightmap, IN.uvMainAndLM.xy)) * 2;
+    #else
+        half height = ((IN.positionWS.y - _HeatmapData.z) - _HeatmapData.x) / (_HeatmapData.y - _HeatmapData.x);
+    #endif
+    half3 albedo = SAMPLE_TEXTURE2D(_HeatmapGradient, sampler_HeatmapGradient, height.xx).rgb;
+#elif _SPLATMAP_PREVIEW
+    half3 albedo = SAMPLE_TEXTURE2D(_SplatmapTex, sampler_SplatmapTex, IN.uvMainAndLM.xy).rgb;
 #else
-	half3 albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uvMainAndLM.xy).rgb;
+    half3 albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uvMainAndLM.xy).rgb;
 #endif
     InputData inputData;
-	half3 normalTS = half3(0.0h, 0.0h, 1.0h);
+    half3 normalTS = half3(0.0h, 0.0h, 1.0h);
     InitializeInputData(IN, normalTS, inputData);
 
     half4 color = UniversalFragmentPBR(inputData, albedo, 0, half3(0.0h, 0.0h, 0.0h), 0, /* occlusion */ 1.0, /* emission */ half3(0, 0, 0), 1);

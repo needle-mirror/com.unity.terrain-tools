@@ -14,7 +14,6 @@ namespace UnityEditor.TerrainTools
         /// </summary>
         /// <param name="terrain">The terrain to calculate the brush-transform for.</param>
         /// <param name="uv">The UV co-ordinate on that terrain.</param>
-        /// <returns>The brush-transform on the terrain at the specified UV co-ordinates.</returns>
         /// <param name="size">The size of the brush.</param>
         /// <param name="rotation">The rotation about the Y axis of the brush.</param>
         /// <param name="brushTransform">The brush-transform on the terrain at the specified UV co-ordinates.</param>
@@ -87,7 +86,7 @@ namespace UnityEditor.TerrainTools
 
         /// <summary>
         /// Releases the PaintContext specified, if this was made writable when
-        /// acquired then we write back into the texture at this point.
+        /// acquired, then we write back into the texture at this point.
         /// </summary>
         /// <param name="paintContext">The paint context to be released.</param>
         void Release(PaintContext paintContext);

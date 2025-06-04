@@ -34,7 +34,7 @@ namespace UnityEditor.TerrainTools
 #pragma warning restore 0618
             SystemInfo.graphicsDeviceType != GraphicsDeviceType.Vulkan &&
             SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES3
-            // return Terrain height format because values will be packed and unpacked on GPU using Terrain height functions    
+            // return Terrain height format because values will be packed and unpacked on GPU using Terrain height functions
             ? GraphicsFormat.R16_SFloat : Terrain.heightmapFormat;
 
 

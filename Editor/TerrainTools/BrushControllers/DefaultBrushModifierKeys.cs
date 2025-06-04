@@ -6,7 +6,7 @@ namespace UnityEditor.TerrainTools
     {
         public event Action<BrushModifierKey> OnModifierPressed;
         public event Action<BrushModifierKey> OnModifierReleased;
-        
+
         private static readonly BrushShortcutHandler<BrushModifierKey> s_ShortcutHandler = new BrushShortcutHandler<BrushModifierKey>();
 
         private void HandleModifier1Pressed()
@@ -48,7 +48,7 @@ namespace UnityEditor.TerrainTools
         {
             OnModifierReleased?.Invoke(BrushModifierKey.BRUSH_MOD_INVERT);
         }
-        
+
         public void OnEnterToolMode()
         {
             s_ShortcutHandler.AddActions(BrushModifierKey.BRUSH_MOD_1, HandleModifier1Pressed, HandleModifier1Released);

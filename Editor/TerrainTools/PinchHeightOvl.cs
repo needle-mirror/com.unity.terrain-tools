@@ -19,7 +19,7 @@ namespace UnityEditor.TerrainTools
         public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Pinch.png";
 
         private bool m_ShowControls = true;
-        
+
         IBrushUIGroup commonUI {
             get
             {
@@ -61,8 +61,8 @@ namespace UnityEditor.TerrainTools
         }
 
         public override string GetName()
-        { 
-            return "Transform/Pinch"; 
+        {
+            return "Transform/Pinch";
         }
 
         public override string GetDescription()
@@ -70,7 +70,7 @@ namespace UnityEditor.TerrainTools
             return "Pulls or pushes Terrain features and layers from the center of the Brush.\n\n" +
                    "Hold Ctrl + Click to push Terrain features and layers.";
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -98,7 +98,7 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
+
             // Only render preview if this is a repaint. losing performance if we do
             if (Event.current.type == EventType.Repaint)
             {
@@ -106,7 +106,7 @@ namespace UnityEditor.TerrainTools
 
                 using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PinchHeight", brushTexture))
                 {
-                    
+
                     if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
                         PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
@@ -144,7 +144,7 @@ namespace UnityEditor.TerrainTools
                     }
                 }
             }
-            
+
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
         }
@@ -185,7 +185,7 @@ namespace UnityEditor.TerrainTools
                 TerrainToolsAnalytics.OnParameterChange();
             }
         }
-        
+
 
         private void Reset()
         {

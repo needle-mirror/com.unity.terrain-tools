@@ -169,7 +169,7 @@ namespace UnityEditor.TerrainTools
                 if (foreground.width > 0)
                     Styles.m_SliderRange.Draw(foreground, GUIContent.none, false, false, false, false);
                 Styles.m_SliderText.Draw(distributionElement.m_RangePosition, startPercentageString, false, false, false, false);
-                GUI.Label(distributionElement.m_RangePosition, new GUIContent(String.Empty, startPercentageString)); 
+                GUI.Label(distributionElement.m_RangePosition, new GUIContent(String.Empty, startPercentageString));
             }
             else
             {

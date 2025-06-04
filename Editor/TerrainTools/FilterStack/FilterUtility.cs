@@ -104,7 +104,7 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        
+
         private static Material m_blendModesMaterial;
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace UnityEditor.TerrainTools
         /// Tells whether the Terrain Layer filter is active within the selected tool/brush
         /// </summary>
         private static bool s_isLayerFilterActive;
-        internal static bool LayerFilterActiveState { 
+        internal static bool LayerFilterActiveState {
             get { return s_isLayerFilterActive; }
             set { s_isLayerFilterActive = value; }
         }

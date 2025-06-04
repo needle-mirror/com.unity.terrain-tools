@@ -10,7 +10,7 @@ Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspecto
 
 Alternatively, select the terrain, and select the contrast icon on the terrain toolbar.
 
-![contrast icon](images/Icons/Contrast.png) 
+![contrast icon](images/Icons/Contrast.png)
 
 ## Parameters
 

@@ -15,12 +15,12 @@
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
             sampler2D _BrushTex;
-			sampler2D _FilterTex;
+            sampler2D _FilterTex;
 
             float4 _BrushParams;
             #define BRUSH_STRENGTH      (_BrushParams[0])
             #define BRUSH_FEATURESIZE   (_BrushParams[1])
-			#define BRUSH_BEVELINTERIOR (_BrushParams[2])
+            #define BRUSH_BEVELINTERIOR (_BrushParams[2])
             #define BRUSH_BEVELEXTERIOR (_BrushParams[3])
 
             struct appdata_t {
@@ -44,7 +44,7 @@
         ENDCG
 
 
-        Pass    
+        Pass
         {
             Name "Terrace Erosion"
 
@@ -63,16 +63,16 @@
                 float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
                 float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
 
-				float scaledHeight = height * BRUSH_FEATURESIZE;
-				float terracedHeight = round(scaledHeight);
-				float dh = scaledHeight - terracedHeight;
+                float scaledHeight = height * BRUSH_FEATURESIZE;
+                float terracedHeight = round(scaledHeight);
+                float dh = scaledHeight - terracedHeight;
 
-				if (dh > (1.0 - BRUSH_BEVELINTERIOR)) {
-					terracedHeight = scaledHeight;
-				}
+                if (dh > (1.0 - BRUSH_BEVELINTERIOR)) {
+                    terracedHeight = scaledHeight;
+                }
 
                 return PackHeightmap(lerp (height, terracedHeight / (BRUSH_FEATURESIZE), brushStrength));
-                
+
             }
             ENDCG
         }

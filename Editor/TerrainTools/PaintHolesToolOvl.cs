@@ -16,14 +16,14 @@ namespace UnityEditor.TerrainTools
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Paint Holes Tool");
         }
 
-        public override string OnIcon => "TerrainOverlays/Holes_On.png";
-        public override string OffIcon => "TerrainOverlays/Holes.png";
+        public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Holes_On.png";
+        public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Holes.png";
 
         public override bool HasBrushMask => true;
 
         public override bool HasBrushAttributes => true;
         public override bool HasBrushFilters => true;
-        
+
         IBrushUIGroup commonUI {
             get
             {
@@ -41,7 +41,7 @@ namespace UnityEditor.TerrainTools
                 return m_commonUI;
             }
         }
-        
+
         public override int IconIndex
         {
             get { return (int) SculptIndex.Holes; }
@@ -53,8 +53,8 @@ namespace UnityEditor.TerrainTools
         }
 
         public override string GetName()
-        { 
-            return "Paint Holes"; 
+        {
+            return "Paint Holes";
         }
 
         public override string GetDescription()
@@ -79,7 +79,7 @@ namespace UnityEditor.TerrainTools
         {
             commonUI.OnInspectorGUI(terrain, editContext);
         }
-        
+
 
         //Returns a negative value if ctrl is not held down (which will add holes), returns a positive value if ctrl is held down (which will remove holes)
         float GetBrushStrength()
@@ -98,7 +98,7 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
+
             // Only render preview if this is a repaint. losing performance if we do
             if (commonUI.isRaycastHitUnderCursorValid && Event.current.type == EventType.Repaint)
             {

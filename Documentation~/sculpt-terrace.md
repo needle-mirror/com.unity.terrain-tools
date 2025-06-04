@@ -10,7 +10,7 @@ To access the Terrace tool, select a Terrain tile to bring up the Terrain Inspec
 
 Alternatively, select the terrain, and select the terrace icon on the terrain toolbar.
 
-![Terrace icon](images/Icons/Terrace.png) 
+![Terrace icon](images/Icons/Terrace.png)
 
 ## Parameters
 

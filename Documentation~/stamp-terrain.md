@@ -13,9 +13,9 @@ To select the Stamp Terrain tool:
 
 Alternatively, select the terrain, and select the stamp terrain icon on the terrain toolbar.
 
-![Stamp terrain icon](images/Icons/Stamp.png) 
+![Stamp terrain icon](images/Icons/Stamp.png)
 
-Select the **Stamp Terrain** tool, set the **Stamp Mode**, and then click on the Terrain. When you click an area with the **Stamp Terrain** tool, it applies the shape of the selected Brush Mask or mesh to the Terrain's heightmap. 
+Select the **Stamp Terrain** tool, set the **Stamp Mode**, and then click on the Terrain. When you click an area with the **Stamp Terrain** tool, it applies the shape of the selected Brush Mask or mesh to the Terrain's heightmap.
 
 ![The stamp terrain tool in use](images/2-70-stamp-terrain-02.png)
 

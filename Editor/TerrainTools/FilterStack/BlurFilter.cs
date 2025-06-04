@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace UnityEditor.TerrainTools
 {
@@ -6,14 +6,14 @@ namespace UnityEditor.TerrainTools
     {
         private static readonly GUIContent s_BlurAmount = EditorGUIUtility.TrTextContent("Amount", "The amount of blurring to apply to the texture");
         private static readonly GUIContent s_BlurDirection = EditorGUIUtility.TrTextContent("Direction", "The direction in which the blur will be applied. Blur only up (1.0), only down (-1.0) or both (0.0)");
-        
+
         private Material m_Material;
         private Material Material
         {
             get
             {
                 if (m_Material != null) return m_Material;
-                
+
                 m_Material = new Material(Shader.Find("Hidden/TerrainTools/Blur"));
                 return m_Material;
             }
@@ -35,7 +35,7 @@ namespace UnityEditor.TerrainTools
                 0);
             mat.SetVector("_SmoothWeights", smoothWeights);
             mat.SetInt("_KernelSize", Mathf.Max(1, m_Amount));  // kernel size
-            
+
             // Two pass blur (first horizontal, then vertical)
             var tmpRT = RTUtils.GetTempHandle(dest.descriptor);
             tmpRT.RT.wrapMode = TextureWrapMode.Clamp;

@@ -146,9 +146,9 @@ namespace UnityEditor.TerrainTools
         RTHandleCollection m_RtCollection;
         Vector3 m_BaseHandlePos;
 
-        public override string OnIcon => "TerrainOverlays/Stamp_On.png";
-        public override string OffIcon => "TerrainOverlays/Stamp.png";
-        
+        public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Stamp_On.png";
+        public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Stamp.png";
+
         IBrushUIGroup commonUI {
             get
             {
@@ -212,7 +212,7 @@ namespace UnityEditor.TerrainTools
         public override string GetName()
         {
             return "Stamp Terrain";
-            
+
         }
 
         public override string GetDescription()
@@ -222,7 +222,7 @@ namespace UnityEditor.TerrainTools
                    "Hold Ctrl + Click to subtract the mesh.\n" +
                    "Hold C to rotate, scale, or set a height offset of the mesh using an interactive gizmo.";
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -238,7 +238,7 @@ namespace UnityEditor.TerrainTools
         {
             s_StampToolProperties.mode = mode;
         }
-        
+
         void SetStampHeight(Terrain terrain, float height)
         {
             s_StampToolProperties.stampHeight = Mathf.Clamp(height, -terrain.terrainData.size.y, terrain.terrainData.size.y);
@@ -254,7 +254,7 @@ namespace UnityEditor.TerrainTools
 
             var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
             Utility.GenerateAndSetFilterRT(commonUI, paintContext.sourceRenderTexture, brushMask, mat);
-            
+
             if (s_StampToolProperties.mode == StampToolMode.Mesh)
             {
                 Init();
@@ -355,7 +355,7 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
+
             bool justPressedEditKey = s_EditTransform && !s_PrevEditTransform;
             bool justReleaseEditKey = s_PrevEditTransform && !s_EditTransform;
             s_PrevEditTransform = s_EditTransform;
@@ -387,7 +387,7 @@ namespace UnityEditor.TerrainTools
                 editContext.Repaint();
                 SaveSettings();
             }
-            
+
             // We're only doing painting operations, early out if it's not a repaint
             if (evt.type == EventType.Repaint && commonUI.isRaycastHitUnderCursorValid)
             {
@@ -422,13 +422,13 @@ namespace UnityEditor.TerrainTools
                         m_RtCollection.ReleaseRTHandles();
                         texelCtx.Cleanup();
                         RTUtils.Release(filterRT);
-                        brushRender.Release(paintContext); 
+                        brushRender.Release(paintContext);
                     }
                 }
             }
-            
+
             commonUI.OnSceneGUI(terrain, editContext);
-            
+
             if (s_EditTransform && s_StampToolProperties.mode == StampToolMode.Mesh)
             {
                 EditorGUI.BeginChangeCheck();
@@ -512,7 +512,7 @@ namespace UnityEditor.TerrainTools
 
                     s_StampToolProperties.stampHeight = EditorGUILayout.Slider(Styles.height, s_StampToolProperties.stampHeight, -terrain.terrainData.size.y, terrain.terrainData.size.y);
                     s_StampToolProperties.blendAmount = EditorGUILayout.Slider(Styles.blendAmount, s_StampToolProperties.blendAmount, 0.0f, 1.0f);
-                    
+
                     s_StampToolProperties.showToolSettings = TerrainToolGUIHelper.DrawDisableableLabelFoldout(Styles.settings, s_StampToolProperties.showToolSettings, s_StampToolProperties.mode != StampToolMode.Brush);
                     EditorGUI.BeginDisabledGroup(s_StampToolProperties.mode == StampToolMode.Brush);
                     {

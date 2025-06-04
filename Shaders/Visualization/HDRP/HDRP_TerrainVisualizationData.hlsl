@@ -60,14 +60,14 @@ UNITY_INSTANCING_BUFFER_END(Terrain)
 
 // Visualization
 //Heatmap
-TEXTURE2D(_HeatmapGradient);			SAMPLER(sampler_HeatmapGradient);
-TEXTURE2D(_HeatHeightmap);				SAMPLER(sampler_HeatHeightmap);
+TEXTURE2D(_HeatmapGradient);            SAMPLER(sampler_HeatmapGradient);
+TEXTURE2D(_HeatHeightmap);              SAMPLER(sampler_HeatHeightmap);
 CBUFFER_START(Heatmap)
 half4 _HeatmapData;
 CBUFFER_END
 
 //Splatmap
-TEXTURE2D(_SplatmapTex);				SAMPLER(sampler_SplatmapTex);
+TEXTURE2D(_SplatmapTex);                SAMPLER(sampler_SplatmapTex);
 
 float4 ConstructTerrainTangent(float3 normal, float3 positiveZ)
 {
@@ -84,32 +84,32 @@ float4 ConstructTerrainTangent(float3 normal, float3 positiveZ)
 AttributesMesh ApplyMeshModification(AttributesMesh input, float3 timeParameters)
 {
 #ifdef UNITY_INSTANCING_ENABLED
-	float2 patchVertex = input.positionOS.xy;
-	float4 instanceData = UNITY_ACCESS_INSTANCED_PROP(Terrain, _TerrainPatchInstanceData);
+    float2 patchVertex = input.positionOS.xy;
+    float4 instanceData = UNITY_ACCESS_INSTANCED_PROP(Terrain, _TerrainPatchInstanceData);
 
-	float2 sampleCoords = (patchVertex.xy + instanceData.xy) * instanceData.z; // (xy + float2(xBase,yBase)) * skipScale
-	float height = UnpackHeightmap(_TerrainHeightmapTexture.Load(int3(sampleCoords, 0)));
+    float2 sampleCoords = (patchVertex.xy + instanceData.xy) * instanceData.z; // (xy + float2(xBase,yBase)) * skipScale
+    float height = UnpackHeightmap(_TerrainHeightmapTexture.Load(int3(sampleCoords, 0)));
 
-	input.positionOS.xz = sampleCoords * _TerrainHeightmapScale.xz;
-	input.positionOS.y = height * _TerrainHeightmapScale.y;
+    input.positionOS.xz = sampleCoords * _TerrainHeightmapScale.xz;
+    input.positionOS.y = height * _TerrainHeightmapScale.y;
 
 #ifdef ATTRIBUTES_NEED_NORMAL
-	input.normalOS = _TerrainNormalmapTexture.Load(int3(sampleCoords, 0)).rgb * 2 - 1;
+    input.normalOS = _TerrainNormalmapTexture.Load(int3(sampleCoords, 0)).rgb * 2 - 1;
 #endif
 
 #if defined(VARYINGS_NEED_TEXCOORD0) || defined(VARYINGS_DS_NEED_TEXCOORD0)
 #ifdef ENABLE_TERRAIN_PERPIXEL_NORMAL
-	input.uv0 = sampleCoords;
+    input.uv0 = sampleCoords;
 #else
-	input.uv0 = sampleCoords * _TerrainHeightmapRecipSize.zw;
+    input.uv0 = sampleCoords * _TerrainHeightmapRecipSize.zw;
 #endif
 #endif
 #endif
 
 #ifdef ATTRIBUTES_NEED_TANGENT
-	input.tangentOS = ConstructTerrainTangent(input.normalOS, float3(0, 0, 1));
+    input.tangentOS = ConstructTerrainTangent(input.normalOS, float3(0, 0, 1));
 #endif
-	return input;
+    return input;
 }
 
 #endif // HAVE_MESH_MODIFICATION
@@ -183,15 +183,15 @@ void GetSurfaceAndBuiltinData(inout FragInputs input, float3 V, inout PositionIn
 //Visualization
 #ifdef _HEATMAP
 #ifdef LOCAL_SPACE
-	half height = UnpackHeightmap(SAMPLE_TEXTURE2D(_HeatHeightmap, sampler_HeatHeightmap, input.texCoord0.xy)) * 2;
+    half height = UnpackHeightmap(SAMPLE_TEXTURE2D(_HeatHeightmap, sampler_HeatHeightmap, input.texCoord0.xy)) * 2;
 #else
-	half height = ((GetAbsolutePositionWS(posInput.positionWS).y - _HeatmapData.z) - _HeatmapData.x) / (_HeatmapData.y - _HeatmapData.x);
+    half height = ((GetAbsolutePositionWS(posInput.positionWS).y - _HeatmapData.z) - _HeatmapData.x) / (_HeatmapData.y - _HeatmapData.x);
 #endif
-	surfaceData.baseColor = SAMPLE_TEXTURE2D(_HeatmapGradient, sampler_HeatmapGradient, height.xx).rgb;
-#elif _SPLATMAP_PREVIEW 
-	surfaceData.baseColor = SAMPLE_TEXTURE2D(_SplatmapTex, sampler_SplatmapTex, input.texCoord0.xy).rgb;
+    surfaceData.baseColor = SAMPLE_TEXTURE2D(_HeatmapGradient, sampler_HeatmapGradient, height.xx).rgb;
+#elif _SPLATMAP_PREVIEW
+    surfaceData.baseColor = SAMPLE_TEXTURE2D(_SplatmapTex, sampler_SplatmapTex, input.texCoord0.xy).rgb;
 #else
-	surfaceData.baseColor = terrainLitSurfaceData.albedo;
+    surfaceData.baseColor = terrainLitSurfaceData.albedo;
 #endif
 
     // Init non-zero surface parameters

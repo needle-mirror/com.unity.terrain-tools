@@ -17,7 +17,7 @@ namespace UnityEditor.TerrainTools
 #endif
         public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/SharpenPeaks_On.png";
         public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/SharpenPeaks.png";
-        
+
         IBrushUIGroup commonUI {
             get
             {
@@ -64,14 +64,14 @@ namespace UnityEditor.TerrainTools
 
         public override string GetName()
         {
-            return "Effects/Sharpen Peaks"; 
+            return "Effects/Sharpen Peaks";
         }
 
         public override string GetDescription()
         {
-            return "Increases the slope of peaks and levels flat areas of the Terrain."; 
+            return "Increases the slope of peaks and levels flat areas of the Terrain.";
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -100,13 +100,13 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
+
             // Only render preview if this is a repaint. losing performance if we do
             if (Event.current.type == EventType.Repaint)
             {
                 using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SharpenPeak", editContext.brushTexture))
                 {
-                
+
                     if (brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
                         PaintContext ctx = brushRender.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
@@ -125,7 +125,7 @@ namespace UnityEditor.TerrainTools
                 }
             }
 
-            
+
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
         }

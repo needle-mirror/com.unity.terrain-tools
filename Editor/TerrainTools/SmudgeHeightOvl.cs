@@ -18,7 +18,7 @@ namespace UnityEditor.TerrainTools
 
         public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Smudge_On.png";
         public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Smudge.png";
-        
+
         IBrushUIGroup commonUI {
             get
             {
@@ -67,15 +67,15 @@ namespace UnityEditor.TerrainTools
         public override string GetName()
         {
             return "Transform/Smudge";
-            
+
         }
 
         public override string GetDescription()
         {
             return "Smears Terrain features and layers.";
-            
+
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -103,7 +103,7 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
+
             // Only render preview if this is a repaint. losing performance if we do
             if (Event.current.type == EventType.Repaint)
             {
@@ -162,7 +162,7 @@ namespace UnityEditor.TerrainTools
                 TerrainToolsAnalytics.OnParameterChange();
             }
         }
-        
+
 
         private void Reset()
         {

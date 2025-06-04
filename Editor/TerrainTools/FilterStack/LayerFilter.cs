@@ -65,11 +65,11 @@ namespace UnityEditor.TerrainTools
             Rect sharpnessFieldRect = new Rect(sharpnessLabelRect.xMax + k_ElementsPadding, sharpnessLabelRect.y, rect.width - (sharpnessLabelWidth + 30), sharpnessLabelRect.height);
             EditorGUI.LabelField(sharpnessLabelRect, s_SharpnessLabel);
             EditorGUI.MinMaxSlider(sharpnessFieldRect, ref sharpness.x, ref sharpness.y, 0, 1);
-            
+
             Rect scrollRectView = new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight, 0,((k_ThumbnailSize + k_ElementsPadding) * rows) - k_ElementsPadding);
             Rect selectionGridRect = new Rect(scrollRectView.x, scrollRectView.y, rect.width, rect.height - EditorGUIUtility.singleLineHeight);
             m_ScrollPos = GUI.BeginScrollView(selectionGridRect, m_ScrollPos,
-                scrollRectView, 
+                scrollRectView,
                 false, false);
             layerIndex = GUI.SelectionGrid(selectionGridRect, layerIndex, layerContent, columns, buttonStyle);
             GUI.EndScrollView();

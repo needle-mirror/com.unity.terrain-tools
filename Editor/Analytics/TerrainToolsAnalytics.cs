@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -91,7 +91,7 @@ namespace UnityEditor.TerrainTools
         /// <returns>EventRegisterd boolean identifying if the event was registered correctly</returns>
         static bool EnableAnalytics()
         {
-            //Early out if the event has already been registered, returning bool determining 
+            //Early out if the event has already been registered, returning bool determining
             //if Editor Analytics are enabled
             if (s_EventRegistered)
                 return EditorAnalytics.enabled;
@@ -263,7 +263,7 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Caches the shortcutId on keyRelease to be sent as analytics data if the 
+        /// Caches the shortcutId on keyRelease to be sent as analytics data if the
         /// shortcut key hasn't been cached already
         /// </summary>
         /// <param name="shortcutId">ID of the shortcut </param>
@@ -297,7 +297,7 @@ namespace UnityEditor.TerrainTools
 
         /// <summary>
         /// Check whether the difference between the initial and current brush parameters
-        /// is significant enough to send the data for analyzing. 
+        /// is significant enough to send the data for analyzing.
         /// </summary>
         /// <param name="currentValue">The latest brush parameter</param>
         /// <param name="originalValue">The starting brush parameter</param>

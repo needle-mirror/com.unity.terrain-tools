@@ -55,7 +55,7 @@ Shader "TerrainTool/CustomTerrainTool"
             Name "CustomTerrainTool"
 
             HLSLPROGRAM
-            
+
             #pragma vertex vert
             #pragma fragment frag
 

@@ -51,13 +51,13 @@ namespace UnityEditor.TerrainTools
                     Mathf.Clamp01(1.0f - Mathf.Abs(m_direction)),   // centered
                     Mathf.Clamp01(-m_direction),                    // min
                     Mathf.Clamp01(m_direction),                     // max
-                    0);                                          
+                    0);
                 mat.SetInt("_KernelSize", (int)Mathf.Max(1, kernelSize)); // kernel size
                 mat.SetVector("_SmoothWeights", smoothWeights);
-                
+
                 var texelCtx = Utility.CollectTexelValidity(paintContext.originTerrain, brushXform.GetBrushXYBounds(), 1);
                 Utility.SetupMaterialForPaintingWithTexelValidityContext(paintContext, texelCtx, brushXform, mat);
-                
+
                 paintContext.sourceRenderTexture.wrapMode = TextureWrapMode.Clamp;
 
                 var temp = RTUtils.GetTempHandle( paintContext.destinationRenderTexture.descriptor );
@@ -68,7 +68,7 @@ namespace UnityEditor.TerrainTools
                 Graphics.Blit(temp, paintContext.destinationRenderTexture, mat);
 
                 TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Smooth Height");
-                
+
                 texelCtx.Cleanup();
                 RTUtils.Release(temp);
 

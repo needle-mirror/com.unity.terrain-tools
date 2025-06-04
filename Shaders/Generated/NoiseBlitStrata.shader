@@ -36,7 +36,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
         v2f vert( appdata_t v )
         {
             v2f o;
-            
+
             o.vertex = UnityObjectToClipPos( v.vertex );
             o.uv = v.uv;
 
@@ -45,8 +45,8 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
 
         ENDHLSL
 
-        
-        
+
+
         // Pass
         // {
         //     Name "Value Raw Noise Blit (2D)"
@@ -94,7 +94,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
 
 #if USE_NOISE_TEXTURE
-                
+
                 float pos = tex2D( _NoiseTex, i.uv ).r * _NoiseTransform._m00 + _NoiseTransform._m13;
 
 #else
@@ -151,9 +151,9 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
             ENDHLSL
         }
 
-        
 
-        
+
+
         // Pass
         // {
         //     Name "Voronoi Raw Noise Blit (2D)"
@@ -201,7 +201,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
 
 #if USE_NOISE_TEXTURE
-                
+
                 float pos = tex2D( _NoiseTex, i.uv ).r * _NoiseTransform._m00 + _NoiseTransform._m13;
 
 #else
@@ -258,9 +258,9 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
             ENDHLSL
         }
 
-        
 
-        
+
+
         // Pass
         // {
         //     Name "Perlin Raw Noise Blit (2D)"
@@ -308,7 +308,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
 
 #if USE_NOISE_TEXTURE
-                
+
                 float pos = tex2D( _NoiseTex, i.uv ).r * _NoiseTransform._m00 + _NoiseTransform._m13;
 
 #else
@@ -365,9 +365,9 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
             ENDHLSL
         }
 
-        
 
-        
+
+
         // Pass
         // {
         //     Name "Billow Raw Noise Blit (2D)"
@@ -415,7 +415,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
 
 #if USE_NOISE_TEXTURE
-                
+
                 float pos = tex2D( _NoiseTex, i.uv ).r * _NoiseTransform._m00 + _NoiseTransform._m13;
 
 #else
@@ -472,9 +472,9 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
             ENDHLSL
         }
 
-        
 
-        
+
+
         // Pass
         // {
         //     Name "Ridge Raw Noise Blit (2D)"
@@ -522,7 +522,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
                 float3 uv = float3( i.uv.x, 0, i.uv.y ) - float3( .5, 0, .5 );
 
 #if USE_NOISE_TEXTURE
-                
+
                 float pos = tex2D( _NoiseTex, i.uv ).r * _NoiseTransform._m00 + _NoiseTransform._m13;
 
 #else
@@ -579,7 +579,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitStrata"
             ENDHLSL
         }
 
-        
+
 
     }
 }

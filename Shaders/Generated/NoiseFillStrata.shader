@@ -57,14 +57,14 @@
 
             ENDHLSL
 
-            
-            
+
+
             Pass // Value Noise Fill
             {
                 Name "Value Noise Fill"
 
                 HLSLPROGRAM
-                
+
                 #pragma vertex vert
                 #pragma fragment frag
 
@@ -81,11 +81,11 @@
                 float4 frag(v2f i) : SV_Target
                 {
                     float h = UnpackHeightmap( tex2D( _MainTex, i.pcUV ) );
-                    
+
                     float2 pos = TransformPosition( i.pcUV );
 
                     float n = noise_StrataValue( pos, GetDefaultStrataFractalInput() );
-                    
+
                     return PackHeightmap( n );
                     // return PackHeightmap( lerp( h + n, n, OVERWRITE_HEIGHT ) );
                 }
@@ -93,15 +93,15 @@
                 ENDHLSL
             }
 
-            
 
-            
+
+
             Pass // Voronoi Noise Fill
             {
                 Name "Voronoi Noise Fill"
 
                 HLSLPROGRAM
-                
+
                 #pragma vertex vert
                 #pragma fragment frag
 
@@ -118,11 +118,11 @@
                 float4 frag(v2f i) : SV_Target
                 {
                     float h = UnpackHeightmap( tex2D( _MainTex, i.pcUV ) );
-                    
+
                     float2 pos = TransformPosition( i.pcUV );
 
                     float n = noise_StrataVoronoi( pos, GetDefaultStrataFractalInput() );
-                    
+
                     return PackHeightmap( n );
                     // return PackHeightmap( lerp( h + n, n, OVERWRITE_HEIGHT ) );
                 }
@@ -130,15 +130,15 @@
                 ENDHLSL
             }
 
-            
 
-            
+
+
             Pass // Perlin Noise Fill
             {
                 Name "Perlin Noise Fill"
 
                 HLSLPROGRAM
-                
+
                 #pragma vertex vert
                 #pragma fragment frag
 
@@ -155,11 +155,11 @@
                 float4 frag(v2f i) : SV_Target
                 {
                     float h = UnpackHeightmap( tex2D( _MainTex, i.pcUV ) );
-                    
+
                     float2 pos = TransformPosition( i.pcUV );
 
                     float n = noise_StrataPerlin( pos, GetDefaultStrataFractalInput() );
-                    
+
                     return PackHeightmap( n );
                     // return PackHeightmap( lerp( h + n, n, OVERWRITE_HEIGHT ) );
                 }
@@ -167,15 +167,15 @@
                 ENDHLSL
             }
 
-            
 
-            
+
+
             Pass // Billow Noise Fill
             {
                 Name "Billow Noise Fill"
 
                 HLSLPROGRAM
-                
+
                 #pragma vertex vert
                 #pragma fragment frag
 
@@ -192,11 +192,11 @@
                 float4 frag(v2f i) : SV_Target
                 {
                     float h = UnpackHeightmap( tex2D( _MainTex, i.pcUV ) );
-                    
+
                     float2 pos = TransformPosition( i.pcUV );
 
                     float n = noise_StrataBillow( pos, GetDefaultStrataFractalInput() );
-                    
+
                     return PackHeightmap( n );
                     // return PackHeightmap( lerp( h + n, n, OVERWRITE_HEIGHT ) );
                 }
@@ -204,15 +204,15 @@
                 ENDHLSL
             }
 
-            
 
-            
+
+
             Pass // Ridge Noise Fill
             {
                 Name "Ridge Noise Fill"
 
                 HLSLPROGRAM
-                
+
                 #pragma vertex vert
                 #pragma fragment frag
 
@@ -229,11 +229,11 @@
                 float4 frag(v2f i) : SV_Target
                 {
                     float h = UnpackHeightmap( tex2D( _MainTex, i.pcUV ) );
-                    
+
                     float2 pos = TransformPosition( i.pcUV );
 
                     float n = noise_StrataRidge( pos, GetDefaultStrataFractalInput() );
-                    
+
                     return PackHeightmap( n );
                     // return PackHeightmap( lerp( h + n, n, OVERWRITE_HEIGHT ) );
                 }
@@ -241,7 +241,7 @@
                 ENDHLSL
             }
 
-            
+
 
         }
 

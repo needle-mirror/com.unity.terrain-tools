@@ -15,7 +15,7 @@
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
             sampler2D _BrushTex;
-			sampler2D _FilterTex;
+            sampler2D _FilterTex;
 
             float4 _BrushParams;
             #define BRUSH_STRENGTH      (_BrushParams[0])
@@ -68,12 +68,12 @@
                 float yoffset = _MainTex_TexelSize.y * BRUSH_FEATURESIZE;
                 float xyoffset = xoffset * yoffset / sqrt(0.5 * xoffset * xoffset + 0.5 * yoffset * yoffset);
 
-				/*
-				float2 uvLeft = heightmapUV + float2(-xoffset, 0.0f);
-				float2 uvRight = heightmapUV + float2(xoffset, 0.0f);
-				float2 uvTop = heightmapUV + float2(0.0f, -yoffset);
-				float2 uvBottom = heightmapUV + float2(0.0f, yoffset);
-				*/
+                /*
+                float2 uvLeft = heightmapUV + float2(-xoffset, 0.0f);
+                float2 uvRight = heightmapUV + float2(xoffset, 0.0f);
+                float2 uvTop = heightmapUV + float2(0.0f, -yoffset);
+                float2 uvBottom = heightmapUV + float2(0.0f, yoffset);
+                */
 
                 float x0 = UnpackHeightmap(tex2D(_MainTex, saturate(heightmapUV + float2(-xoffset, 0.0f))));
                 float x1 = UnpackHeightmap(tex2D(_MainTex, saturate(heightmapUV + float2( xoffset, 0.0f))));

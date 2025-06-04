@@ -182,8 +182,11 @@ namespace UnityEditor.TerrainTools
 
             m_image.style.width = newRect.width;
             m_image.style.height = newRect.height;
-
+#if UNITY_6000_2_OR_NEWER
+            m_image.style.translate = new Vector3(localBound.width / 2 - newRect.width / 2, localBound.height / 2 - newRect.height / 2, 0);
+#else
             m_image.transform.position = new Vector3(localBound.width / 2 - newRect.width / 2, localBound.height / 2 - newRect.height / 2, 0);
+#endif
 
             if (m_previewRT != null)
             {

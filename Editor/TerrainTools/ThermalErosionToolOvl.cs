@@ -17,7 +17,7 @@ namespace UnityEditor.TerrainTools
 #endif
         public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/ThermalErosion_On.png";
         public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/ThermalErosion.png";
-        
+
         IBrushUIGroup commonUI {
             get
             {
@@ -86,15 +86,15 @@ namespace UnityEditor.TerrainTools
         public override string GetName()
         {
             return "Erosion/Thermal";
-            
+
         }
 
         public override string GetDescription()
         {
             return "Simulates the effect of temperature changes, weathering and redistributing sediment.";
-            
+
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -110,7 +110,7 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
+
             // Only render preview if this is a repaint. losing performance if we do
             if (Event.current.type == EventType.Repaint)
             {
@@ -133,7 +133,7 @@ namespace UnityEditor.TerrainTools
                     }
                 }
             }
-            
+
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
 
@@ -161,9 +161,9 @@ namespace UnityEditor.TerrainTools
                     { 38.0f, 42.0f },  //dry ash
                     { 45.0f, 45.0f },  //chalk
                     { 25.0f, 40.0f },  //dry clay (25 - 40)
-                    { 15.0f, 15.0f },  //wet clay 
+                    { 15.0f, 15.0f },  //wet clay
                     { 30.0f, 45.0f },  //soil (30-45)
-                    { 35.0f, 40.0f },  //crushed granite (35 - 40) 
+                    { 35.0f, 40.0f },  //crushed granite (35 - 40)
                     { 45.0f, 45.0f },  //gravel
                     { 32.0f, 36.0f },  //dry sand
                     { 45.0f, 45.0f },  //wet sand
@@ -203,7 +203,7 @@ namespace UnityEditor.TerrainTools
                     }
 
                     m_Eroder.m_ReposeJitter = EditorGUILayout.IntSlider(Erosion.Styles.m_AngleOfReposeJitter, (int)m_Eroder.m_ReposeJitter, 0, 100);
-                    EditorGUI.indentLevel--; 
+                    EditorGUI.indentLevel--;
                 }
 
                 EditorGUILayout.EndVertical();

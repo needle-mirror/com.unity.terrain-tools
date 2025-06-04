@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.TerrainTools;
@@ -9,7 +9,7 @@ namespace UnityEditor.TerrainTools
     [Serializable]
     internal class TerrainCreationSettings : ScriptableObject
     {
-        // Terrain Size	
+        // Terrain Size
         public float TerrainWidth = 1000;
         public float TerrainLength = 1000;
         public float TerrainHeight = 600;

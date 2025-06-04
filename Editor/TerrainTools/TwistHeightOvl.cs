@@ -19,7 +19,7 @@ namespace UnityEditor.TerrainTools
         public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Twist.png";
 
         private bool m_ShowControls = true;
-        
+
         IBrushUIGroup commonUI {
             get
             {
@@ -63,15 +63,15 @@ namespace UnityEditor.TerrainTools
         public override string GetName()
         {
             return "Transform/Twist";
-            
+
         }
 
         public override string GetDescription()
         {
             return "Rotates Terrain features and layers around the center of the Brush.";
-            
+
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -99,7 +99,7 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
+
 
             // Only render preview if this is a repaint. losing performance if we do
             if (commonUI.isRaycastHitUnderCursorValid && Event.current.type == EventType.Repaint)

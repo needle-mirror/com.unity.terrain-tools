@@ -82,7 +82,7 @@
             ENDCG
         }
 
-		Pass    // 1 stamp heights
+        Pass    // 1 stamp heights
         {
             Name "Stamp Heights"
 
@@ -90,8 +90,8 @@
             #pragma vertex vert
             #pragma fragment StampHeight
 
-            #define STAMP_TOOL_MODE     (_BrushParams[0]) // Min=0 | Set=1 | Max=2  
-            #define HEIGHT_UNDER_CURSOR (_BrushParams[1])   
+            #define STAMP_TOOL_MODE     (_BrushParams[0]) // Min=0 | Set=1 | Max=2
+            #define HEIGHT_UNDER_CURSOR (_BrushParams[1])
             #define BRUSH_STAMPHEIGHT   (_BrushParams[2])
             #define BLEND_AMOUNT        (_BrushParams[3])
 
@@ -119,12 +119,12 @@
                 float brushIntersection = saturate(1.0f - brushShape);
                 float brushSmooth = exp2(brushIntersection * 8.0f);
                 targetHeight = SmoothMax(height, brushHeight, brushSmooth);
-					
+
                 // "preserve details = 0" stamp is an offset from the height under the cursor
                 float flatHeight = lerp(height, HEIGHT_UNDER_CURSOR + BRUSH_STAMPHEIGHT, brushShape);
-                
+
                 // composite results
-                float outheight = lerp(flatHeight, targetHeight, BLEND_AMOUNT);	
+                float outheight = lerp(flatHeight, targetHeight, BLEND_AMOUNT);
                 if (STAMP_TOOL_MODE != 2)
                 {
                     outheight = lerp(min(height, outheight), max(height, outheight), STAMP_TOOL_MODE);
@@ -263,7 +263,7 @@
                 float holes = tex2D(_MainTex, i.pcUV).r;
                 float brush = UnpackHeightmap(tex2D(_BrushTex, brushUV));
                 float filter = UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
-                
+
                 // out of bounds multiplier
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
                 float brushStrength = BRUSH_STRENGTH * oob;

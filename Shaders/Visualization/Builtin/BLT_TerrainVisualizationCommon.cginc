@@ -7,7 +7,7 @@
 struct Input
 {
     float4 tc;
-	float4 vertex;
+    float4 vertex;
     #ifndef TERRAIN_BASE_PASS
         UNITY_FOG_COORDS(0) // needed because finalcolor oppresses fog code generation.
     #endif
@@ -66,7 +66,7 @@ void SplatmapVert(inout appdata_full v, out Input data)
     v.tangent.w = -1;
 
     data.tc.xy = v.texcoord.xy;
-	data.vertex = mul(unity_ObjectToWorld, v.vertex);
+    data.vertex = mul(unity_ObjectToWorld, v.vertex);
 
 #ifdef TERRAIN_BASE_PASS
     #ifdef UNITY_PASS_META

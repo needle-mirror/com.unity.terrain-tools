@@ -58,7 +58,7 @@ namespace UnityEditor.TerrainTools
 
         public void OnGUI()
         {
-            //Scroll view of settings 
+            //Scroll view of settings
             EditorGUIUtility.hierarchyMode = true;
             TerrainToolboxUtilities.DrawSeperatorLine();
 
@@ -123,7 +123,7 @@ namespace UnityEditor.TerrainTools
 
         void ShowPresetGUI()
         {
-            
+
             TerrainToolboxUtilities.DrawSeperatorLine();
             EditorGUILayout.LabelField(Styles.Preset, EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();

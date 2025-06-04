@@ -15,7 +15,7 @@ namespace UnityEditor.TerrainTools
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Smooth Tool");
         }
 #endif
-        
+
         IBrushUIGroup commonUI {
             get
             {
@@ -36,8 +36,8 @@ namespace UnityEditor.TerrainTools
         }
 
         const string k_ToolName = "Smooth Height";
-        public override string OnIcon => "TerrainOverlays/Smooth_On.png";
-        public override string OffIcon => "TerrainOverlays/Smooth.png";
+        public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Smooth_On.png";
+        public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Smooth.png";
 
         [SerializeField]
         public float m_direction = 0.0f;     // -1 to 1
@@ -60,7 +60,7 @@ namespace UnityEditor.TerrainTools
                 m_DiffusionCS = ComputeUtility.GetShader("Diffusion");
             }
             return m_DiffusionCS;
-        }        
+        }
 
         public override int IconIndex
         {
@@ -75,15 +75,15 @@ namespace UnityEditor.TerrainTools
         public override string GetName()
         {
             return k_ToolName;
-            
+
         }
 
         public override string GetDescription()
         {
             return Styles.description.text;
-            
+
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -127,7 +127,7 @@ namespace UnityEditor.TerrainTools
                 TerrainToolsAnalytics.OnParameterChange();
             }
         }
-        
+
         private void Reset()
         {
             m_direction = 0.0f;     // -1 to 1
@@ -186,7 +186,7 @@ namespace UnityEditor.TerrainTools
                 return;
             }
 
-            // Only render preview if this is a repaint. losing performance if we do 
+            // Only render preview if this is a repaint. losing performance if we do
             if (Event.current.type == EventType.Repaint)
             {
                 using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SmoothHeight", editContext.brushTexture))
@@ -224,7 +224,7 @@ namespace UnityEditor.TerrainTools
                 }
             }
 
-            
+
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
 

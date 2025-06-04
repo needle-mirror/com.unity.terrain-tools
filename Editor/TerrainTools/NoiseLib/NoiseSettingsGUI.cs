@@ -23,7 +23,7 @@ namespace UnityEditor.TerrainTools
         /// </summary>
         public SerializedObject serializedNoise;
         public bool isScrollingPreview { get; private set; }
-        
+
         // noise settings properties
         // noise settings properties
         // noise settings properties
@@ -43,7 +43,7 @@ namespace UnityEditor.TerrainTools
         private SerializedProperty noiseTypeParams;
         private SerializedProperty fractalTypeName;
         private SerializedProperty fractalTypeParams;
-        
+
         // filter stack settings
         // private SerializedProperty filterSettings;
         // private FilterStackView m_filterStackView;
@@ -119,7 +119,7 @@ namespace UnityEditor.TerrainTools
                 TerrainToolGUIHelper.DrawFoldout(domainSettings, Styles.domainSettings, DomainSettingsGUI);
                 // TerrainToolGUIHelper.DrawFoldout(filterSettings, Styles.filterSettings, FilterSettingsGUI);
             }
-            
+
             serializedNoise.ApplyModifiedProperties();
         }
 
@@ -133,11 +133,11 @@ namespace UnityEditor.TerrainTools
             Vector3 tv3 = translation.vector3Value;
             Vector3 rv3 = rotation.vector3Value;
             Vector3 sv3 = scale.vector3Value;
-            
+
             tv3 = EditorGUILayout.Vector3Field(translation.displayName, tv3);
             rv3 = EditorGUILayout.Vector3Field(rotation.displayName, rv3);
             sv3 = EditorGUILayout.Vector3Field(scale.displayName, sv3);
-            
+
             EditorGUILayout.BeginHorizontal();
             {
                 EditorGUILayout.PrefixLabel(Styles.flipScale);
@@ -146,9 +146,9 @@ namespace UnityEditor.TerrainTools
                 flipScaleZ.boolValue = GUILayout.Toggle(flipScaleZ.boolValue, Styles.flipScaleZ, GUI.skin.button);
             }
             EditorGUILayout.EndHorizontal();
-            
+
             // fix up transform values
-            
+
             // translation
 
             if (!CheckVector3(float.IsNaN, tv3) && !CheckVector3(float.IsInfinity, tv3))
@@ -156,9 +156,9 @@ namespace UnityEditor.TerrainTools
                 translation.vector3Value = tv3;
                 GUI.changed = true;
             }
-            
+
             // rotation
-            
+
             if (!CheckVector3(float.IsNaN, rv3) && !CheckVector3(float.IsInfinity, rv3))
             {
                 rotation.vector3Value = rv3;
@@ -179,7 +179,7 @@ namespace UnityEditor.TerrainTools
             }
 
             // scale
-            
+
             if (!CheckVector3(float.IsNaN, sv3) && !CheckVector3(float.IsInfinity, sv3))
             {
                 scale.vector3Value = sv3;
@@ -240,16 +240,16 @@ namespace UnityEditor.TerrainTools
             Vector2 abs = new Vector2(Mathf.Abs(s.x), Mathf.Abs(s.z));
 
             isScrollingPreview = false;
-            
+
             if (!scrollLocked && Event.current.type == EventType.ScrollWheel)
             {
                 abs += Vector2.one * .001f;
-                
+
                 float scroll = Event.current.delta.y;
-                
+
                 s.x += abs.x * scroll * .05f;
                 s.z += abs.y * scroll * .05f;
-                
+
                 scale.vector3Value = s;
 
                 Event.current.Use();
@@ -265,7 +265,7 @@ namespace UnityEditor.TerrainTools
                 d3 = Quaternion.Euler( r ) * d3;
 
                 t += d3;
-                
+
                 translation.vector3Value = t;
 
                 Event.current.Use();
@@ -300,7 +300,7 @@ namespace UnityEditor.TerrainTools
                 GUI.Label( infoIconRect, Styles.infoIcon );
                 // GUI.Label( infoIconRect, Styles.noiseTooltip );
             }
-            
+
             // draw export button
             float buttonWidth = GUI.skin.button.CalcSize(Styles.export).x;
             float buttonHeight = EditorGUIUtility.singleLineHeight;
@@ -337,7 +337,7 @@ namespace UnityEditor.TerrainTools
 
                 NoiseSettings noiseSettings = serializedNoise.targetObject as NoiseSettings;
                 RenderTexture tempRT = RenderTexture.GetTemporary(512, 512, 0, NoiseUtils.singleChannelFormat);
-                
+
                 NoiseUtils.Blit2D(noiseSettings, tempRT);
                 NoiseUtils.BlitPreview2D(tempRT, previewRT);
                 RenderTexture.active = prevActive;

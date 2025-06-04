@@ -42,7 +42,7 @@ namespace UnityEditor.TerrainTools
             this.noiseDesc = noiseType.GetDescription();
 
             this.noiseIncludeStr = string.Format("#include \"{0}\"", noiseDesc.sourcePath);
-            
+
             if(!string.IsNullOrEmpty(fractalDesc.name))
             {
                 this.variantName = string.Format("{0}{1}", fractalDesc.name, noiseDesc.name);
@@ -67,7 +67,7 @@ namespace UnityEditor.TerrainTools
             fractalParamStr = null;
             noiseParamStr = null;
             functionInputStr = "";
-            
+
             // construct include paths string
             additionalIncludePaths = "\n";
 
@@ -92,7 +92,7 @@ namespace UnityEditor.TerrainTools
                 noiseParamStr = string.Format("{0} {1}", noiseStructName, "noiseInput");
             }
 
-            // generate the argument string for an HLSL function declaration that would be 
+            // generate the argument string for an HLSL function declaration that would be
             // using this combination of noise and fractal type structure definitions
             functionParamStr = "";
 
@@ -101,7 +101,7 @@ namespace UnityEditor.TerrainTools
                 functionParamStr += fractalParamStr;
                 functionInputStr += "fractalInput";
             }
-            
+
             if(fractalParamStr != null && noiseParamStr != null)
             {
                 functionParamStr += ", ";
@@ -135,7 +135,7 @@ namespace UnityEditor.TerrainTools
             getInputsStr = "";
             getFractalInputStr = NoiseLib.GetInputFunctionCallString(fractalStructName);
             getNoiseInputStr = NoiseLib.GetInputFunctionCallString(fractalStructName);
-            
+
             if (numFractalInputs > 0)
             {
                 getInputsStr += getFractalInputStr;
@@ -150,7 +150,7 @@ namespace UnityEditor.TerrainTools
             {
                 getInputsStr += getNoiseInputStr;
             }
-            
+
             // get default input str construction
             getDefaultInputsStr = "";
             getDefaultFractalInputStr = NoiseLib.GetDefaultInputFunctionCallString(fractalStructName);

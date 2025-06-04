@@ -18,13 +18,13 @@ namespace UnityEditor.TerrainTools
         public static void OptimizeSelectedTerrains(float padBottom = 0.025f, float padTop = 0.025f)
         {
             var selectedTerrains = SelectedContiguousTerrains(out bool isSelectedContiguous);
-            
+
             if (! isSelectedContiguous)
             {
                 Debug.LogWarning("Choose one or more terrains from the same Terrain group before calling OptimizeSelectedTerrains");
                 return;
             }
-            
+
             Undo.RegisterCompleteObjectUndo(GetUndoArray(selectedTerrains), "Optimize heightmap");
             var terrainDatas= new List<TerrainData>();
 
@@ -36,13 +36,13 @@ namespace UnityEditor.TerrainTools
                 bottom = Mathf.Min(eachTerrain.transform.position.y, bottom);
                 range = Mathf.Max(eachTerrain.terrainData.size.y, range);
             }
-            
+
             GetTerrainHeightRange(out float minHeight, out float maxHeight, terrainDatas.ToArray());
-            
+
             var worldBottom = (minHeight * range) + bottom;
             var worldTop = (maxHeight * range) + bottom;
             var existingRange = worldTop - worldBottom;
-            
+
             var  paddedBottom = Mathf.FloorToInt(worldBottom  -  (padBottom * existingRange));
             var  paddedTop = Mathf.CeilToInt(worldTop +  (padTop * existingRange));
 
@@ -64,15 +64,15 @@ namespace UnityEditor.TerrainTools
                 Debug.LogWarning("Upper bound must be higher than lower bound");
                 return;
             }
-            
+
             var selectedTerrains = SelectedContiguousTerrains(out bool isSelectedContiguous);
-            
+
             if (! isSelectedContiguous)
             {
                 Debug.LogWarning("Select one or more terrains from the same Terrain group before calling RemapSelectedTerrains");
                 return;
             }
-            
+
             Undo.RegisterCompleteObjectUndo(GetUndoArray(selectedTerrains), $"Remap Terrain Heights {minY}-{maxY}");
             foreach (var eachObject in selectedTerrains)
             {
@@ -91,8 +91,8 @@ namespace UnityEditor.TerrainTools
         /// <param name="heightMapMax">The world Y coordinate of the new upper bound of the the target terrain</param>
         public static void RemapTerrainHeights(Terrain targetTerrain, int heightMapMin, int heightMapMax)
         {
-            
-            
+
+
             var xform = targetTerrain.gameObject.transform;
             var terrainData = targetTerrain.terrainData;
             var oldPos = xform.position;
@@ -105,14 +105,14 @@ namespace UnityEditor.TerrainTools
                 Debug.LogWarning("Remap range must be at least one unit");
                 return;
             }
-            
-            
+
+
             float Remapped(float h)
             {
                 var hmapToWorld =  originalPos + (oldScaleFactor * h);
                 return  Mathf.Clamp01(Mathf.Max(0, hmapToWorld - heightMapMin) / newRange);
             }
-            
+
             var stride = terrainData.heightmapResolution;
             var existingHeights =
                 terrainData.GetHeights(0, 0, stride, stride);
@@ -126,14 +126,11 @@ namespace UnityEditor.TerrainTools
             oldPos.y = heightMapMin;
             targetTerrain.transform.position = oldPos;
         }
-        
+
 
         /// <summary>
-        ///     Returns the minimum and maximum world height values for
-        ///     <terrainData>
-        ///         . The results are
-        ///         passed as out parameters.
-        ///     </terrainData>
+        ///     Returns the minimum and maximum world height values for <paramref name="terrainDatas"/>.
+        ///     The results are passed as out parameters.
         /// </summary>
         /// <param name="minHeight">float (will be reset)</param>
         /// <param name="maxHeight">float (will be reset)</param>
@@ -143,7 +140,7 @@ namespace UnityEditor.TerrainTools
             minHeight = float.MaxValue;
             maxHeight = float.MinValue;
             foreach (var eachData in terrainDatas)
-            { 
+            {
                 foreach (var eachExtent in eachData.GetPatchMinMaxHeights())
                 {
                     minHeight = Mathf.Min(minHeight, eachExtent.min);
@@ -165,7 +162,7 @@ namespace UnityEditor.TerrainTools
             var selectedTerrains = Selection.GetFiltered<Terrain>(SelectionMode.Deep);
             success = selectedTerrains.Length == 1;
             if (selectedTerrains.Length < 2)
-            {           
+            {
                 return selectedTerrains;
             }
             int groupID = selectedTerrains[0].groupingID;

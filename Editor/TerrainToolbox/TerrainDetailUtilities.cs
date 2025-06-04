@@ -15,9 +15,9 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         ///     Gets a TerrainData's detailLayer as a Texture2D
         /// </summary>
-        /// <param name="tData">a TerrainData object</param>
-        /// <param name="detailLayer">the detail layer to use</param>
-        /// <returns>Texture2D representing the grayscale values of the detail masks</returns>
+        /// <param name="tData">A TerrainData object.</param>
+        /// <param name="detailLayer">The detail layer to use.</param>
+        /// <returns>Texture2D representing the grayscale values of the detail masks.</returns>
         public static Texture2D GetDensityMapTexture(TerrainData tData, int detailLayer = 0)
         {
             var detailWidth = tData.detailWidth;
@@ -28,7 +28,7 @@ namespace UnityEditor.TerrainTools
                 .GetDetailLayer(0, 0, detailWidth, detailHeight, detailLayer)
                 .Cast<int>()
                 .Select(i => (byte) Mathf.Min(i * bucketSize, 255));
-            
+
             var outputTexture = new Texture2D(detailWidth, detailHeight, TextureFormat.R8, false);
             outputTexture.name = $"{tData.name}_densitymap";
             outputTexture.SetPixelData(detailArray.ToArray(), 0);
@@ -40,9 +40,9 @@ namespace UnityEditor.TerrainTools
         ///     Saves a Texture2D representing the detail density in <paramref name="terrain"/>
         ///     to the asset folder <paramref name="folder"/>
         /// </summary>
-        /// <param name="terrain">A terrain object to save</param>
-        /// <param name="folder">An asset folder to receive saved assets</param>
-        /// <param name="detailLayer">The detail layer to save</param>
+        /// <param name="terrain">A terrain object to save.</param>
+        /// <param name="folder">An asset folder to receive saved assets.</param>
+        /// <param name="detailLayer">The detail layer to save.</param>
         public static void SaveDensityMap(Terrain terrain, DefaultAsset folder, int detailLayer)
         {
             var texToSave = GetDensityMapTexture(terrain.terrainData, detailLayer);
@@ -54,8 +54,8 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         ///     Save a detail density map for every prototype in the supplied terrain to <paramref name="folder"/>
         /// </summary>
-        /// <param name="terrain"></param>
-        /// <param name="folder"></param>
+        /// <param name="terrain">A terrain object to save.</param>
+        /// <param name="folder">An asset folder to receive saved assets.</param>
         public static void SaveAllDensityMaps(Terrain terrain, DefaultAsset folder)
         {
             var layers = terrain.terrainData.detailPrototypes.Length;
@@ -65,8 +65,8 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         ///     Save a detail density map for every prototype in the supplied terrain to <paramref name="folder"/>
         /// </summary>
-        /// <param name="terrain"></param>
-        /// <param name="folderName">String path to the asset folder</param>
+        /// <param name="terrain">A terrain object to save.</param>
+        /// <param name="folderName">String path to the asset folder.</param>
         public static void SaveAllDensityMaps(Terrain terrain, string folderName)
         {
             var folder = AssetDatabase.LoadAssetAtPath<DefaultAsset>(folderName);
@@ -78,9 +78,9 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         ///     Generates a predictable asset file path for a texture assert representing a detail density map
         /// </summary>
-        /// <param name="terrain">The terrain object whose details will be saved</param>
-        /// <param name="folderAsset">A DefaultAsset representing the Asset folder where the files will be saved</param>
-        /// <param name="detailLayer">The index of the detail layer being saveds</param>
+        /// <param name="terrain">The terrain object whose details will be saved.</param>
+        /// <param name="folderAsset">A DefaultAsset representing the Asset folder where the files will be saved.</param>
+        /// <param name="detailLayer">The index of the detail layer being saved.</param>
         /// <returns></returns>
         private static string GetDensityMapName(Terrain terrain, DefaultAsset folderAsset, int detailLayer)
         {
@@ -91,9 +91,9 @@ namespace UnityEditor.TerrainTools
         /// Loads a saved density map for <paramref name="terrain"/> from <paramref name="folder"/>
         /// into detail layer <paramref name="detailLayer"/>
         /// </summary>
-        /// <param name="terrain">Terrain object</param>
-        /// <param name="folder">DefaultAsset or string folder path</param>
-        /// <param name="detailLayer">integer detail layer</param>
+        /// <param name="terrain">A Terrain object.</param>
+        /// <param name="folder">DefaultAsset or string folder path.</param>
+        /// <param name="detailLayer">Integer detail layer.</param>
         /// <returns> True if the expected texture asset exists and can be applied, or false otherwise.</returns>
         public static bool LoadDensityMap(Terrain terrain, DefaultAsset folder, int detailLayer)
         {
@@ -102,7 +102,7 @@ namespace UnityEditor.TerrainTools
                 Debug.Log($"{terrain.name} has no detail layer {detailLayer}");
                 return false;
             }
-            
+
             var inputFile = GetDensityMapName(terrain, folder, detailLayer);
 
             var inputTx = AssetDatabase.LoadAssetAtPath<Texture2D>(inputFile);
@@ -122,9 +122,9 @@ namespace UnityEditor.TerrainTools
         /// Loads a saved density map for <paramref name="terrain"/> from <paramref name="folder"/>
         /// into detail layer <paramref name="detailLayer"/>
         /// </summary>
-        /// <param name="terrain">Terrain object</param>
-        /// <param name="folderName">string folder path</param>
-        /// <param name="detailLayer">integer detail layer</param>
+        /// <param name="terrain">A Terrain object.</param>
+        /// <param name="folderName">String folder path.</param>
+        /// <param name="detailLayer">Integer detail layer.</param>
         /// <returns> True if the expected texture asset exists and can be applied, or false otherwise.</returns>
         public static bool LoadDensityMap(Terrain terrain, string folderName, int detailLayer)
         {
@@ -132,15 +132,15 @@ namespace UnityEditor.TerrainTools
             if (folder is null) throw new ArgumentException($"folderAsset {folderName} not found");
             return LoadDensityMap(terrain, folder, detailLayer);
         }
-        
-        
-        
+
+
+
         /// <summary>
         ///     Given a DefaultAsset <paramref name="folder"/> to seach, finds the density maps corresponding to
         ///     <paramref name="terrain"/> and loads them into the corresponding detail channels of <paramref name="terrain"/>.
         /// </summary>
-        /// <param name="terrain">a Terrain object</param>
-        /// <param name="folder">a DefaultAsset corresponding to Asset folder containing textures</param>
+        /// <param name="terrain">A Terrain object.</param>
+        /// <param name="folder">A DefaultAsset corresponding to Asset folder containing textures.</param>
         public static void LoadDensityMaps(Terrain terrain, DefaultAsset folder)
         {
             Undo.RegisterCompleteObjectUndo(terrain.terrainData, "Load saved density maps");
@@ -161,11 +161,11 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        ///     Given a the text path of an asset folder to seach, finds the detail maps corresponding
+        ///     Given a text path of an asset folder to search, finds the detail maps corresponding
         ///     to <paramref name="terrain"/> and loads them into the corresponding detail channels of <paramref name="terrain"/>.
         /// </summary>
-        /// <param name="terrain">a Terrain object</param>
-        /// <param name="folderName">an Asset folder containing textures</param>
+        /// <param name="terrain">A Terrain object.</param>
+        /// <param name="folderName">An Asset folder containing textures.</param>
         public static void LoadDensityMaps(Terrain terrain, string folderName)
         {
             var folder = AssetDatabase.LoadAssetAtPath<DefaultAsset>(folderName);
@@ -184,16 +184,16 @@ namespace UnityEditor.TerrainTools
         ///     This method will accept any Texture2D as an input, but for best results use a texture
         ///     which is not saved with gamma or color correction.
         /// </summary>
-        /// <param name="tData">the TerrainData to populate</param>
-        /// <param name="texture">a Texture2D.</param>
-        /// <param name="detailLayer">the detail layer to populate</param>
+        /// <param name="tData">The TerrainData to populate.</param>
+        /// <param name="texture">A Texture2D.</param>
+        /// <param name="detailLayer">The detail layer to populate.</param>
         /// <param name="allowResample">
-        ///     if true, resample the texture to fit the detail array. If false, accept only textures of
-        ///     the same dimensions as the detail array
+        ///     If true, resample the texture to fit the detail array. If false, accept only textures of
+        ///     the same dimensions as the detail array.
         /// </param>
         /// <exception cref="ArgumentException">
-        ///     thrown if allowResample is false and the texture resolution does not match the
-        ///     detail array resolution
+        ///     Thrown if allowResample is false and the texture resolution does not match the
+        ///     detail array resolution.
         /// </exception>
         public static void SetDensityMap(TerrainData tData, in Texture2D texture, int detailLayer = 0,
             bool allowResample = true)
@@ -224,8 +224,8 @@ namespace UnityEditor.TerrainTools
                 throw new ArgumentException(
                     $"Texture {texture} is not readable. Set it readable in the import settings, or use a dynamically created texture");
 
-            var grayscale = GrayscaleMultiplier(tData);     
-            
+            var grayscale = GrayscaleMultiplier(tData);
+
             var grayValues = assignableTexture.GetPixels()
                 .Select(c => Mathf.CeilToInt(grayscale * c.r));
 
@@ -239,7 +239,7 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         ///     Returns a readable Texture2D from the supplied RenderTarget.
         /// </summary>
-        /// <param name="renderTexture">an R8 format RenderTexture</param>
+        /// <param name="renderTexture">An R8 format RenderTexture.</param>
         /// <returns>Texture2D</returns>
         private static Texture2D DensityMapFromRenderTexture(in RenderTexture renderTexture)
         {
@@ -268,9 +268,9 @@ namespace UnityEditor.TerrainTools
         ///     Sets a TerrainData's detail layer using the supplied RenderTextures
         ///     This executes synchronously
         /// </summary>
-        /// <param name="tData"></param>
-        /// <param name="rTexture"></param>
-        /// <param name="detailLayer"></param>
+        /// <param name="tData">The TerrainData to populate.</param>
+        /// <param name="rTexture">An R8 format RenderTexture.</param>
+        /// <param name="detailLayer">The detail layer to populate.</param>
         public static void SetDensityMap(TerrainData tData, RenderTexture rTexture, int detailLayer = 0)
         {
             if (rTexture.format != RenderTextureFormat.R8)
@@ -293,9 +293,9 @@ namespace UnityEditor.TerrainTools
         ///     (referenced as "_Density#"  where # is the detail layer number.
         ///     The material can use or ignore these inputs as desired.
         /// </summary>
-        /// <param name="tData">(this) target TerrainData</param>
-        /// <param name="densityMaterial">a material to blit</param>
-        /// <param name="detailLayer">the detail index of the details to scatter</param>
+        /// <param name="tData">(this) Target TerrainData.</param>
+        /// <param name="densityMaterial">A material to blit.</param>
+        /// <param name="detailLayer">The detail index of the details to scatter.</param>
         public static void SetDensityMap(TerrainData tData, Material densityMaterial,
             int detailLayer = 0)
         {
@@ -335,8 +335,8 @@ namespace UnityEditor.TerrainTools
             foreach (var eachTempTexture in detailTexturesToRelease) Object.DestroyImmediate(eachTempTexture);
         }
 
-        
-        
+
+
         // Prior to 2022.2, detail arrays were limited to 16 items per cell
         // after that, they have a full eight bits.  The following two methods
         // return the appropriate multipliers based on the availability
@@ -349,7 +349,7 @@ namespace UnityEditor.TerrainTools
         return 16;
 #endif
         }
-        
+
         private static int GrayscaleMultiplier(TerrainData tData)
         {
 #if UNITY_2022_2_OR_NEWER
@@ -359,7 +359,7 @@ namespace UnityEditor.TerrainTools
 #endif
         }
 
-        
+
         /// <summary>
         ///     Store the current active render texture, and restore it when its context closes
         /// </summary>
@@ -401,6 +401,6 @@ namespace UnityEditor.TerrainTools
                 return ctx._tempRT;
             }
         }
-        
+
     }
 }

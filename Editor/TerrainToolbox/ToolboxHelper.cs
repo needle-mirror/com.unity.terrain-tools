@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
@@ -9,7 +9,7 @@ namespace UnityEditor.TerrainTools
 {
     internal class ToolboxHelper
     {
-        // Toolbox setting serialization 
+        // Toolbox setting serialization
         public static string LibraryPath = "/../Library/TerrainTools/";
         public static string ToolboxPrefsWindow = "ToolboxWindowPrefs";
         public static string ToolboxPrefsCreate = "ToolboxCreatePrefs";
@@ -280,7 +280,7 @@ namespace UnityEditor.TerrainTools
             // duv = (tsuv(dwidth - 1) + 0.5) / dwidth
             // duv = (((suv * swidth - 0.5) / (swidth - 1)) * (dwidth - 1) + 0.5) / dwidth
             // k = (dwidth - 1) / (swidth - 1) / dwidth
-            // duv = suv * (swidth * k)		+ 0.5 / dwidth - 0.5 * k
+            // duv = suv * (swidth * k) + 0.5 / dwidth - 0.5 * k
 
             float k = (dWidth - 1.0f) / (sWidth - 1.0f) / dWidth;
             float scaleX = sUV * (sWidth * k);
@@ -475,7 +475,7 @@ namespace UnityEditor.TerrainTools
                 return;
             }
 
-            // check if texture is read-only before proceeding, because it could pass in a Texture2D from an object selector UI 
+            // check if texture is read-only before proceeding, because it could pass in a Texture2D from an object selector UI
             if (!texture.isReadable)
             {
                 string assetPath = AssetDatabase.GetAssetPath(texture);

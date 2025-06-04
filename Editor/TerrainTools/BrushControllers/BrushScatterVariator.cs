@@ -1,4 +1,4 @@
-using System; 
+using System;
 using System.Text;
 using UnityEngine;
 using UnityEngine.TerrainTools;
@@ -9,7 +9,7 @@ namespace UnityEditor.TerrainTools
     {
 
         private float m_BrushScatter;
-        
+
         public float brushScatter {
             get { return m_BrushScatter; }
             set
@@ -20,7 +20,7 @@ namespace UnityEditor.TerrainTools
 
         private bool m_UseNewRandomValue;
         private Vector2 m_RandomValues;
-        
+
         private float m_defaultBrushScatter;
 
         public Vector2 ScatterBrushStamp(Vector2 uv, float brushSize)
@@ -71,9 +71,9 @@ namespace UnityEditor.TerrainTools
             base.OnSceneGUI(currentEvent, controlId, terrain, editContext);
         }
 
-        // for updating condensed slider overlays 
+        // for updating condensed slider overlays
         public static event Action BrushScatterChanged;
-        private float prevBrushScatter; 
+        private float prevBrushScatter;
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             base.OnInspectorGUI(terrain, editContext);
@@ -82,7 +82,7 @@ namespace UnityEditor.TerrainTools
             if (!Mathf.Approximately(m_BrushScatter, prevBrushScatter) && BrushScatterChanged != null)
             {
                 BrushScatterChanged();
-                prevBrushScatter = m_BrushScatter; 
+                prevBrushScatter = m_BrushScatter;
             }
         }
 

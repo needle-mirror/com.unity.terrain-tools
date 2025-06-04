@@ -38,7 +38,7 @@ namespace UnityEditor.TerrainTools
             GenerateHeaderFiles();
             GenerateShaders();
         }
-        
+
         /// <summary>
         /// Renders a Popup using EditorGUILayout.Popup for all loaded NoiseType implementations
         /// </summary>
@@ -225,7 +225,7 @@ namespace UnityEditor.TerrainTools
 
             IFractalType[] instances = s_fractalTypes;
             string[] fractalNames = GetFractalNames();
-            
+
             for (int i = 0; i < instances.Length && i < fractalNames.Length; ++i)
             {
                 if (fractalName.CompareTo(fractalNames[i]) == 0)
@@ -434,7 +434,7 @@ namespace UnityEditor.TerrainTools
 
                 string valueString = input.GetHlslValueTypeString();
 
-                structDefStr += string.Format("\t{0} {1};\n", valueString, input.name); 
+                structDefStr += string.Format("\t{0} {1};\n", valueString, input.name);
             }
 
             structDefStr += "};\n\n";
@@ -520,7 +520,7 @@ namespace UnityEditor.TerrainTools
             for(int f = 0; f < fractalTypes.Length; ++f)
             {
                 string fractalStr = fractalContents[f];
-                
+
                 // dont generate for this fractal type if the source could not be found
                 if(fractalStr == null)
                 {
@@ -546,17 +546,13 @@ namespace UnityEditor.TerrainTools
 
                     sb.Append(Strings.k_warningHeader);                             // add the DO NOT EDIT warning
                     sb.Append(fractalStr);                                          // add the fractal template
-                    
+
                     info.ReplaceTags(sb);
-                    
+
                     string newContents = sb.ToString();
 
                     // do some code cleanup
-                    newContents = Regex.Replace(newContents, Strings.k_regexDupCommas, ", ");
-                    newContents = Regex.Replace(newContents, Strings.k_emptyArgsRight, " )");
-                    newContents = Regex.Replace(newContents, Strings.k_emptyArgsLeft, "( ");
-
-                    newContents = NormalizeLineEndings(newContents);
+                    newContents = CodeCleanup(newContents);
 
                     string outputDir = info.outputDir;
 
@@ -599,7 +595,7 @@ namespace UnityEditor.TerrainTools
                     }
                 }
             }
-            
+
             // restore previous cultureinfo
             System.Threading.Thread.CurrentThread.CurrentCulture = prevCultureInfo;
 
@@ -641,7 +637,7 @@ namespace UnityEditor.TerrainTools
             TypeCache.TypeCollection generatorTypes = TypeCache.GetTypesDerivedFrom(typeof(NoiseShaderGenerator<>));
 
             s_generators = new Dictionary<Type, INoiseShaderGenerator>(generatorTypes.Count);
-            
+
             foreach(Type t in generatorTypes)
             {
                 PropertyInfo propertyInfo = t.GetProperty("instance", s_bindingFlags);
@@ -651,9 +647,31 @@ namespace UnityEditor.TerrainTools
             }
         }
 
+        private static string CodeCleanup(string newContents)
+        {
+            // Normalize all line endings to LF first
+            newContents = NormalizeLineEndings(newContents);
+
+            // Replace tabs with spaces
+            newContents = newContents.Replace("\t", "    ");
+
+            // Remove trailing whitespace from lines
+            newContents = Regex.Replace(newContents, Strings.k_regexTrailWhitespace, "", RegexOptions.Multiline);
+
+            // Remove trailing and duplicate commas
+            newContents = Regex.Replace(newContents, Strings.k_regexDupCommas, ", ");
+            newContents = Regex.Replace(newContents, Strings.k_emptyArgsRight, " )");
+            newContents = Regex.Replace(newContents, Strings.k_emptyArgsLeft, "( ");
+
+            // Convert back to LF for final output
+            newContents = newContents.Replace("\n", "\n");
+
+            return newContents;
+        }
+
         private static string NormalizeLineEndings(string str)
         {
-            return str.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", "\r\n");
+            return str.Replace("\r\n", "\n").Replace("\r", "\n");
         }
 
         /// <summary>
@@ -681,7 +699,7 @@ namespace UnityEditor.TerrainTools
                 passesSB.Clear();
 
                 string shaderTemplateStr = null;
-                
+
                 INoiseShaderGenerator generator = pair.Value;
                 ShaderGeneratorDescriptor generatorDesc = generator.GetDescription();
 
@@ -727,7 +745,7 @@ namespace UnityEditor.TerrainTools
                         passesSB.Append(passTemplateStr);
                         passesSB.AppendLine();
                         passesSB.Replace(NoiseLib.Strings.k_tagIncludes, string.Format("#include \"{0}\"", info.generatedIncludePath));
-                       
+
                         info.ReplaceTags(passesSB);
                     }
 
@@ -759,11 +777,7 @@ namespace UnityEditor.TerrainTools
                     }
 
                     // do some code cleanup
-                    newContents = Regex.Replace(newContents, NoiseLib.Strings.k_regexDupCommas, ", ");
-                    newContents = Regex.Replace(newContents, NoiseLib.Strings.k_emptyArgsRight, " )");
-                    newContents = Regex.Replace(newContents, NoiseLib.Strings.k_emptyArgsLeft, "( ");
-
-                    newContents = NormalizeLineEndings(newContents);
+                    newContents = CodeCleanup(newContents);
 
                     // only write to file if it is not read-only, ie. if it is one of the generated
                     // shader files that we ship with the TerrainTools package
@@ -868,6 +882,7 @@ namespace UnityEditor.TerrainTools
             public static readonly string k_emptyArgsLeft = @"\(\s*,";
             public static readonly string k_emptyArgsRight = @",\s*\)";
             public static readonly string k_regexDupCommas = @",\s*,";
+            public static readonly string k_regexTrailWhitespace = @"[ \t]+$";
             public static readonly string k_tagPasses = "${Passes}";
             public static readonly string k_tagIncludes = "${Includes}";
             public static readonly string k_tagNoiseName = "${NoiseName}";

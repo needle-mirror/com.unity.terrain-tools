@@ -3,6 +3,14 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.3.0] - 2025-06-04
+### Changed:
+- Move tests to a separate package.
+
+### Fixed:
+- Fixed low resolution icons on high PPI and retina displays
+- Fixed deprecation warnings in NoiseFieldView
+
 ## [5.2.1] - 2025-03-07
 ### Fixed:
 - Fixed issue where new tests were not set to be internal, causing internal checks to fail.
@@ -90,7 +98,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ## [5.0.2] - 2022-10-12
 ### Fixed:
-- Replaced the old v4.0.0 What's new page with the new updated 5.0.2 one. 
+- Replaced the old v4.0.0 What's new page with the new updated 5.0.2 one.
 
 ### Changed:
 - Updated version number to 5.0.2.
@@ -104,7 +112,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 ## [5.0.0] - 2022-04-29
 ### Added:
 - Added Paint Details tool override including multi-detail scatter, new detail selection UI, and the detail distribution slider.
-- Added Layer Filter to the Brush Mask Filter list. 
+- Added Layer Filter to the Brush Mask Filter list.
 - Added tool for optimizing heightmap range.
 
 ### Changed:
@@ -112,14 +120,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ### Fixed:
 - Fixed the UI of the Terrain Toolbox so that the elements resize properly and provide a better user experience.
-- The hotkeys for brush strength, size, rotation have a tooltip that is displayed that shows the current value. Fixed a bug that involves the tooltip being obscured when the brush size is too large. 
+- The hotkeys for brush strength, size, rotation have a tooltip that is displayed that shows the current value. Fixed a bug that involves the tooltip being obscured when the brush size is too large.
 - Fixed terrain Toolbox's create terrain import heightmap's tiles mode not showing a warning and disabling the create button when a invalid file path is selected.
 - Fixed selected parented terrains being improperly duplicated when using Toolbox's Utilities duplicate feature.
-- Fixed terrain transform tools target UI disabling the tool when no targets are selected. 
+- Fixed terrain transform tools target UI disabling the tool when no targets are selected.
 - Fixed transform tools being disabled when a user deselects both target options.
 - Fixed terrain Toolbox gizmo tooltip not displaying the proper modifier key for the currently used platform.
 - Fixed the improper modifier key being displayed within Create Terrain depending on the users Platform.
-- Fixed warnings being thrown when a terrain is split and the detail resolution per patch is set to a value lower than the minimum. 
+- Fixed warnings being thrown when a terrain is split and the detail resolution per patch is set to a value lower than the minimum.
 - Fixed splitting terrain setting a detail resolution per patch lower than the minimum allowed value of 8.
 - Fixed terrain toolbox's layers utilities not clearing the alphamap when "Clear Existing Layers" is selected.
 - Fixed Import Heightmap error when flipping heightmap axis.

@@ -9,25 +9,25 @@ namespace UnityEditor.TerrainTools
         /// Gets and sets the brush's size.
         /// </summary>
         float brushSize { get; set; }
-        
-        
+
+
         /// <summary>
         /// Gets the brush's size without jitter.
         /// </summary>
         float brushSizeVal { get; }
-        
+
         /// <summary>
-        /// Gets and sets the brush's min size. 
+        /// Gets and sets the brush's min size.
         /// </summary>
         float brushSizeMin { get; set; }
-        
+
         /// <summary>
-        /// Gets and sets the brush's max size. 
+        /// Gets and sets the brush's max size.
         /// </summary>
         float brushSizeMax { get; set; }
-        
+
         /// <summary>
-        /// Gets and sets the brush's jitter. 
+        /// Gets and sets the brush's jitter.
         /// </summary>
         float brushSizeJitter { get; set; }
 

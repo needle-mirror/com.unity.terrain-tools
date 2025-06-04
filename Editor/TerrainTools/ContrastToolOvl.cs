@@ -8,8 +8,8 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.TerrainTools
 {
-    
-    
+
+
     internal class ContrastToolOvl : TerrainToolsPaintTool<ContrastToolOvl>
     {
 #if UNITY_2019_1_OR_NEWER
@@ -23,7 +23,7 @@ namespace UnityEditor.TerrainTools
 #endif
         public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Contrast_On.png";
         public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Contrast.png";
-        
+
         IBrushUIGroup commonUI {
             get
             {
@@ -67,14 +67,14 @@ namespace UnityEditor.TerrainTools
 
         public override string GetName()
         {
-          return "Effects/Contrast"; 
+          return "Effects/Contrast";
         }
 
         public override string GetDescription()
         {
-            return "Applies a contrast filter that sharpens the Terrain features."; 
+            return "Applies a contrast filter that sharpens the Terrain features.";
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -148,7 +148,7 @@ namespace UnityEditor.TerrainTools
                     }
                 }
             }
-            
+
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
         }

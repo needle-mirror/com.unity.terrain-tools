@@ -29,7 +29,7 @@ namespace UnityEditor.TerrainTools
         public NoiseDimensionFlags   supportedDimensions;
         /// <summary>
         /// List of HlslInput structs defining the HLSL function parameter list for this
-        /// NoiseType implementation. This is used in the noise shader generation. 
+        /// NoiseType implementation. This is used in the noise shader generation.
         /// </summary>
         public List<HlslInput>  inputStructDefinition;
 

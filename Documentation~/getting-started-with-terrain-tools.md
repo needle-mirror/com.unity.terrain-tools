@@ -10,7 +10,7 @@ Terrain Tools adds fourteen new tools to the Paint Terrain drop-down menu, which
 
 ## Paint Details
 
-Terrain Tools adds updates to the Paint Detail tool. These updates include the addition of enhanced [brush controls](brush-controls-shortcut-keys.md), the ability to scatter multiple details simultaneously, and a new Layer filtering mode. 
+Terrain Tools adds updates to the Paint Detail tool. These updates include the addition of enhanced [brush controls](brush-controls-shortcut-keys.md), the ability to scatter multiple details simultaneously, and a new Layer filtering mode.
 
 ## Brushes
 

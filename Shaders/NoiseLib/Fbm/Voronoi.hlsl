@@ -27,32 +27,32 @@
 
 struct FbmFractalInput
 {
-	float octaves;
-	float amplitude;
-	float persistence;
-	float frequency;
-	float lacunarity;
-	float warpIterations;
-	float warpStrength;
-	float4 warpOffsets;
+    float octaves;
+    float amplitude;
+    float persistence;
+    float frequency;
+    float lacunarity;
+    float warpIterations;
+    float warpStrength;
+    float4 warpOffsets;
 };
 
 
 
 FbmFractalInput GetDefaultFbmFractalInput()
 {
-	FbmFractalInput ret;
+    FbmFractalInput ret;
 
-	ret.octaves = 8;
-	ret.amplitude = 0.5;
-	ret.persistence = 0.5;
-	ret.frequency = 1;
-	ret.lacunarity = 2;
-	ret.warpIterations = 0;
-	ret.warpStrength = 0.5;
-	ret.warpOffsets = float4(2.5, 1.4, 3.2, 2.7);
+    ret.octaves = 8;
+    ret.amplitude = 0.5;
+    ret.persistence = 0.5;
+    ret.frequency = 1;
+    ret.lacunarity = 2;
+    ret.warpIterations = 0;
+    ret.warpStrength = 0.5;
+    ret.warpOffsets = float4(2.5, 1.4, 3.2, 2.7);
 
-	return ret;
+    return ret;
 }
 
 
@@ -69,18 +69,18 @@ float4 _FbmWarpOffsets;
 
 FbmFractalInput GetFbmFractalInput()
 {
-	FbmFractalInput ret;
+    FbmFractalInput ret;
 
-	ret.octaves = _FbmOctaves;
-	ret.amplitude = _FbmAmplitude;
-	ret.persistence = _FbmPersistence;
-	ret.frequency = _FbmFrequency;
-	ret.lacunarity = _FbmLacunarity;
-	ret.warpIterations = _FbmWarpIterations;
-	ret.warpStrength = _FbmWarpStrength;
-	ret.warpOffsets = _FbmWarpOffsets;
+    ret.octaves = _FbmOctaves;
+    ret.amplitude = _FbmAmplitude;
+    ret.persistence = _FbmPersistence;
+    ret.frequency = _FbmFrequency;
+    ret.lacunarity = _FbmLacunarity;
+    ret.warpIterations = _FbmWarpIterations;
+    ret.warpStrength = _FbmWarpStrength;
+    ret.warpOffsets = _FbmWarpOffsets;
 
-	return ret;
+    return ret;
 }
 
 
@@ -220,7 +220,7 @@ float noise_FbmVoronoi( float2 pos, FbmFractalInput fractalInput )
 
             pos = pos + fractalInput.warpStrength * q;
         }
-        
+
         pos = lerp(prev, pos, frac(fractalInput.warpIterations));
     }
 
@@ -245,10 +245,10 @@ float noise_FbmVoronoi( float3 pos, FbmFractalInput fractalInput )
             prev = pos;
             pos = pos + fractalInput.warpStrength * q;
         }
-        
+
         pos = lerp(prev, pos, frac(fractalInput.warpIterations));
     }
-    
+
     float f = noise_FbmVoronoi_Raw( pos, fractalInput );
 
     return f;

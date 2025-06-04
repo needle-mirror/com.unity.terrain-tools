@@ -10,7 +10,7 @@ Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspecto
 
 Alternatively, select the terrain, and select the bridge icon on the terrain toolbar.
 
-![Bridge Icon](images/Icons/Bridge.png) 
+![Bridge Icon](images/Icons/Bridge.png)
 
 To create a bridge, hold Control and click anywhere on a Terrain tile to select the starting position of the bridge. After you set the starting point, release Control and click anywhere on the Terrain to create a bridge between the set starting point and the point you just clicked. The starting point of your bridge does not change unless you hold Control and click somewhere else on the Terrain tile to assign a new starting point.
 

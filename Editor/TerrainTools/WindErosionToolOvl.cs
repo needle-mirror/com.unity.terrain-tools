@@ -16,7 +16,7 @@ namespace UnityEditor.TerrainTools
 #endif
         public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/WindErosion_On.png";
         public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/WindErosion.png";
-        
+
         IBrushUIGroup commonUI
         {
             get
@@ -68,7 +68,7 @@ namespace UnityEditor.TerrainTools
         public override string GetName()
         {
             return "Erosion/Wind";
-            
+
         }
 
         public override string GetDescription()
@@ -76,7 +76,7 @@ namespace UnityEditor.TerrainTools
             return "Simulates the effect of wind transporting and redistributing sediment.\n\n" +
                    "Hold D + Drag to change the wind direction";
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -115,7 +115,7 @@ namespace UnityEditor.TerrainTools
             {
                 using(IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "WindErosion", editContext.brushTexture))
                 {
-                
+
                     if(brushRender.CalculateBrushTransform(out BrushTransform brushXform))
                     {
                         Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
@@ -129,8 +129,8 @@ namespace UnityEditor.TerrainTools
                             editContext.brushTexture, brushXform, previewMaterial, 0);
                         texelCtx.Cleanup();
                         RTUtils.Release(filterRT);
-                        brushRender.Release(ctx); // release the context 
-            
+                        brushRender.Release(ctx); // release the context
+
                         Quaternion windRot = Quaternion.AngleAxis(commonUI.brushRotation, new Vector3(0.0f, 1.0f, 0.0f));
                         Handles.ArrowHandleCap(0, commonUI.raycastHitUnderCursor.point, windRot, 0.5f * commonUI.brushSize, EventType.Repaint);
                     }
@@ -155,7 +155,7 @@ namespace UnityEditor.TerrainTools
 
             commonUI.OnInspectorGUI(terrain, editContext);
             OnToolSettingsGUI(terrain, editContext);
-           
+
             if (EditorGUI.EndChangeCheck()) {
                 TerrainToolsAnalytics.OnParameterChange();
             }
@@ -194,7 +194,7 @@ namespace UnityEditor.TerrainTools
                         Vector2 texelSize = new Vector2(terrain.terrainData.size.x / terrain.terrainData.heightmapResolution,
                                                     terrain.terrainData.size.z / terrain.terrainData.heightmapResolution);
                         m_Eroder.ErodeHeightmap(heightRT, terrain.terrainData.size, brushBounds, texelSize);
-    
+
                         //Blit the result onto the new height map
                         Material mat = GetPaintMaterial();
                         var brushMask = RTUtils.GetTempHandle(paintContext.sourceRenderTexture.width, paintContext.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
@@ -203,7 +203,7 @@ namespace UnityEditor.TerrainTools
                         mat.SetTexture("_BrushTex", editContext.brushTexture);
                         mat.SetTexture("_NewHeightTex", heightRT);
                         mat.SetVector("_BrushParams", brushParams);
-                
+
                         brushRender.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
                         brushRender.RenderBrush(paintContext, mat, 0);
                         brushRender.Release(paintContext);

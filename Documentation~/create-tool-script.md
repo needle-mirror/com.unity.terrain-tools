@@ -46,7 +46,7 @@ The image below displays **Examples**, which contains **Basic Custom Terrain Too
 
 ## Toolbar icon and category
 
-To access your tool from the terrain toolbar, give it an icon and a toolbar category. 
+To access your tool from the terrain toolbar, give it an icon and a toolbar category.
 
 ### Create icons
 
@@ -98,7 +98,7 @@ class BasicTerrainTool : TerrainPaintToolWithOverlays<BasicTerrainTool>
     {
         return "This is a very basic Terrain Tool that doesn't do anything aside from appear in the list of Paint Terrain tools.";
     }
-    
+
     // File names of the light theme icons - prepend d_ to the file name to generate dark theme variants.
     // Override these to specify your own icon.
     // public override string OnIcon => "Assets/Icon_on.png";

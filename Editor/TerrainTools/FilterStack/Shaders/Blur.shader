@@ -1,4 +1,4 @@
-﻿    Shader "Hidden/TerrainTools/Blur" {
+    Shader "Hidden/TerrainTools/Blur" {
 
     Properties { _MainTex ("Texture", any) = "" {} }
 
@@ -52,7 +52,7 @@
                 float2 uv = i.uv;
                 float4 c = tex2D(_MainTex, uv);
                 float4 h = tex2D(_MainTex, uv);
-                
+
                 float divisor = 1.0f;
                 int kernelSize = _KernelSize; // todo: subpixel?
 
@@ -67,16 +67,16 @@
                     h += tex2D(_MainTex, uv - offset) * weight * iib1;
                     divisor += weight * (iib0 + iib1);
                 }
-            
+
                 h /= divisor;
-                
+
                 h = float4(
                     dot(float3(h.r, min(h.r, c.r), max(h.r, c.r)), _SmoothWeights.xyz),
                     dot(float3(h.g, min(h.g, c.g), max(h.g, c.g)), _SmoothWeights.xyz),
                     dot(float3(h.b, min(h.b, c.b), max(h.b, c.b)), _SmoothWeights.xyz),
                     dot(float3(h.a, min(h.a, c.a), max(h.a, c.a)), _SmoothWeights.xyz)
                 );
-                
+
                 return h;
             }
             ENDCG

@@ -8,7 +8,7 @@ Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspecto
 
 Alternatively, select the terrain, and select the hydraulic erosion icon on the terrain toolbar.
 
-![Hydraulic Icon](images/Icons/HydraulicErosion.png) 
+![Hydraulic Icon](images/Icons/HydraulicErosion.png)
 
 The Hydraulic Erosion Tool simulates the effect of water flowing across the Terrain surface, and the transport of sediment along the flow field. Use this tool to create valley and fluvial features.
 

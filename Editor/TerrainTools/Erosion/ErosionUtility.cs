@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 
 namespace UnityEditor.TerrainTools.Erosion
@@ -79,7 +79,7 @@ namespace UnityEditor.TerrainTools.Erosion
 
 
 
-        //Hydro 
+        //Hydro
         public static GUIContent m_HydroErosionControls = EditorGUIUtility.TrTextContent("Hydraulic Erosion Controls");
         public static GUIContent m_AffectHeight = EditorGUIUtility.TrTextContent("Affect Terrain Height", "Toggles whether this brush will affect the terrain height.");
         public static GUIContent m_AddHeight = EditorGUIUtility.TrTextContent("Add Height", "Amount of new height to add before erosion simulation.");
@@ -108,7 +108,7 @@ namespace UnityEditor.TerrainTools.Erosion
         public static GUIContent m_SedimentDeposit = EditorGUIUtility.TrTextContent("Sediment Deposit Rate", "Specifies the overall rate at which sediment is deposited back into " +
             "the height field and removed from the hydraulic flow");
 
-        // Thermal        
+        // Thermal
         public static GUIContent m_ThermalErosionControls = EditorGUIUtility.TrTextContent("Thermal Erosion Controls");
         public static GUIContent m_DoThermal = EditorGUIUtility.TrTextContent("Thermal Erosion", "Toggles whether the thermal erosion simulation is run. " +
             "Thermal Erosion simulates the crumbling and settling of rock into loose debris.");

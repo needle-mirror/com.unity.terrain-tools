@@ -1,4 +1,4 @@
-﻿#if UNITY_2018_2_OR_NEWER
+#if UNITY_2018_2_OR_NEWER
 #define NEW_PACKMAN
 
 using System;
@@ -59,7 +59,7 @@ internal class SamplesLinkPackageManagerExtension : IPackageManagerExtension
         {
             sampleSceneButton.text = SAMPLESCENEURPBUTTON_TEXT;
             sampleSceneButton.clickable.clicked += () => Application.OpenURL(URPSCENE_URL);
-        }        
+        }
     }
 
     static SamplesLinkPackageManagerExtension()

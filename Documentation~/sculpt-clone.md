@@ -1,6 +1,6 @@
 # Clone Tool
 
-The Clone Tool duplicates Terrain from one region to another. 
+The Clone Tool duplicates Terrain from one region to another.
 
 ![The clone tool in use](images/2-12-Clone-03.png)
 
@@ -10,7 +10,7 @@ To access the Clone Tool, select a Terrain tile to bring up the Terrain Inspecto
 
 Alternatively, select the terrain, and select the clone icon on the terrain toolbar.
 
-![Clone icon](images/Icons/Clone.png) 
+![Clone icon](images/Icons/Clone.png)
 
 Hold Ctrl (Option on macOS) and click to set the Terrain area to sample from. Click to apply the cloned area anywhere else on the Terrain. The region to clone from remains the same until you hold Ctrl (Option on macOS) and click to select a new area.
 

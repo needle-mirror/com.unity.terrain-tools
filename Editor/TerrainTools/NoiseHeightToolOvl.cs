@@ -53,7 +53,7 @@ namespace UnityEditor.TerrainTools
 
         public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Noise_On.png";
         public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Noise.png";
-        
+
         IBrushUIGroup commonUI {
             get
             {
@@ -182,14 +182,14 @@ namespace UnityEditor.TerrainTools
 
         public override string GetName()
         {
-           return "Sculpt/Noise"; 
+           return "Sculpt/Noise";
         }
 
         public override string GetDescription()
-        { 
-            return "Increases or decreases the Terrain height using Noise and Fractal Types."; 
+        {
+            return "Increases or decreases the Terrain height using Noise and Fractal Types.";
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -214,7 +214,7 @@ namespace UnityEditor.TerrainTools
                     m_IsScrolling = true;
                     m_ScrollTime = Time.realtimeSinceStartupAsDouble;
                 }
-                    
+
                 if (m_IsScrolling && (Time.realtimeSinceStartupAsDouble - m_ScrollTime) > .2)
                 {
                     m_IsScrolling = false;
@@ -247,7 +247,7 @@ namespace UnityEditor.TerrainTools
 
                 GUILayout.Space(12);
             }
-            
+
         }
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
@@ -266,7 +266,7 @@ namespace UnityEditor.TerrainTools
                 TerrainToolsAnalytics.OnParameterChange();
             }
         }
-        
+
 
         private void DoSimulationControls()
         {
@@ -540,7 +540,7 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
+
             // Only render preview if this is a repaint. losing performance if we do
             if (Event.current.type == EventType.Repaint)
             {
@@ -554,33 +554,33 @@ namespace UnityEditor.TerrainTools
                     PaintContext ctx = brushPreview.AcquireHeightmap(false, brushXform.GetBrushXYBounds(), 1);
 
                     Material previewMaterial = Utility.GetDefaultPreviewMaterial(commonUI.hasEnabledFilters);
-                    
+
                     var filter = RTUtils.GetTempHandle(ctx.sourceRenderTexture.width, ctx.sourceRenderTexture.height, 0, FilterUtility.defaultFormat);
                     Utility.GenerateAndSetFilterRT(commonUI, ctx.sourceRenderTexture, filter, previewMaterial);
-                    
+
                     var texelCtx = Utility.CollectTexelValidity(ctx.originTerrain, brushXform.GetBrushXYBounds());
                     Utility.SetupMaterialForPaintingWithTexelValidityContext(ctx, texelCtx, brushXform, previewMaterial);
-                    
+
                     previewMaterial.SetTexture("_HeightmapOrig", ctx.sourceRenderTexture);
                     TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture,
                         editContext.brushTexture, brushXform, previewMaterial, 0);
-                    
+
                     ApplyBrushInternal(ctx, brushXform, brushPosWS, commonUI.brushRotation,
                                         brushStrength, brushSize, editContext.brushTexture);
                     TerrainPaintUtility.SetupTerrainToolMaterialProperties(ctx, brushXform, previewMaterial);
 
                     // restore old render target
                     RenderTexture.active = ctx.oldRenderTexture;
-                    
+
                      TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.DestinationRenderTexture,
                         editContext.brushTexture, brushXform, previewMaterial, 1);
                     texelCtx.Cleanup();
                     RTUtils.Release(filter);
-                    brushPreview.Release(ctx); 
-                  
+                    brushPreview.Release(ctx);
+
                 }
             }
-            
+
 
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
@@ -703,7 +703,7 @@ namespace UnityEditor.TerrainTools
             SerializedProperty fractalTypeParams = domainSettings.FindPropertyRelative("fractalTypeParams");
 
             //Add Generic, Transform, and Domain type settings to be sent as analytic data
-            m_AnalyticsData.AddRange(new TerrainToolsAnalytics.IBrushParameter[]{ 
+            m_AnalyticsData.AddRange(new TerrainToolsAnalytics.IBrushParameter[]{
                 //Generic Settings
                 new TerrainToolsAnalytics.BrushParameter<string>{Name = Styles.coordSpace.text,
                     Value = m_toolSettings.coordSpace.ToString()},

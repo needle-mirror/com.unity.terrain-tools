@@ -101,7 +101,7 @@ class CustomTerrainTool : TerrainPaintToolWithOverlays<CustomTerrainTool>
         // Return whether or not Trees and Details should be hidden while painting with this Terrain Tool
         return true;
     }
-    
+
     // Return true for this property to display the brush attributes overlay
     public override bool HasBrushAttributes => true;
 

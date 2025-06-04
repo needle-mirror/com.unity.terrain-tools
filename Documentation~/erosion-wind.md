@@ -6,9 +6,9 @@ Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspecto
 
 Alternatively, select the terrain, and select the wind erosion icon on the terrain toolbar.
 
-![Wind Icon](images/Icons/WindErosion.png) 
+![Wind Icon](images/Icons/WindErosion.png)
 
-The Wind Erosion Tool simulates the effect of wind transporting and redistributing sediment. 
+The Wind Erosion Tool simulates the effect of wind transporting and redistributing sediment.
 
 The Wind Erosion Tool uses a smooth rotation jitter control, which is slightly different from the standard rotation control. Instead of computing a random rotation value for each frame, this tool uses a smooth noise function to simulate gradual changes in wind direction. Use the **Jitter** slider in the **Brush Rotation** section of the [Common Brush controls](brush-controls-shortcut-keys.md) to control the frequency of these rotation changes.
 

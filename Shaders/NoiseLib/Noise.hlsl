@@ -149,7 +149,7 @@
 //         float2 q = float2( fbm( pos ), fbm( pos + warp.offset.xy ) );
 //         pos = pos + warp.strength * q;
 //     }
-    
+
 //     float f = fbm( pos, fractal );
 
 //     return f;
@@ -166,7 +166,7 @@
 //                            fbm( pos.xyz + float3( warp.offset.x, warp.offset.y, 0 ) ) );
 //         pos = pos + warp.strength * q;
 //     }
-    
+
 //     float f = fbm( pos, fractal );
 
 //     return f;

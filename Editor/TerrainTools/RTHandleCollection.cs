@@ -19,6 +19,7 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         /// Access an RTHandle using an <c>int</c> hash.
         /// </summary>
+        /// <param name="hash">The hash or integer value used to access the RTHandle.</param>
         public RTHandle this[int hash] {
             get
             {
@@ -39,6 +40,7 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         /// Access an RTHandle using a <c>string</c>.
         /// </summary>
+        /// <param name="name">The name used to access the RTHandle.</param>
         public RTHandle this[string name] {
             get
             {
@@ -209,7 +211,7 @@ namespace UnityEditor.TerrainTools
         /// Releases the gathered <see cref="RTHandle"/> resources, and clears the RTHandleCollection <c>Dictionary</c>.
         /// </summary>
         /// <remarks>Override this method if you create a class that derives from RTHandleCollection.</remarks>
-        /// <param name="dispose">Whether to dispose resources when clearing releasing the RTHandleCollection. 
+        /// <param name="dispose">Whether to dispose resources when clearing releasing the RTHandleCollection.
         /// When the value is <c>true</c>, Unity disposes of resources. Otherwise, Unity does not dispose of resources.</param>
         /// <seealso cref="ReleaseRTHandles"/>
         public virtual void Dispose(bool dispose)

@@ -1,13 +1,15 @@
 {
   "name": "com.unity.terrain-tools",
   "displayName": "Terrain Tools",
-  "version": "5.2.1",
-  "unity": "2023.1",
-  "unityRelease": "0a25",
+  "version": "5.3.0",
+  "unity": "6000.0",
   "description": "The Terrain Tools package adds additional Terrain sculpting brushes and tools to Unity. This add-on toolset is suitable if you require more control over the appearance of your Terrain, and want to streamline Terrain workflows. It’s also useful when you want to make more complex-looking Terrain, or author Terrain Texture data in external digital content creation tools.",
   "dependencies": {
     "com.unity.modules.terrain": "1.0.0",
     "com.unity.modules.terrainphysics": "1.0.0"
+  },
+  "relatedPackages": {
+    "com.unity.terrain-tools.tests": "0.0.0"
   },
   "keywords": [
     "Terrain",
@@ -18,15 +20,15 @@
     "Noise"
   ],
   "_upm": {
-    "changelog": "### Fixed:\n- Fixed issue where new tests were not set to be internal, causing internal checks to fail.\n- Fixed incorrect line endings on some shaders that caused internal checks to fail."
+    "changelog": "### Changed:\n- Move tests to a separate package.\n\n### Fixed:\n- Fixed low resolution icons on high PPI and retina displays\n- Fixed deprecation warnings in NoiseFieldView"
   },
   "upmCi": {
-    "footprint": "bf920a5e9de67f357399329c5a3556bd38f55dd7"
+    "footprint": "29ea37c95e6624a4b7fe8dfc19ca959b2a4bb19e"
   },
-  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.terrain-tools@5.2/manual/index.html",
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.terrain-tools@5.3/manual/index.html",
   "repository": {
     "url": "https://github.com/Unity-Technologies/TerrainTools.git",
     "type": "git",
-    "revision": "523252ebeb35751a9a1059dce1fff9dda2e9ae2f"
+    "revision": "f2e40ae748f1940ea0d18f66152f18d3678f4267"
   }
 }

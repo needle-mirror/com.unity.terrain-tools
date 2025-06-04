@@ -10,7 +10,7 @@ Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspecto
 
 Alternatively, select the terrain, and select the pinch icon on the terrain toolbar.
 
-![Pinch icon](images/Icons/Pinch.png) 
+![Pinch icon](images/Icons/Pinch.png)
 
 ## Parameters
 

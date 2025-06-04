@@ -13,7 +13,7 @@ Shader "Hidden/TerrainTools/CloneBrush"
         CGINCLUDE
 
             #include "UnityCG.cginc"
-		    #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
+            #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
 
             float4 _SampleUVScaleOffset;
 
@@ -21,7 +21,7 @@ Shader "Hidden/TerrainTools/CloneBrush"
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
             sampler2D _BrushTex;
-			sampler2D _FilterTex;
+            sampler2D _FilterTex;
 
             float4 _BrushParams;
             #define BRUSH_STRENGTH      (_BrushParams[0])

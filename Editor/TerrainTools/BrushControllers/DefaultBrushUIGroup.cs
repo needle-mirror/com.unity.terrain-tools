@@ -13,7 +13,7 @@ namespace UnityEditor.TerrainTools
             public float Spacing { get; set; }
             public float Scatter { get; set; }
         }
-        
+
         [Flags]
         public enum Feature
         {
@@ -30,35 +30,35 @@ namespace UnityEditor.TerrainTools
             NoSpacing = All & ~Spacing,
             NoSmoothing = All & ~Smoothing,
         }
-        
+
 
         public DefaultBrushUIGroup(string name, Func<TerrainToolsAnalytics.IBrushParameter[]> analyticsCall = null, Feature feature = Feature.All, FeatureDefaults defaults = null) : base(name, analyticsCall)
         {
             //Scatter must be first.
             if ((feature & Feature.Scatter) != 0)
             {
-                m_HasBrushScatter = true; 
+                m_HasBrushScatter = true;
                 AddScatterController(new BrushScatterVariator(name, this, this, defaults?.Scatter?? brushScatter));
             }
 
             if ((feature & Feature.Size) != 0)
             {
-                m_HasBrushSize = true; 
+                m_HasBrushSize = true;
                 AddSizeController(new BrushSizeVariator(name, this, this, defaults?.Size?? brushSize));
             }
             if ((feature & Feature.Rotation) != 0)
             {
-                m_HasBrushRotation = true; 
+                m_HasBrushRotation = true;
                 AddRotationController(new BrushRotationVariator(name, this, this, false, defaults?.Rotation?? brushRotation));
             }
             if ((feature & Feature.Strength) != 0)
             {
-                m_HasBrushStrength = true; 
+                m_HasBrushStrength = true;
                 AddStrengthController(new BrushStrengthVariator(name, this, this, defaults?.Strength?? brushStrength));
             }
             if ((feature & Feature.Spacing) != 0)
             {
-                m_HasBrushSpacing = true; 
+                m_HasBrushSpacing = true;
                 AddSpacingController(new BrushSpacingVariator(name, this, this, defaults?.Spacing?? brushSpacing));
             }
 

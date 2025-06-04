@@ -32,13 +32,13 @@ namespace UnityEditor.TerrainTools
         bool m_ShowDetailControls = true;
         int m_PreviouslySelectedIndex;
         int m_MouseOnPatchIndex = -1;
-        
+
         List<DetailUIData> m_DetailDataList = new List<DetailUIData>();
         internal List<DetailUIData> detailDataList => m_DetailDataList;
 
         private const string k_MissingDetailPrototype = "Detail Prototype is missing.";
         private const string k_MissingDetailTexture = "Detail Texture is missing.";
-        
+
         Material m_Material = null;
         Material scatterMaterial
         {
@@ -49,7 +49,7 @@ namespace UnityEditor.TerrainTools
                 return m_Material;
             }
         }
-        
+
         IBrushUIGroup commonUI
         {
             get
@@ -72,7 +72,7 @@ namespace UnityEditor.TerrainTools
         {
             m_commonUI = uiGroup;
         }
-        
+
         private class Styles
         {
             public readonly GUIContent editDetails = EditorGUIUtility.TrTextContent("Edit Details...", "Add or remove detail meshes");
@@ -103,7 +103,7 @@ namespace UnityEditor.TerrainTools
 
             public enum ViewType
             {
-                List, 
+                List,
                 Grid
             }
             public ViewType viewType = ViewType.List;
@@ -111,7 +111,7 @@ namespace UnityEditor.TerrainTools
             public readonly GUIContent listViewLabel = EditorGUIUtility.TrTextContent("List", "View the detail controls in a list. Allows for greater access to parameters.");
             public readonly GUIContent gridViewLabel = EditorGUIUtility.TrTextContent("Grid", "View the detail controls in a grid. Allows for a simpler UI.");
             public readonly GUIContent detailSelectionWarning = EditorGUIUtility.TrTextContentWithIcon("Select the \"+\" button in order to add a Detail to scatter with.", MessageType.Info);
-            
+
             //List View
             public readonly GUIContent previewLabel = EditorGUIUtility.TrTextContent("Preview", "Detail preview image");
             public readonly GUIContent targetDensityLabel = EditorGUIUtility.TrTextContent("Target Density", "Clamps the scattered density to a percentage of the Detail Density.");
@@ -180,7 +180,7 @@ namespace UnityEditor.TerrainTools
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
         {
             commonUI.OnSceneGUI2D(terrain, editContext);
-            
+
             commonUI.OnSceneGUI(terrain, editContext);
 
             //Grab m_MouseOnPatchIndex here to avoid calling again in OnRenderBrushPreview
@@ -229,7 +229,7 @@ namespace UnityEditor.TerrainTools
         {
             if (s_Styles == null)
                 s_Styles = new Styles();
-            
+
             m_ShowDetailControls = TerrainToolGUIHelper.DrawHeaderFoldout(s_Styles.detailControlHeader, m_ShowDetailControls);
             if (m_ShowDetailControls)
             {
@@ -299,7 +299,7 @@ namespace UnityEditor.TerrainTools
             for (int t = 0; t < ctx.neighborTerrains.Length; ++t)
             {
                 TerrainData terrainData = ctx.neighborTerrains[t]?.terrainData;
-                
+
                 if (terrainData == null)
                 {
                     continue;
@@ -329,7 +329,7 @@ namespace UnityEditor.TerrainTools
                 }
 
                 TerrainPaintUtilityEditor.UpdateTerrainDataUndo(terrainData, "Terrain - Detail Edit");
-                
+
                 for (int i = 0; i < layers.Length; i++)
                 {
                     int layerIndex;
@@ -537,7 +537,7 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        
+
         void InitReordableLayerSelection()
         {
             m_ReordableDetailsList = new ReorderableList(m_DetailDataList, typeof(DetailUIData), false, true, true, true);
@@ -621,7 +621,7 @@ namespace UnityEditor.TerrainTools
             GUI.Label(previewLabelRect, s_Styles.previewLabel);
         }
 
-        const int k_ElementPadding = 4; 
+        const int k_ElementPadding = 4;
         const int k_ElementPrototypeCardSize = 80;
         const int k_ElementPrototypePreviewPadding = 4;
         const int k_ElementOptionsMenuXOffest = 15;
@@ -633,7 +633,7 @@ namespace UnityEditor.TerrainTools
 
         //The empty method is needed to properly draw detail elements without the selection highlight
         void DrawElement(Rect rect, int index, bool selected, bool focused) { }
-        void DrawElementBackground(Rect rect, int index, bool selected, bool focused) 
+        void DrawElementBackground(Rect rect, int index, bool selected, bool focused)
         {
             if (m_SelectedTerrain == null || m_DetailDataList.Count == 0)
                 return;
@@ -693,7 +693,7 @@ namespace UnityEditor.TerrainTools
                 prototypeCardRect.y - 2,
                 prototypeRectOffset - k_ElementOptionsMenuXOffest,
                 EditorGUIUtility.singleLineHeight);
-            
+
             GUI.Label(prototypeNameRect, GetPrototypeName(prototypes[index]));
 
             //Prototype options menu
@@ -858,7 +858,7 @@ namespace UnityEditor.TerrainTools
             if (EditorGUI.EndChangeCheck())
             {
                 m_SelectedTerrain.terrainData.detailPrototypes = prototypes; //Necessary to update the settings
-                EditorUtility.SetDirty(m_SelectedTerrain); 
+                EditorUtility.SetDirty(m_SelectedTerrain);
             }
         }
 
@@ -885,7 +885,7 @@ namespace UnityEditor.TerrainTools
             GenericMenu menu = new GenericMenu();
             menu.AddItem(new GUIContent("Edit"), false, () =>
             {
-                //Taken from TerrainMenus.EditDetail(MenuCommand) 
+                //Taken from TerrainMenus.EditDetail(MenuCommand)
                 MenuCommand item = new MenuCommand(m_SelectedTerrain, index);
 
                 if (prototypes[index].usePrototypeMesh)
@@ -950,7 +950,7 @@ namespace UnityEditor.TerrainTools
                     currentEvent.Use();
                     m_PreviouslySelectedIndex = index;
                 }
-                
+
                 if (currentEvent.button == 1 && rightClickAreaRect.Contains(currentEvent.mousePosition)) //Right click operation
                 {
                     originalPrototypeThumbnail = detailIcons[index].image;
@@ -983,9 +983,9 @@ namespace UnityEditor.TerrainTools
             for (int i = 0; i < ctxTerrain.terrainData.detailPrototypes.Length; i++)
             {
                 m_DetailDataList.Add(
-                    new DetailUIData() { 
+                    new DetailUIData() {
                         isSelected = m_SelectedTerrain == ctxTerrain && i + 1 > oldDetailListCount  // Set the selection boolean to true if it's a newly added detail
-                    } 
+                    }
                 );
             }
 
@@ -1019,15 +1019,15 @@ namespace UnityEditor.TerrainTools
                     new TerrainToolsAnalytics.BrushParameter<float>{Name = "Average Target Coverage", Value = m_SelectedTerrain.terrainData.detailPrototypes.Select(x => x.targetCoverage).Average()},
                 };
             }
-            
+
         }
-        
+
         public static string GetPrototypeName(DetailPrototype prototype)
         {
             return prototype.usePrototypeMesh
                 ? prototype.prototype == null
                     ? k_MissingDetailPrototype
-                    : prototype.prototype.name 
+                    : prototype.prototype.name
                 : prototype.prototypeTexture == null
                     ? k_MissingDetailTexture
                     : prototype.prototypeTexture.name;

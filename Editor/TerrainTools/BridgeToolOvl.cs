@@ -16,7 +16,7 @@ namespace UnityEditor.TerrainTools
 #endif
         public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Bridge_On.png";
         public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Bridge.png";
-        
+
         IBrushUIGroup commonUI
         {
             get
@@ -31,7 +31,7 @@ namespace UnityEditor.TerrainTools
                 return m_commonUI;
             }
         }
-        
+
 
         Terrain m_StartTerrain = null;
         private Vector3 m_StartPoint;
@@ -74,7 +74,7 @@ namespace UnityEditor.TerrainTools
 
         public override string GetName()
         {
-            return "Sculpt/Bridge"; 
+            return "Sculpt/Bridge";
         }
 
         public override string GetDescription()
@@ -83,7 +83,7 @@ namespace UnityEditor.TerrainTools
                    "Hold Ctrl + Click to select the starting position.\n" +
                    "Release Ctrl + Click to set the end position.";
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -121,12 +121,12 @@ namespace UnityEditor.TerrainTools
                     texelCtx.Cleanup();
                     ctx.Cleanup();
                     RTUtils.Release(brushMask);
-                    
+
                 }
-                
+
                 commonUI.OnSceneGUI(terrain, editContext);
             }
-            
+
 
             //display a brush preview at the bridge starting location, using starting size from width profile
             if (m_StartTerrain != null && Event.current.type == EventType.Repaint)
@@ -174,7 +174,7 @@ namespace UnityEditor.TerrainTools
                 editContext.Repaint(RepaintFlags.Scene);
             }
         }
-        
+
         private Vector2 transformToWorld(Terrain t, Vector2 uvs)
         {
             Vector3 tilePos = t.GetPosition();
@@ -216,7 +216,7 @@ namespace UnityEditor.TerrainTools
             Vector2 jitterVec = new Vector2(-stroke.z, stroke.x); //perpendicular to stroke direction
             jitterVec.Normalize();
 
-            
+
 
             for (int i = 0; i < numSplats; i++)
             {
@@ -266,7 +266,7 @@ namespace UnityEditor.TerrainTools
                     {
                         Rect brushBounds = brushTransform.GetBrushXYBounds();
                         PaintContext paintContext = brushRenderWithTerrain.AcquireHeightmap(true, currTerrain, brushBounds);
-                
+
                         mat.SetTexture("_BrushTex", brushTexture);
 
                         brushParams.x = commonUI.brushStrength * strengthScale;
@@ -283,7 +283,7 @@ namespace UnityEditor.TerrainTools
                 }
             }
         }
-        
+
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
             commonUI.OnPaint(terrain, editContext);

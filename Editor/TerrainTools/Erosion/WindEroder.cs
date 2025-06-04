@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Collections.Generic;
 
@@ -344,9 +344,9 @@ namespace UnityEditor.TerrainTools.Erosion
                         m_ThermalIterations = EditorGUILayout.IntSlider("# Iterations", m_ThermalIterations, 0, 100);
                         m_ThermalTimeDelta.DrawInspectorGUI();
                         m_AngleOfRepose = EditorGUILayout.Slider(Erosion.Styles.m_AngleOfRepose, m_AngleOfRepose, 0.0f, 89.0f);
-                        EditorGUI.indentLevel--; 
+                        EditorGUI.indentLevel--;
                     }
-                    EditorGUI.indentLevel--; 
+                    EditorGUI.indentLevel--;
                 }
                 EditorGUILayout.EndVertical();
             }

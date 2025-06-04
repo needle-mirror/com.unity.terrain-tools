@@ -15,7 +15,7 @@
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
             sampler2D _BrushTex;
-			sampler2D _FilterTex;
+            sampler2D _FilterTex;
 
             float4 _BrushParams;
             #define BRUSH_STRENGTH      (_BrushParams[0])
@@ -78,14 +78,14 @@
                 // out of bounds multiplier
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
-				float PinchAmt = BRUSH_PINCHAMOUNT;// *centerDistance; //todo: allow user to specify
-				float2 pinchVector = PinchAmt * (RotateUVs(brushUV, BRUSH_ROTATION) - float2(0.5, 0.5));
+                float PinchAmt = BRUSH_PINCHAMOUNT;// *centerDistance; //todo: allow user to specify
+                float2 pinchVector = PinchAmt * (RotateUVs(brushUV, BRUSH_ROTATION) - float2(0.5, 0.5));
 
-				float2 PinchedUVs = heightmapUV + pinchVector;
+                float2 PinchedUVs = heightmapUV + pinchVector;
 
                 float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
                 float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
-				float h = UnpackHeightmap(tex2D(_MainTex, PinchedUVs));
+                float h = UnpackHeightmap(tex2D(_MainTex, PinchedUVs));
 
                 return PackHeightmap(lerp(height, h, brushStrength));
             }

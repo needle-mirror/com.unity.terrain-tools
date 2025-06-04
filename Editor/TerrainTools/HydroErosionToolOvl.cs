@@ -69,13 +69,13 @@ namespace UnityEditor.TerrainTools
 
         public override string GetName()
         {
-            return "Erosion/Hydraulic"; 
+            return "Erosion/Hydraulic";
         }
 
         public override string GetDescription()
-        { return "Simulates the effect of water transporting and redistributing sediment."; 
+        { return "Simulates the effect of water transporting and redistributing sediment.";
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -91,7 +91,7 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
+
             // Only render preview if this is a repaint. losing performance if we do
             if (Event.current.type == EventType.Repaint)
             {
@@ -115,7 +115,7 @@ namespace UnityEditor.TerrainTools
                 }
             }
 
-            
+
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
 
@@ -130,12 +130,12 @@ namespace UnityEditor.TerrainTools
             }
 
             Erosion.HydraulicErosionSettings erosionSettings = ((Erosion.HydraulicEroder)m_Eroder).m_ErosionSettings;
-            
+
             m_Eroder.OnInspectorGUI(terrain, editContext);
 
             commonUI.validationMessage = TerrainToolGUIHelper.ValidateAndGenerateSceneGUIMessage(terrain);
 
-            
+
         }
 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
@@ -144,9 +144,9 @@ namespace UnityEditor.TerrainTools
             EditorGUI.BeginChangeCheck();
 
             commonUI.OnInspectorGUI(terrain, editContext);
-            
+
             OnToolSettingsGUI(terrain, editContext);
-            
+
             if (EditorGUI.EndChangeCheck())
             {
                 TerrainToolsAnalytics.OnParameterChange();
@@ -213,7 +213,7 @@ namespace UnityEditor.TerrainTools
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_SimulationScale.text, Value = settings.m_SimScale.value},
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_TimeDelta.text, Value = settings.m_HydroTimeDelta.value},
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_NumIterations.text, Value = settings.m_HydroIterations.value},
-            
+
             //Thermal Smoothing
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_ThermalDTScalar.text, Value = settings.m_ThermalTimeDelta},
             new TerrainToolsAnalytics.BrushParameter<float>{Name = Erosion.Styles.m_NumIterations.text, Value = settings.m_ThermalIterations},

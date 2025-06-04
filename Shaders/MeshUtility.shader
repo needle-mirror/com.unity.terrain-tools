@@ -46,7 +46,7 @@ Shader "Hidden/TerrainTools/MeshUtility"
                 v2f o;
 
                 float2 b = float2( 0, 1 );
-                
+
                 o.worldPos = mul( _Matrix_M, float4( v.vertex.xyz, 1 ) );        // world space position
                 // o.viewPos = mul( _Matrix_MV, float4( v.vertex.xyz, 1 ) );   // view ( camera ) space position
                 o.vertex = mul( _Matrix_MVP, float4( v.vertex.xyz, 1 ) );   // clip space position
@@ -57,7 +57,7 @@ Shader "Hidden/TerrainTools/MeshUtility"
             float4 frag( v2f i ) : SV_Target
             {
                 return i.worldPos.y;
-                // return PackHeightmap( i.viewPos.z ); 
+                // return PackHeightmap( i.viewPos.z );
                 // return PackHeightmap( i.vertex.z ); // depth
             }
 

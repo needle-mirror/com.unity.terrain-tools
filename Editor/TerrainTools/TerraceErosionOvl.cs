@@ -17,7 +17,7 @@ namespace UnityEditor.TerrainTools
 #endif
         public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Terrace_On.png";
         public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/Terrace.png";
-        
+
         IBrushUIGroup commonUI
         {
             get
@@ -79,13 +79,13 @@ namespace UnityEditor.TerrainTools
         public override string GetName()
         {
             return "Sculpt/Terrace";
-            
+
         }
 
         public override string GetDescription()
         {
             return "Transforms Terrain features into a series of flat areas resembling steps.";
-            
+
         }
 
         public override bool HasToolSettings => true;
@@ -116,7 +116,7 @@ namespace UnityEditor.TerrainTools
                 return;
             }
 
-            // Only render preview if this is a repaint. losing performance if we do 
+            // Only render preview if this is a repaint. losing performance if we do
             if (Event.current.type == EventType.Repaint)
             {
                 using (IBrushRenderPreviewUnderCursor brushRender =

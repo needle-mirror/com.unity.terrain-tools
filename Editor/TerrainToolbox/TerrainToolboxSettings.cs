@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor.AnimatedValues;
 using UnityEngine;
@@ -254,23 +254,23 @@ namespace UnityEditor.TerrainTools
 #if UNITY_2019_2_OR_NEWER
             m_Settings.MaterialTemplate = EditorGUILayout.ObjectField("Material", m_Settings.MaterialTemplate, typeof(Material), false) as Material;
 #if UNITY_2021_2_OR_NEWER
-			TerrainInspectorUtility.TerrainShaderValidationGUI(m_Settings.MaterialTemplate);
+            TerrainInspectorUtility.TerrainShaderValidationGUI(m_Settings.MaterialTemplate);
 #endif
             m_Settings.ReflectionProbeUsage = (ReflectionProbeUsage)EditorGUILayout.EnumPopup(Styles.ReflectionProbes, m_Settings.ReflectionProbeUsage);
 #else
-			m_Settings.MaterialType = (Terrain.MaterialType)EditorGUILayout.EnumPopup(Styles.Material, m_Settings.MaterialType);
+            m_Settings.MaterialType = (Terrain.MaterialType)EditorGUILayout.EnumPopup(Styles.Material, m_Settings.MaterialType);
 
-			if (m_Settings.MaterialType == Terrain.MaterialType.Custom)
-			{
-				m_Settings.MaterialTemplate = EditorGUILayout.ObjectField("Material", m_Settings.MaterialTemplate, typeof(Material), false) as Material;
-				m_Settings.ReflectionProbeUsage = (ReflectionProbeUsage)EditorGUILayout.EnumPopup(Styles.ReflectionProbes, m_Settings.ReflectionProbeUsage);
-			}
+            if (m_Settings.MaterialType == Terrain.MaterialType.Custom)
+            {
+                m_Settings.MaterialTemplate = EditorGUILayout.ObjectField("Material", m_Settings.MaterialTemplate, typeof(Material), false) as Material;
+                m_Settings.ReflectionProbeUsage = (ReflectionProbeUsage)EditorGUILayout.EnumPopup(Styles.ReflectionProbes, m_Settings.ReflectionProbeUsage);
+            }
 
-			if (m_Settings.MaterialType == Terrain.MaterialType.BuiltInLegacySpecular)
-			{
-				m_Settings.LegacySpecular = EditorGUILayout.ColorField("Specular Color", m_Settings.LegacySpecular);
-				m_Settings.LegacyShininess = EditorGUILayout.Slider("Shininess", m_Settings.LegacyShininess, 0, 1);
-			}
+            if (m_Settings.MaterialType == Terrain.MaterialType.BuiltInLegacySpecular)
+            {
+                m_Settings.LegacySpecular = EditorGUILayout.ColorField("Specular Color", m_Settings.LegacySpecular);
+                m_Settings.LegacyShininess = EditorGUILayout.Slider("Shininess", m_Settings.LegacyShininess, 0, 1);
+            }
 #endif
         }
 
@@ -362,7 +362,7 @@ namespace UnityEditor.TerrainTools
                         m_Settings.TerrainLength);
                     foreach (var terrain in terrains)
                     {
-                        // If any terrain has a size that's different from the specified settings, let's confirm 
+                        // If any terrain has a size that's different from the specified settings, let's confirm
                         // the action.
                         if (terrain.terrainData.size != newSize)
                         {
@@ -408,12 +408,12 @@ namespace UnityEditor.TerrainTools
                             terrain.reflectionProbeUsage = m_Settings.ReflectionProbeUsage;
 #if UNITY_2019_2_OR_NEWER
 #else
-						terrain.materialType = m_Settings.MaterialType;
-						if (m_Settings.MaterialType != Terrain.MaterialType.Custom)
-						{
-							terrain.legacySpecular = m_Settings.LegacySpecular;
-							terrain.legacyShininess = m_Settings.LegacyShininess;
-						}
+                        terrain.materialType = m_Settings.MaterialType;
+                        if (m_Settings.MaterialType != Terrain.MaterialType.Custom)
+                        {
+                            terrain.legacySpecular = m_Settings.LegacySpecular;
+                            terrain.legacyShininess = m_Settings.LegacyShininess;
+                        }
 #endif
                         }
 

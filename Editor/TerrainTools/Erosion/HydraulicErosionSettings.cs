@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 
 namespace UnityEditor.TerrainTools.Erosion {
@@ -122,7 +122,7 @@ namespace UnityEditor.TerrainTools.Erosion {
             m_SedimentCapacity.value = 0.42f;
             m_SedimentCapacity.minValue = 0.0f;
             m_SedimentCapacity.maxValue = 1.0f;
-            
+
             m_SedimentDissolveRate.value = 0.51f;
             m_SedimentDissolveRate.minValue = 0.0f;
             m_SedimentDissolveRate.maxValue = 1.0f;

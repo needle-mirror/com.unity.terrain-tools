@@ -5,7 +5,7 @@ using UnityEngine.Experimental.Rendering;
 namespace UnityEditor.TerrainTools
 {
     /// <summary>
-    /// Class that implements EditorWindow in order to provide options for exporting noise to 
+    /// Class that implements EditorWindow in order to provide options for exporting noise to
     /// textures that can be saved to disk.
     /// </summary>
     internal class ExportNoiseGUI

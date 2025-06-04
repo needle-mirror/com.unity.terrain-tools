@@ -49,7 +49,7 @@ namespace UnityEditor.TerrainTools
         public float ExportHeightRemapMin = 0.0f;
         public float ExportHeightRemapMax = 1.0f;
         public bool FlipVertically = false;
-        
+
         // Remap heightmaps
         public int LowerBound = 0;
         public int UpperBound = 512;
@@ -191,10 +191,10 @@ namespace UnityEditor.TerrainTools
             public static readonly GUIContent OptimizeButtonLabel  = EditorGUIUtility.TrTextContent("Optimize", "Remap the heightmap so that it fills the height values efficiently");
 
             public static readonly GUIStyle ToggleButtonStyle = "LargeButton";
-            
-            // for the large buttons 
-            public static int ButtonWidth = 140; 
-            public static int ButtonHeight = 25; 
+
+            // for the large buttons
+            public static int ButtonWidth = 140;
+            public static int ButtonHeight = 25;
         }
 
         public static void DrawSeperatorLine()
@@ -221,7 +221,7 @@ namespace UnityEditor.TerrainTools
             EditorGUIUtility.hierarchyMode = true;
             DrawSeperatorLine();
 
-            // Terrain Edit			
+            // Terrain Edit
             m_Settings.ShowTerrainEdit = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.TerrainEdit, m_Settings.ShowTerrainEdit);
             ++EditorGUI.indentLevel;
             if (m_Settings.ShowTerrainEdit)
@@ -250,7 +250,7 @@ namespace UnityEditor.TerrainTools
             }
             --EditorGUI.indentLevel;
             DrawSeperatorLine();
-            
+
             // Terrain Heightmaps
             m_Settings.ShowRemapHeightmaps =
                 TerrainToolGUIHelper.DrawHeaderFoldout(Styles.RemapHeightMaps, m_Settings.ShowRemapHeightmaps);
@@ -286,10 +286,10 @@ namespace UnityEditor.TerrainTools
 
         void ShowTerrainEditGUI()
         {
-            // style for labels 
-            GUIStyle labelStyle = new GUIStyle(EditorStyles.label); 
-            labelStyle.wordWrap = true; 
-            
+            // style for labels
+            GUIStyle labelStyle = new GUIStyle(EditorStyles.label);
+            labelStyle.wordWrap = true;
+
             // Duplicate Terrain
             EditorGUILayout.LabelField(Styles.DuplicateTerrain, EditorStyles.boldLabel);
             ++EditorGUI.indentLevel;
@@ -372,7 +372,7 @@ namespace UnityEditor.TerrainTools
             // layer reorderable list
             ShowLayerListGUI();
 
-            // Apply button			
+            // Apply button
             m_Settings.ApplyAllTerrains = EditorGUILayout.Toggle(Styles.ApplyToAllTerrains, m_Settings.ApplyAllTerrains);
             if (m_LayersAlreadyAdded)
             {
@@ -425,7 +425,7 @@ namespace UnityEditor.TerrainTools
             m_LayerList.onRemoveCallback = OnRemoveLayerElement;
             m_LayerList.onCanAddCallback = OnCanAddLayerElement;
             m_LayerList.DoLayoutList();
-            LayerCreation(); 
+            LayerCreation();
             EditorGUILayout.EndVertical();
         }
 
@@ -465,7 +465,7 @@ namespace UnityEditor.TerrainTools
             return list.count < m_MaxLayerCount;
         }
 
-        // adding layers 
+        // adding layers
         int m_LayerPickerWindowID = -1;
         int m_ObjPickerWindowID = -1;
         string m_LayerName = "NewLayer";
@@ -480,7 +480,7 @@ namespace UnityEditor.TerrainTools
         void LayerCreation()
         {
             // this code grabs the layer from the ObjectSelector, and creates a new layer with the texture and adds
-            // it to the list 
+            // it to the list
             if (Event.current.commandName == "ObjectSelectorClosed" &&
                 EditorGUIUtility.GetObjectPickerControlID() == m_LayerPickerWindowID)
             {
@@ -506,10 +506,10 @@ namespace UnityEditor.TerrainTools
                 m_LayerTexture = null;
                 CreateNewLayerWithTexture(tempTexture);
             }
-            
-            RemoveEmptyLayers(); 
+
+            RemoveEmptyLayers();
         }
-        
+
         void AddLayerElement(TerrainLayer layer)
         {
             if (LayerExists(layer))
@@ -522,7 +522,7 @@ namespace UnityEditor.TerrainTools
             m_PaletteLayers.Add(newLayer);
             m_LayerList.index = m_PaletteLayers.Count - 1;
         }
-        
+
         bool LayerExists(TerrainLayer layer)
         {
             List<TerrainLayer> existingLayers = m_PaletteLayers.Select(l => l.AssignedLayer).ToList();
@@ -532,7 +532,7 @@ namespace UnityEditor.TerrainTools
                 m_LayerList.index = existingLayers.IndexOf(layer);
                 return true;
             }
-            
+
             return false;
         }
 
@@ -540,7 +540,7 @@ namespace UnityEditor.TerrainTools
         {
             m_PaletteLayers.RemoveAll(layer => layer.AssignedLayer == null);
         }
-        
+
         void CreateNewLayerWithTexture(Texture2D texture)
         {
             Layer newLayer = new Layer();
@@ -847,7 +847,7 @@ namespace UnityEditor.TerrainTools
             //m_Settings.HeightmapByteOrder = (ToolboxHelper.ByteOrder)EditorGUILayout.EnumPopup(Styles.HeightmapByteOrder, m_Settings.HeightmapByteOrder);
             //EditorGUILayout.EndHorizontal();
 
-            //Future to support PNG and TGA. 
+            //Future to support PNG and TGA.
             m_Settings.HeightFormat = (Heightmap.Format)EditorGUILayout.EnumPopup(Styles.HeightmapSelectedFormat, m_Settings.HeightFormat);
             if (m_Settings.HeightFormat == Heightmap.Format.RAW)
             {
@@ -881,11 +881,11 @@ namespace UnityEditor.TerrainTools
         {
             EditorGUILayout.LabelField(Styles.RemapLabel, EditorStyles.boldLabel);
 
-            // ---- remap section 
+            // ---- remap section
             ++EditorGUI.indentLevel;
             EditorGUILayout.BeginHorizontal();
 
-            // min-max fields 
+            // min-max fields
             EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Heightmap lower boundary");
@@ -912,7 +912,7 @@ namespace UnityEditor.TerrainTools
 
             EditorGUILayout.EndHorizontal();
             --EditorGUI.indentLevel;
-            // ----  end remap section 
+            // ----  end remap section
 
             EditorGUILayout.Separator();
             EditorGUILayout.Separator();
@@ -1455,7 +1455,7 @@ namespace UnityEditor.TerrainTools
 #if UNITY_2019_3_OR_NEWER
                     // get and set holes, however there's currently a bug in GetHoles() so using render texture blit instead
                     //var holes = terrainData.GetHoles(heightOffset.x, heightOffset.y, newHeightmapRes, newHeightmapRes);
-                    //terrainDataNew.SetHoles(0, 0, holes);							
+                    //terrainDataNew.SetHoles(0, 0, holes);
                     float divX = 1f / m_Settings.TileSplit;
                     float divZ = 1f / m_Settings.TileSplit;
                     Vector2 scale = new Vector2(divX, divZ);
@@ -1485,7 +1485,7 @@ namespace UnityEditor.TerrainTools
             {
                 ToolboxHelper.ResizeHeightmap(terrainData, originalHeightmapRes);
             }
-            
+
             // Remove terrain components from the root gameobject.
             var terrainCollider = terrain.GetComponent<TerrainCollider>();
             if (terrainCollider != null)
@@ -1539,7 +1539,7 @@ namespace UnityEditor.TerrainTools
             targetTerrain.reflectionProbeUsage = sourceTerrain.reflectionProbeUsage;
 #if UNITY_2019_2_OR_NEWER
 #else
-            targetTerrain.materialType = sourceTerrain.materialType;			
+            targetTerrain.materialType = sourceTerrain.materialType;
             targetTerrain.legacySpecular = sourceTerrain.legacySpecular;
             targetTerrain.legacyShininess = sourceTerrain.legacyShininess;
 #endif
@@ -2106,7 +2106,7 @@ namespace UnityEditor.TerrainTools
                     vizShader = Shader.Find("Hidden/HDRP_TerrainVisualization");
                     break;
                 case ToolboxHelper.RenderPipeline.LW:
-                    // this is a temp setting, in LW if height based blending or opacity as density enabled, 
+                    // this is a temp setting, in LW if height based blending or opacity as density enabled,
                     // we only support 4 layers and 1 splatmap
                     // this will get checked when applying changes to each terrain
                     // To-do: update max allowance check once LW terrain checked in

@@ -63,7 +63,7 @@ Shader "Hidden/TerrainEngine/PaintMaterialBrushPreview"
             float4 frag(v2f i) : SV_Target
             {
                 float brushSample = _BrushStrength * UnpackHeightmap(tex2D(_BrushTex, i.brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.uv));
-                
+
                 float iib = IsPcUvPartOfValidTerrainTileTexel(i.pcPixels / _PcPixelRect.zw);
                 clip(iib - .01);
 

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor.TerrainTools
@@ -27,7 +27,7 @@ namespace UnityEditor.TerrainTools
 
                 Utility.AnimationCurveToRenderTexture(m_RemapCurve, ref m_RemapTex);
             }
-            
+
             return m_RemapTex;
         }
 
@@ -61,7 +61,7 @@ namespace UnityEditor.TerrainTools
                 message = $"The current Graphics API does not support UAV resource access for GraphicsFormat.{filterContext.targetFormat}.";
                 return false;
             }
-            
+
             return true;
         }
 
@@ -93,7 +93,7 @@ namespace UnityEditor.TerrainTools
                 cs.SetVector("TextureResolution", new Vector4(source.width, source.height, 0.0f, 0.0f));
                 cs.SetVector("AspectValues", new Vector4(Mathf.Cos(rotRad), Mathf.Sin(rotRad), m_Epsilon, 0.0f));
                 cs.Dispatch(kidx, source.width, source.height, 1);
-                
+
                 Graphics.Blit(destHandle, dest);
             }
         }

@@ -36,18 +36,18 @@ namespace UnityEditor.TerrainTools
         private IBrushScatterController m_BrushScatterController = null;
         private IBrushModifierKeyController m_BrushModifierKeyController = null;
         private IBrushSmoothController m_BrushSmoothController = null;
-        
-        internal bool m_HasBrushSize; // tells you which of the controllers are null or not 
+
+        internal bool m_HasBrushSize; // tells you which of the controllers are null or not
         internal bool m_HasBrushRotation;
         internal bool m_HasBrushStrength;
         internal bool m_HasBrushSpacing;
-        internal bool m_HasBrushScatter; 
+        internal bool m_HasBrushScatter;
 
         [ SerializeField ]
         private FilterStack m_BrushMaskFilterStack = null;
 
         /// <summary>
-        /// Gets the brush mask's <see cref="FilterStack"/>. 
+        /// Gets the brush mask's <see cref="FilterStack"/>.
         /// </summary>
         public FilterStack brushMaskFilterStack
         {
@@ -100,7 +100,7 @@ namespace UnityEditor.TerrainTools
             get
             {
                 if (m_FilterContext != null) return m_FilterContext;
-                
+
                 m_FilterContext = new FilterContext(FilterUtility.defaultFormat, Vector3.zero, 1f, 0f);
                 return m_FilterContext;
             }
@@ -136,7 +136,7 @@ namespace UnityEditor.TerrainTools
         /// <param name="position">The brush's position.</param>
         /// <param name="scale">The brush's scale.</param>
         /// <param name="rotation">The brush's rotation.</param>
-        /// <seealso cref="GenerateBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture, Vector3 position, float scale, float rotation)"/> 
+        /// <seealso cref="GenerateBrushMask(Terrain terrain, RenderTexture sourceRenderTexture, RenderTexture destinationRenderTexture, Vector3 position, float scale, float rotation)"/>
         public void GenerateBrushMask(Terrain terrain, IBrushRenderUnderCursor brushRender, RenderTexture destinationRenderTexture,
             Vector3 position, float scale, float rotation)
         {
@@ -146,7 +146,7 @@ namespace UnityEditor.TerrainTools
             if (brushRender.CalculateBrushTransform(out BrushTransform brushTransform))
             {
                 Rect brushRect = brushTransform.GetBrushXYBounds();
-                
+
                 using (new ActiveRenderTextureScope(null))
                 {
                     TerrainData terrainData = terrain.terrainData;
@@ -190,7 +190,7 @@ namespace UnityEditor.TerrainTools
                         filterContext.rtHandleCollection.GatherRTHandles(heightContext.sourceRenderTexture.width, heightContext.sourceRenderTexture.height);
                         Graphics.Blit(heightContext.sourceRenderTexture, filterContext.rtHandleCollection[FilterContext.Keywords.Heightmap]);
                     }
-                    
+
                     brushMaskFilterStack.Eval(filterContext, heightContext.sourceRenderTexture, destinationRenderTexture);
                 }
                 filterContext.ReleaseRTHandles();
@@ -201,7 +201,7 @@ namespace UnityEditor.TerrainTools
         /// Generates the brush mask.
         /// </summary>
         /// <remarks>
-        /// **Note:** Use <see cref="GenerateBrushMask(Terrain terrain, IBrushRenderUnderCursor brushRender, RenderTexture destinationRenderTexture, Vector3 position, float scale, float rotation)"/> 
+        /// **Note:** Use <see cref="GenerateBrushMask(Terrain terrain, IBrushRenderUnderCursor brushRender, RenderTexture destinationRenderTexture, Vector3 position, float scale, float rotation)"/>
         /// if Layer Filtering capabilities are desired.
         /// </remarks>
         /// <param name="terrain">The terrain in focus.</param>
@@ -268,31 +268,31 @@ namespace UnityEditor.TerrainTools
         /// Returns the brush name.
         /// </summary>
         public string brushName => m_Name;
-        
+
         /// <summary>
-        /// Does the commonUI have a size controller? 
+        /// Does the commonUI have a size controller?
         /// </summary>
         public bool hasBrushSize => m_HasBrushSize;
-        
+
         /// <summary>
-        /// Does the commonUI have a rotation controller? 
+        /// Does the commonUI have a rotation controller?
         /// </summary>
         public bool hasBrushRotation => m_HasBrushRotation;
-        
+
         /// <summary>
-        /// Does the commonUI have a strength controller? 
+        /// Does the commonUI have a strength controller?
         /// </summary>
         public bool hasBrushStrength => m_HasBrushStrength;
-        
+
         /// <summary>
-        /// Does the commonUI have a spacing controller? 
+        /// Does the commonUI have a spacing controller?
         /// </summary>
         public bool hasBrushSpacing => m_HasBrushSpacing;
 
         /// <summary>
-        /// Does the commonUI have a scatter controller? 
+        /// Does the commonUI have a scatter controller?
         /// </summary>
-        public bool hasBrushScatter => m_HasBrushScatter; 
+        public bool hasBrushScatter => m_HasBrushScatter;
 
         /// <summary>
         /// Gets and sets the brush size.
@@ -303,7 +303,7 @@ namespace UnityEditor.TerrainTools
             get { return m_BrushSizeController?.brushSize ?? 100.0f; }
             set { m_BrushSizeController.brushSize = value; }
         }
-        
+
         /// <summary>
         /// The size of the brush without jitter.
         /// </summary>
@@ -312,7 +312,7 @@ namespace UnityEditor.TerrainTools
         {
             get { return m_BrushSizeController?.brushSizeVal ?? 100.0f; }
         }
-        
+
         /// <summary>
         /// Gets and sets the brush min size.
         /// </summary>
@@ -322,7 +322,7 @@ namespace UnityEditor.TerrainTools
             get { return m_BrushSizeController?.brushSizeMin ?? 0.0f; }
             set { m_BrushSizeController.brushSizeMin = value; }
         }
-        
+
         /// <summary>
         /// Gets and sets the brush max size.
         /// </summary>
@@ -332,7 +332,7 @@ namespace UnityEditor.TerrainTools
             get { return m_BrushSizeController?.brushSizeMax ?? 1.0f; }
             set { m_BrushSizeController.brushSizeMax = value; }
         }
-        
+
         /// <summary>
         /// Gets and sets the brush size jitter.
         /// </summary>
@@ -352,7 +352,7 @@ namespace UnityEditor.TerrainTools
             get { return m_BrushRotationController?.brushRotation ?? 0.0f; }
             set { m_BrushRotationController.brushRotation = value; }
         }
-        
+
         /// <summary>
         /// The strength of the brush without jitter.
         /// </summary>
@@ -361,7 +361,7 @@ namespace UnityEditor.TerrainTools
         {
             get { return m_BrushRotationController?.brushRotationVal ?? 0.0f; }
         }
-        
+
         /// <summary>
         /// Gets and sets the brush rotation jitter.
         /// </summary>
@@ -381,7 +381,7 @@ namespace UnityEditor.TerrainTools
             get { return m_BrushStrengthController?.brushStrength ?? 1.0f; }
             set { m_BrushStrengthController.brushStrength = value; }
         }
-        
+
         /// <summary>
         /// The strength of the brush without jitter.
         /// </summary>
@@ -390,7 +390,7 @@ namespace UnityEditor.TerrainTools
         {
             get { return m_BrushStrengthController?.brushStrengthVal ?? 1.0f; }
         }
-        
+
         /// <summary>
         /// Gets and sets the brush min strength.
         /// </summary>
@@ -400,7 +400,7 @@ namespace UnityEditor.TerrainTools
             get { return m_BrushStrengthController?.brushStrengthMin ?? 0.0f; }
             set { m_BrushStrengthController.brushStrengthMin = value; }
         }
-        
+
         /// <summary>
         /// Gets and sets the brush max strength.
         /// </summary>
@@ -410,7 +410,7 @@ namespace UnityEditor.TerrainTools
             get { return m_BrushStrengthController?.brushStrengthMax ?? 1.0f; }
             set { m_BrushStrengthController.brushStrengthMax = value; }
         }
-        
+
         /// <summary>
         /// Gets and sets the brush strength jitter.
         /// </summary>
@@ -461,12 +461,12 @@ namespace UnityEditor.TerrainTools
         /// Checks if painting is allowed.
         /// </summary>
         public virtual bool allowPaint => (m_BrushSpacingController?.allowPaint ?? true) && !isSmoothing;
-        
+
         /// <summary>
         /// Inverts the brush strength.
         /// </summary>
         public bool InvertStrength => m_BrushModifierKeyController?.ModifierActive(BrushModifierKey.BRUSH_MOD_INVERT) ?? false;
-        
+
         /// <summary>
         /// Checks if the brush is in use.
         /// </summary>
@@ -628,7 +628,7 @@ namespace UnityEditor.TerrainTools
         }
 
         private bool m_RepaintRequested;
-        
+
         /// <summary>
         /// Registers a new event to be used witin <see cref="OnSceneGUI(Terrain, IOnSceneGUI)"/>.
         /// </summary>
@@ -637,7 +637,7 @@ namespace UnityEditor.TerrainTools
         {
             m_ConsumedEvents.Add(newEvent);
         }
-        
+
         /// <summary>
         /// Calls the Use function of the registered events.
         /// </summary>
@@ -660,7 +660,7 @@ namespace UnityEditor.TerrainTools
 
                 editContext.Repaint();
                 view.Repaint();
-                
+
                 m_RepaintRequested = false;
             }
         }
@@ -692,21 +692,21 @@ namespace UnityEditor.TerrainTools
         /// <param name="editContext">The editcontext used to show the brush GUI.</param>
         /// <param name="overlays">The bool to mark true when showing UI specific for overlays.</param>
         /// <param name="brushFlags">The brushflags to use when displaying the brush GUI.</param>
-        /// <param name="brushOverlaysFlags"></param>
+        /// <param name="brushOverlaysFlags">the overlays brushflags to use when displaying the GUI</param>
         public virtual void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays,
             BrushGUIEditFlags brushFlags = BrushGUIEditFlags.SelectAndInspect,
             BrushOverlaysGUIFlags brushOverlaysFlags = BrushOverlaysGUIFlags.All)
         {
-            // get flag booleans for overlays 
-            bool showNone = brushOverlaysFlags.Equals(BrushOverlaysGUIFlags.None); 
-            bool showFilter = (brushOverlaysFlags & BrushOverlaysGUIFlags.Filter) != 0; 
-            bool showStrength = (brushOverlaysFlags & BrushOverlaysGUIFlags.Strength) != 0; 
-            bool showSize = (brushOverlaysFlags & BrushOverlaysGUIFlags.Size) != 0; 
-            bool showRotation = (brushOverlaysFlags & BrushOverlaysGUIFlags.Rotation) != 0; 
-            bool showSpacing = (brushOverlaysFlags & BrushOverlaysGUIFlags.Spacing) != 0; 
+            // get flag booleans for overlays
+            bool showNone = brushOverlaysFlags.Equals(BrushOverlaysGUIFlags.None);
+            bool showFilter = (brushOverlaysFlags & BrushOverlaysGUIFlags.Filter) != 0;
+            bool showStrength = (brushOverlaysFlags & BrushOverlaysGUIFlags.Strength) != 0;
+            bool showSize = (brushOverlaysFlags & BrushOverlaysGUIFlags.Size) != 0;
+            bool showRotation = (brushOverlaysFlags & BrushOverlaysGUIFlags.Rotation) != 0;
+            bool showSpacing = (brushOverlaysFlags & BrushOverlaysGUIFlags.Spacing) != 0;
             bool showScatter = (brushOverlaysFlags & BrushOverlaysGUIFlags.Scatter) != 0;
 
-            if (overlays && showNone) return; // if show nothing for overlays, then return 
+            if (overlays && showNone) return; // if show nothing for overlays, then return
 
             if (brushFlags != BrushGUIEditFlags.None && !overlays)
             {
@@ -717,17 +717,17 @@ namespace UnityEditor.TerrainTools
 
             if (showFilter)
             {
-                // only show drop down for not overlays 
+                // only show drop down for not overlays
                 if (!overlays) m_ShowBrushMaskFilters = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.brushMask, m_ShowBrushMaskFilters);
                 if (m_ShowBrushMaskFilters)
                 {
                     brushMaskFilterStackView.OnGUI();
                 }
             }
-            
-            // only show drop down for not overlays 
+
+            // only show drop down for not overlays
             if (!overlays) m_ShowModifierControls = TerrainToolGUIHelper.DrawHeaderFoldout(Styles.stroke, m_ShowModifierControls);
-            
+
             if (m_ShowModifierControls)
             {
                 if(m_BrushStrengthController != null && showStrength)
@@ -750,8 +750,8 @@ namespace UnityEditor.TerrainTools
                     m_BrushRotationController?.OnInspectorGUI(terrain, editContext);
                     EditorGUILayout.EndVertical();
                 }
-                
-                // if NOT overlays then draw spacing and scatter together. else draw scatter and spacing separately 
+
+                // if NOT overlays then draw spacing and scatter together. else draw scatter and spacing separately
                 if (overlays)
                 {
                     if (((m_BrushSpacingController != null) || (m_BrushScatterController != null)) && showSpacing)
@@ -760,7 +760,7 @@ namespace UnityEditor.TerrainTools
                         m_BrushSpacingController?.OnInspectorGUI(terrain, editContext);
                         EditorGUILayout.EndVertical();
                     }
-                    
+
                     if (((m_BrushSpacingController != null) || (m_BrushScatterController != null)) && showScatter)
                     {
                         EditorGUILayout.BeginVertical(Styles.kGroupBox);
@@ -780,7 +780,7 @@ namespace UnityEditor.TerrainTools
                     }
                 }
 
-                
+
             }
 
             if (EditorGUI.EndChangeCheck())
@@ -813,7 +813,7 @@ namespace UnityEditor.TerrainTools
             filterStack.filters.ForEach( ( f ) =>
             {
                 var l = f.GetObjectsToSerialize();
-                
+
                 if( l != null && l.Count > 0 )
                 {
                     objList.AddRange( l );
@@ -852,9 +852,9 @@ namespace UnityEditor.TerrainTools
         /// Checks if the brush strokes are being recorded.
         /// </summary>
         public static bool isRecording = false;
-        
+
         /// <summary>
-        /// Provides methods for the brush's painting.  
+        /// Provides methods for the brush's painting.
         /// </summary>
         [Serializable]
         public class OnPaintOccurrence
@@ -961,8 +961,22 @@ namespace UnityEditor.TerrainTools
             m_BrushScatterController?.RequestRandomisation();
 
             TerrainToolsAnalytics.UpdateAnalytics(this, m_analyticsCallback);
-            
+
             filterContext.ReleaseRTHandles();
+        }
+
+        /// <summary>
+        /// Text containing brush information.
+        /// </summary>
+        private static string brushInfo = "";
+
+        /// <summary>
+        /// Retrieves the current brush information text.
+        /// </summary>
+        /// <returns>A string containing the current brush information.</returns>
+        public static string getBrushInfoText()
+        {
+            return brushInfo;
         }
 
         /// <summary>
@@ -971,7 +985,6 @@ namespace UnityEditor.TerrainTools
         /// <param name="terrain">The terrain in focus.</param>
         /// <param name="editContext">The editcontext to reference.</param>
         /// <seealso cref="OnSceneGUI(Terrain, IOnSceneGUI)"/>
-        private static string brushInfo = ""; // adding this to grab brush info 
         public virtual void OnSceneGUI2D(Terrain terrain, IOnSceneGUI editContext)
         {
             StringBuilder builder = new StringBuilder();
@@ -982,31 +995,32 @@ namespace UnityEditor.TerrainTools
                 string text = builder.ToString();
                 string trimmedText = text.Trim('\n', '\r', ' ', '\t');
                 brushInfo = trimmedText;
-                BrushInfoIsAccessed(); 
+                BrushInfoIsAccessed();
                 Handles.EndGUI();
             }
         }
-        
-        // adding this to grab brush info 
-        public static string getBrushInfoText()
-        {
-            return brushInfo; 
-        }
-        
+
+        /// <summary>
+        /// Event that is triggered when brush information is accessed.
+        /// </summary>
         public static event Action brushInfoAccessed;
+
+        /// <summary>
+        /// Invokes the brushInfoAccessed event if there are subscribers.
+        /// </summary>
         internal static void BrushInfoIsAccessed()
         {
             if (brushInfoAccessed == null)
                 return;
             brushInfoAccessed();
         }
-        
+
         [Overlay(typeof(SceneView), k_Id, "Brush Info")]
         class BrushInfoOverlay : Overlay, ITransientOverlay
         {
             const string k_Id = "brush-info-overlay";
             private Label m_Label;
-            
+
             public bool visible
             {
                 get
@@ -1026,23 +1040,23 @@ namespace UnityEditor.TerrainTools
             {
                 if (m_Label != null) m_Label.text = "";
             }
-            
+
             public override VisualElement CreatePanelContent()
             {
                 brushInfoAccessed += UpdateText;
-                Selection.selectionChanged += EmptyText; 
-                
-                return m_Label = new Label(getBrushInfoText()); 
+                Selection.selectionChanged += EmptyText;
+
+                return m_Label = new Label(getBrushInfoText());
             }
-            
+
             public override void OnWillBeDestroyed()
             {
                 base.OnWillBeDestroyed();
                 brushInfoAccessed -= UpdateText;
-                Selection.selectionChanged -= EmptyText; 
+                Selection.selectionChanged -= EmptyText;
             }
         }
-        
+
         /// <summary>
         /// Triggers events to render objects and displays within Scene view.
         /// </summary>
@@ -1062,9 +1076,9 @@ namespace UnityEditor.TerrainTools
                 terrainUnderCursor = terrain;
                 raycastHitUnderCursor = editContext.raycastHit;
             }
-            
+
             m_Controllers.ForEach((controller) => controller.OnSceneGUI(currentEvent, controlId, terrain, editContext));
-            
+
             ConsumeEvents(terrain, editContext);
 
             if (!isRecording && OnPaintOccurrence.history.Count != 0) {
@@ -1079,7 +1093,7 @@ namespace UnityEditor.TerrainTools
                 SceneView.currentDrawingSceneView.Frame( new Bounds() { center = raycastHitUnderCursor.point, size = new Vector3( brushSize, 1, brushSize ) }, false );
                 evt.Use();
             }
-            
+
             filterContext.ReleaseRTHandles();
         }
 
@@ -1113,7 +1127,7 @@ namespace UnityEditor.TerrainTools
 
             builder.AppendLine($"Brush: {m_Name}");
             builder.AppendLine();
-            
+
             m_Controllers.ForEach((controller) => controller.AppendBrushInfo(terrain, editContext, builder));
             builder.AppendLine();
             builder.AppendLine(validationMessage);
@@ -1129,13 +1143,13 @@ namespace UnityEditor.TerrainTools
         {
             if(m_BrushScatterController == null) {
                 bool invalidTerrain = terrain == null;
-                
+
                 return !invalidTerrain;
             }
             else {
                 Vector2 scatteredUv = m_BrushScatterController.ScatterBrushStamp(uv, brushSize);
                 Terrain scatteredTerrain = terrain;
-                
+
                 // Ensure that our UV is over a valid terrain AND in the range 0-1...
                 while((scatteredTerrain != null) && (scatteredUv.x < 0.0f)) {
                     scatteredTerrain = scatteredTerrain.leftNeighbor;
@@ -1177,7 +1191,7 @@ namespace UnityEditor.TerrainTools
         }
 
         private int m_TerrainUnderCursorLockCount = 0;
-        
+
         /// <summary>
         /// Handles the locking of the terrain cursor in it's current position.
         /// </summary>
@@ -1212,7 +1226,7 @@ namespace UnityEditor.TerrainTools
             else if (m_TerrainUnderCursorLockCount < 0)
             {
                 m_TerrainUnderCursorLockCount = 0;
-                throw new ArgumentOutOfRangeException(nameof(m_TerrainUnderCursorLockCount), "Cannot reduce m_TerrainUnderCursorLockCount below zero. Possible mismatch between lock/unlock calls.");                
+                throw new ArgumentOutOfRangeException(nameof(m_TerrainUnderCursorLockCount), "Cannot reduce m_TerrainUnderCursorLockCount below zero. Possible mismatch between lock/unlock calls.");
             }
         }
 
@@ -1220,7 +1234,7 @@ namespace UnityEditor.TerrainTools
         /// Checks if the cursor is currently locked and can not be updated.
         /// </summary>
         public bool canUpdateTerrainUnderCursor => m_TerrainUnderCursorLockCount == 0;
-        
+
         /// <summary>
         /// Gets and sets the terrain in focus.
         /// </summary>

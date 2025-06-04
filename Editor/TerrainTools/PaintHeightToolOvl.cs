@@ -17,9 +17,9 @@ namespace UnityEditor.TerrainTools
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Sculpt Tool");
         }
 #endif
-        public override string OnIcon => "TerrainOverlays/PaintHeight_On.png";
-        public override string OffIcon => "TerrainOverlays/PaintHeight.png";
-        
+        public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/PaintHeight_On.png";
+        public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/PaintHeight.png";
+
         public override bool HasBrushMask => true;
 
         public override bool HasBrushAttributes => true;
@@ -64,12 +64,12 @@ namespace UnityEditor.TerrainTools
 
         public override string GetName()
         {
-            return "Raise or Lower Terrain"; 
+            return "Raise or Lower Terrain";
         }
 
         public override string GetDescription()
         {
-           
+
                 return "Increases or decreases the Terrain height.\n\n" +
                        "Hold Ctrl + Click to decrease the height.";
         }
@@ -115,9 +115,9 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
-            // Only render preview if this is a repaint. losing performance if we do 
-            if (commonUI.isRaycastHitUnderCursorValid && Event.current.type == EventType.Repaint) 
+
+            // Only render preview if this is a repaint. losing performance if we do
+            if (commonUI.isRaycastHitUnderCursorValid && Event.current.type == EventType.Repaint)
             {
                 using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "PaintHeight", editContext.brushTexture))
                 {
@@ -147,13 +147,13 @@ namespace UnityEditor.TerrainTools
                                 editContext.brushTexture, brushXform, previewMaterial, 1);
                             texelCtx.Cleanup();
                         }
-                       
+
                         RTUtils.Release(filterRT);
-                        brushRender.Release(paintContext); 
+                        brushRender.Release(paintContext);
                     }
                 }
             }
-            
+
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
         }

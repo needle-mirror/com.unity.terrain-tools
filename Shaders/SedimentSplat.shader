@@ -15,11 +15,11 @@
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
             sampler2D _BrushTex;
-			sampler2D _MaskTex;
+            sampler2D _MaskTex;
 
             float4 _BrushParams;
-			#define BRUSH_STRENGTH       (_BrushParams[0])
-			#define BRUSH_SPLATSTRENGTH  (_BrushParams[1])
+            #define BRUSH_STRENGTH       (_BrushParams[0])
+            #define BRUSH_SPLATSTRENGTH  (_BrushParams[1])
 
             struct appdata_t {
                 float4 vertex : POSITION;
@@ -52,72 +52,72 @@
 
             float4 SedimentSplat(v2f i) : SV_Target
             {
-				float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
+                float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
 
-				// out of bounds multiplier
-				float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
+                // out of bounds multiplier
+                float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
-				float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV));
-				float alphaMap = tex2D(_MainTex, i.pcUV).r;
-				float mask = /*1.0f - */ pow(tex2D(_MaskTex, i.pcUV).r, 1.0f); //TODO - make this user specified
-				return saturate(alphaMap + BRUSH_SPLATSTRENGTH * mask * brushStrength);
+                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV));
+                float alphaMap = tex2D(_MainTex, i.pcUV).r;
+                float mask = /*1.0f - */ pow(tex2D(_MaskTex, i.pcUV).r, 1.0f); //TODO - make this user specified
+                return saturate(alphaMap + BRUSH_SPLATSTRENGTH * mask * brushStrength);
             }
             ENDCG
         }
 
-		Pass
-		{
-			Name "Sediment Speed Splat"
+        Pass
+        {
+            Name "Sediment Speed Splat"
 
-			CGPROGRAM
-			#pragma vertex vert
-			#pragma fragment SedimentSpeedSplat
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment SedimentSpeedSplat
 
-			float4 SedimentSpeedSplat(v2f i) : SV_Target
-			{
-				float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
+            float4 SedimentSpeedSplat(v2f i) : SV_Target
+            {
+                float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
 
-				// out of bounds multiplier
-				float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
+                // out of bounds multiplier
+                float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
-				float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV));
-				float alphaMap = tex2D(_MainTex, i.pcUV).r;
-				float2 vel = tex2D(_MaskTex, i.pcUV).rg;
-				float speed = sqrt(vel.x * vel.x + vel.y * vel.y);
-				return saturate(alphaMap + BRUSH_SPLATSTRENGTH * speed * brushStrength);
-			}
-			ENDCG
-		}
+                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV));
+                float alphaMap = tex2D(_MainTex, i.pcUV).r;
+                float2 vel = tex2D(_MaskTex, i.pcUV).rg;
+                float speed = sqrt(vel.x * vel.x + vel.y * vel.y);
+                return saturate(alphaMap + BRUSH_SPLATSTRENGTH * speed * brushStrength);
+            }
+            ENDCG
+        }
 
-		Pass
-		{
-			Name "Sediment Flux Splat"
+        Pass
+        {
+            Name "Sediment Flux Splat"
 
-			CGPROGRAM
-			#pragma vertex vert
-			#pragma fragment SedimentFluxSplat
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment SedimentFluxSplat
 
-			float4 SedimentFluxSplat(v2f i) : SV_Target
-			{
-				float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
+            float4 SedimentFluxSplat(v2f i) : SV_Target
+            {
+                float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
 
-				// out of bounds multiplier
-				float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
+                // out of bounds multiplier
+                float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
-				float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV));
-				float alphaMap = tex2D(_MainTex, i.pcUV).r;
+                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV));
+                float alphaMap = tex2D(_MainTex, i.pcUV).r;
 
-				float4 flux = tex2D(_MaskTex, i.pcUV);
+                float4 flux = tex2D(_MaskTex, i.pcUV);
 
-				float total = 1.0f - 0.01f * (flux.x + flux.y + flux.z + flux.w);
-				return saturate(alphaMap + BRUSH_SPLATSTRENGTH * total * brushStrength);
+                float total = 1.0f - 0.01f * (flux.x + flux.y + flux.z + flux.w);
+                return saturate(alphaMap + BRUSH_SPLATSTRENGTH * total * brushStrength);
 
-				//float2 vel = 0.001f * pow(tex2D(_MaskTex, i.pcUV).rgba, 4.0f);
-				//float speed = sqrt(vel.x * vel.x + vel.y * vel.y);
-				//return saturate(alphaMap + BRUSH_SPLATSTRENGTH * speed * brushStrength);
-			}
-			ENDCG
-		}
+                //float2 vel = 0.001f * pow(tex2D(_MaskTex, i.pcUV).rgba, 4.0f);
+                //float speed = sqrt(vel.x * vel.x + vel.y * vel.y);
+                //return saturate(alphaMap + BRUSH_SPLATSTRENGTH * speed * brushStrength);
+            }
+            ENDCG
+        }
     }
     Fallback Off
 }

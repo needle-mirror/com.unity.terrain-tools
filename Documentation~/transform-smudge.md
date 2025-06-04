@@ -8,7 +8,7 @@ Select a Terrain tile to bring up the Terrain Inspector. In the Terrain Inspecto
 
 Alternatively, select the terrain, and select the smudge icon on the terrain toolbar.
 
-![Smudge icon](images/Icons/Smudge.png) 
+![Smudge icon](images/Icons/Smudge.png)
 
 ## Parameters
 

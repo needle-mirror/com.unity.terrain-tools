@@ -172,7 +172,7 @@ class CustomTerrainToolWithMaskFilters : TerrainPaintToolWithOverlays<CustomTerr
 
         return true;
     }
-    
+
     // Return true for this property to display the brush attributes overlay
     public override bool HasBrushAttributes => true;
 
@@ -249,7 +249,7 @@ Shader "TerrainTool/BrushMaskFilterExample"
             Name "CustomTerrainTool"
 
             HLSLPROGRAM
-            
+
             #pragma vertex vert
             #pragma fragment frag
 

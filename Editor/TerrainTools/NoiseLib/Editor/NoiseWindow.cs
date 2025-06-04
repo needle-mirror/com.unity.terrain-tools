@@ -31,13 +31,13 @@ namespace UnityEditor.TerrainTools
             {
                 OnClose(GetWindow<NoiseWindow>());
             }
-            
+
             NoiseWindow wnd = GetWindow<NoiseWindow>();
             wnd.titleContent = EditorGUIUtility.TrTextContent("Noise Editor");
             wnd.rootVisualElement.Clear();
             var view = new NoiseEditorView(noise, sourceAsset);
             wnd.rootVisualElement.Add(view);
-            
+
             wnd.noiseEditorView = view;
             wnd.m_noiseAsset = noise;
             wnd.minSize = new Vector2(550, 300);

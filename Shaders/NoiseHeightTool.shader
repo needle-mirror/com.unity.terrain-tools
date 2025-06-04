@@ -12,19 +12,19 @@ Shader "Hidden/TerrainTools/NoiseHeightTool"
         #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
 
         #define kMaxHeight          (32766.0f/65535.0f)
-        
+
         sampler2D _MainTex;
         float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
         float2 _WorldHeightRemap;
-        
+
         sampler2D _NoiseTex;
         float4 _NoiseTex_TexelSize;
 
         sampler2D _BrushTex;
         float4 _BrushParams;            // x = strength, y = , z = , w = brushSize
 
-		sampler2D _FilterTex;
+        sampler2D _FilterTex;
 
         // _BrushParams macros
         #define BRUSH_STRENGTH      ( _BrushParams[0] )
@@ -46,7 +46,7 @@ Shader "Hidden/TerrainTools/NoiseHeightTool"
         v2f vert( appdata_t v )
         {
             v2f o;
-            
+
             o.vertex = UnityObjectToClipPos( v.vertex );
             o.pcUV = v.pcUV;
 
@@ -82,7 +82,7 @@ Shader "Hidden/TerrainTools/NoiseHeightTool"
                 // get noise mask value
                 float2 noiseUV = ( i.pcUV - ( .5 ).xx ) * pcUVRescale + ( .5 ).xx + ( .5 ).xx * _NoiseTex_TexelSize.xy;
                 float n = UnpackHeightmap( tex2D( _NoiseTex, noiseUV ) );
-                
+
                 // TODO(wyatt): remap noise values to match _WorldHeightRemap
 
                 return PackHeightmap( clamp( h + BRUSH_STRENGTH * b * n, 0, kMaxHeight ) );

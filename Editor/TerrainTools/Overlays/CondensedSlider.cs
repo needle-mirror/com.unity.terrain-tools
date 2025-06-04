@@ -10,7 +10,7 @@ namespace UnityEditor.TerrainTools.UI
         private Slider m_Slider;
         private readonly string m_Label;
         private Label m_LabelField;
-        private Texture2D m_Image; 
+        private Texture2D m_Image;
 
         internal string contentLabel
         {
@@ -21,16 +21,16 @@ namespace UnityEditor.TerrainTools.UI
         {
             set => m_Image = value;
         }
-        
+
         // this is a variable of type func which takes in a float, string, Slider direction and returns a string
         // the internal stuff is what it starts out as
         // so maybe declare this as a property and give it a get; set; and set the value in the constructor like line 55 or something
         public Func<float, string, SliderDirection, string> labelFormatting
         {
             get;
-            set; 
+            set;
         }
-        
+
         public StyleLength contentWidth
         {
             get => m_Slider.style.width;
@@ -54,7 +54,7 @@ namespace UnityEditor.TerrainTools.UI
             get => m_Slider.value;
             set => SetValue(value);
         }
-        
+
         public CondensedSlider(float min, float max, SliderDirection direction = SliderDirection.Horizontal)
             : this(null, null, min, max, direction)
         {
@@ -74,9 +74,9 @@ namespace UnityEditor.TerrainTools.UI
         {
             m_Label = label;
             tooltip = label;
-            m_Image = image; 
+            m_Image = image;
             CreateSlider(min, max, direction);
-            
+
         }
 
         private void UpdateValue(float value, bool withoutNotify)
@@ -139,7 +139,7 @@ namespace UnityEditor.TerrainTools.UI
                     return $"{label} {value:F0}";
                 return $"{value:F0}";
             };
-            
+
             StyleSheet styleSheet = (StyleSheet)AssetDatabase.LoadAssetAtPath("Packages/com.unity.terrain-tools/Editor/Style/CondensedSlider.uss", typeof(StyleSheet));
             if (styleSheet) styleSheets.Add(styleSheet);
 
@@ -210,12 +210,12 @@ namespace UnityEditor.TerrainTools.UI
             contentTextField.RegisterCallback<MouseDownEvent>(TextFieldMouseDownEvent);
             // closes the textfield on escape or return
             textField.RegisterCallback<KeyDownEvent>(TextFieldKeyDownEvent);
-            
+
             RegisterCallback<AttachToPanelEvent>(RegisterCallbacks);
             RegisterCallback<DetachFromPanelEvent>(UnregisterCallbacks);
-            
+
         }
-        
+
         private void RegisterCallbacks(AttachToPanelEvent e)
         {
 
@@ -244,7 +244,7 @@ namespace UnityEditor.TerrainTools.UI
             contentTextField.UnregisterCallback<MouseDownEvent>(TextFieldMouseDownEvent);
             textField.UnregisterCallback<KeyDownEvent>(TextFieldKeyDownEvent);
         }
-        
+
         private void OnSliderRectChange(GeometryChangedEvent e)
         {
             var slider = m_Slider.Q("unity-tracker");
@@ -340,7 +340,7 @@ namespace UnityEditor.TerrainTools.UI
                 }
             }
         }
-        
+
         public void UpdateDirection(SliderDirection newDirection, float min, float max)
         {
             if (direction == newDirection) return; // no new direction
@@ -376,7 +376,7 @@ namespace UnityEditor.TerrainTools.UI
         {
             ConstructDropdown(clicked, direction);
         }
-        
+
         public void DropdownUpdateDirection(SliderDirection newDirection, Action clicked, float min, float max)
         {
             Remove(m_Dropdown);

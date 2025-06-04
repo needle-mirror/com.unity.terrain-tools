@@ -5,7 +5,7 @@ Use the **Smooth Height** tool to smooth the [heightmap](https://docs.unity3d.co
 **Note:** This tool overrides the built-in [Smooth Height](https://docs.unity3d.com/Manual/terrain-SmoothHeight.html) and adds two new parameters, **Verticality** and **Blur Radius**, which provide finer control when smoothing your Terrain.
 
 To select the Stamp Terrain tool:
-1. Select a Terrain tile to bring up the Terrain Inspector. 
+1. Select a Terrain tile to bring up the Terrain Inspector.
 2. In the **Terrain Inspector**, click the **Paint Terrain** icon.
 3. Select **Smooth Height** from the drop-down menu.
 

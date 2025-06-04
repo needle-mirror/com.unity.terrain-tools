@@ -57,7 +57,7 @@ namespace UnityEditor.TerrainTools
         /// </summary>
         /// <param name="index">The index at which the Filter reference should be inserted.</param>
         /// <param name="filter">The Filter reference to insert.</param>
-        /// <exception>Throws an exception if the specified index is not within the valid range.</exception>
+        /// <exception cref="IndexOutOfRangeException">Throws an exception if the specified index is not within the valid range.</exception>
         public void Insert(int index, Filter filter)
         {
             filters.Insert(index, filter);
@@ -77,7 +77,7 @@ namespace UnityEditor.TerrainTools
         /// Removes the Filter at the specified index.
         /// </summary>
         /// <param name="index">The index of the Filter to be removed.</param>
-        /// <exception>Throws an exception if the specified index is not within the valid range.</exception>
+        /// <exception cref="IndexOutOfRangeException">Throws an exception if the specified index is not within the valid range.</exception>
         public void RemoveAt(int index)
         {
             filters.RemoveAt(index);
@@ -89,7 +89,7 @@ namespace UnityEditor.TerrainTools
         /// <param name="fc">The FilterContext that should be used for composition.</param>
         /// <param name="source">The source render texture to blit from.</param>
         /// <param name="dest">The destination render texture for blitting to.</param>
-        /// <exception>Throws an exception if source or destination RenderTexture is null.</exception>
+        /// <exception cref="InvalidOperationException">Throws an exception if source or destination RenderTexture is null.</exception>
         public void Eval(FilterContext fc, RenderTexture source, RenderTexture dest)
         {
             if (dest == null)

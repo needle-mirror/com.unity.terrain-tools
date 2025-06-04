@@ -18,9 +18,9 @@ namespace UnityEditor.TerrainTools
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Set Height Tool");
         }
 #endif
-        public override string OnIcon => "TerrainOverlays/SetHeight_On.png";
-        public override string OffIcon => "TerrainOverlays/SetHeight.png";
-        
+        public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/SetHeight_On.png";
+        public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/SetHeight.png";
+
         IBrushUIGroup commonUI {
             get
             {
@@ -91,14 +91,14 @@ namespace UnityEditor.TerrainTools
 
         public override string GetName()
         {
-           return k_ToolName; 
+           return k_ToolName;
         }
 
         public override string GetDescription()
         {
-            return Styles.description.text; 
+            return Styles.description.text;
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -126,15 +126,15 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
-            // Only render preview if this is a repaint. losing performance if we do 
+
+            // Only render preview if this is a repaint. losing performance if we do
             if (Event.current.type == EventType.Repaint)
             {
                 Texture brushTexture = editContext.brushTexture;
-            
+
                 using (IBrushRenderPreviewUnderCursor brushRender = new BrushRenderPreviewUIGroupUnderCursor(commonUI, "SetHeightTool", brushTexture))
-                {   
-                    
+                {
+
                     if (brushRender.CalculateBrushTransform(out BrushTransform brushTransform))
                     {
                         Rect brushBounds = brushTransform.GetBrushXYBounds();
@@ -165,12 +165,12 @@ namespace UnityEditor.TerrainTools
                         RTUtils.Release(filterRT);
                         brushRender.Release(paintContext);
                     }
-                    
+
                 }
-                
+
             }
-            
-            
+
+
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
         }

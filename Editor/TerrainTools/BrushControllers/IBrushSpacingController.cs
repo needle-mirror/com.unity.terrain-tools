@@ -11,7 +11,7 @@ namespace UnityEditor.TerrainTools
         float brushSpacing { get; set; }
 
         /// <summary>
-        /// Gets and sets the <c>bool</c> value that determines if painting is allowed. 
+        /// Gets and sets the <c>bool</c> value that determines if painting is allowed.
         /// </summary>
         bool allowPaint { get; set; }
     }

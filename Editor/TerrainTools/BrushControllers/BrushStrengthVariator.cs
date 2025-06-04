@@ -38,7 +38,7 @@ namespace UnityEditor.TerrainTools
             }
             set { m_BrushStrength.value = Mathf.Clamp(value, brushStrengthMin, brushStrengthMax); }
         }
-        
+
         public float brushStrengthVal
         {
             get
@@ -50,20 +50,20 @@ namespace UnityEditor.TerrainTools
             get { return m_BrushStrength.minValue;  }
             set { m_BrushStrength.minValue = value;  }
         }
-        
+
         public float brushStrengthMax
         {
             get { return m_BrushStrength.maxValue;  }
             set { m_BrushStrength.maxValue = value;  }
         }
-        
+
         public float brushStrengthJitter
         {
             get { return m_JitterHandler.jitter;  }
             set { m_JitterHandler.jitter = value;  }
         }
 
-        
+
         public float brushStrengthUI => Mathf.Clamp(m_BrushStrength.value, kMinBrushStrength, kMaxBrushStrength);
 
         public BrushStrengthVariator(string toolName, IBrushEventHandler eventHandler, IBrushTerrainCache terrainCache, float defaultValue = kDefaultBrushStrength) : base(toolName, eventHandler, terrainCache)
@@ -154,14 +154,14 @@ namespace UnityEditor.TerrainTools
             return base.OnPaint(terrain, editContext);
         }
 
-        // for updating condensed slider overlays 
+        // for updating condensed slider overlays
         public static event Action BrushStrengthChanged;
         public static event Action BrushStrengthMinChanged;
-        public static event Action BrushStrengthMaxChanged; 
+        public static event Action BrushStrengthMaxChanged;
         private float prevBrushStrength = kDefaultBrushStrength;
         private float prevBrushStrengthMin = kMinBrushStrength;
-        private float prevBrushStrengthMax = kMaxBrushStrength; 
-        
+        private float prevBrushStrengthMax = kMaxBrushStrength;
+
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             base.OnInspectorGUI(terrain, editContext);
@@ -170,17 +170,17 @@ namespace UnityEditor.TerrainTools
             if (!Mathf.Approximately(m_BrushStrength.value, prevBrushStrength) && BrushStrengthChanged != null)
             {
                 BrushStrengthChanged();
-                prevBrushStrength = m_BrushStrength.value; 
+                prevBrushStrength = m_BrushStrength.value;
             }
             if (!Mathf.Approximately(brushStrengthMin, prevBrushStrengthMin) && BrushStrengthMinChanged != null)
             {
                 BrushStrengthMinChanged();
-                prevBrushStrengthMin = brushStrengthMin; 
+                prevBrushStrengthMin = brushStrengthMin;
             }
             if (!Mathf.Approximately(brushStrengthMax, prevBrushStrengthMax) && BrushStrengthMaxChanged != null)
             {
                 BrushStrengthMaxChanged();
-                prevBrushStrengthMax = brushStrengthMax; 
+                prevBrushStrengthMax = brushStrengthMax;
             }
             if (m_BrushStrength.expanded)
             {

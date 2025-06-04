@@ -32,11 +32,11 @@ namespace UnityEditor.TerrainTools.UI
         public static Layout activeToolbarLayout => instance.activeLayout;
 
         public static string s_UssPath => "Styles/BrushPopup";
-        public static int popUpWidth = 200;  
-        public static int popUpHeight = 50; 
+        public static int popUpWidth = 200;
+        public static int popUpHeight = 50;
 
         BrushAttributesOverlay() : base(
-            BrushOpacity.id, 
+            BrushOpacity.id,
             BrushSize.id,
             BrushRotation.id,
             BrushSpacing.id,
@@ -49,13 +49,13 @@ namespace UnityEditor.TerrainTools.UI
             }
             instance = this;
         }
-        
+
         internal static void RegisterAttribute(CondensedSlider attr)
         {
             if (instance != null)
                 instance.m_Attributes.TryAdd(attr.contentLabel.GetHashCode(), attr);
         }
-        
+
         internal static void RebuildContent()
         {
             if (instance != null)
@@ -86,7 +86,7 @@ namespace UnityEditor.TerrainTools.UI
         {
             var tool = BrushesOverlay.ActiveTerrainTool as TerrainPaintToolWithOverlaysBase;
             if (!tool) return null;
-            if (!Selection.activeGameObject) return null; 
+            if (!Selection.activeGameObject) return null;
             if (!tool.Terrain)
             {
                 if (Selection.activeGameObject == null || Selection.activeGameObject.GetComponent<Terrain>() == null) return null; // check when loading and unloading packages
@@ -95,34 +95,34 @@ namespace UnityEditor.TerrainTools.UI
             if (!tool.Terrain)
             {
                 Debug.LogError("Tool does NOT have associated terrain");
-                return null; 
+                return null;
             }
 
-            return tool; 
+            return tool;
         }
 
         public static IBrushUIGroup GetCommonUI()
         {
-            // get commonUI 
+            // get commonUI
             var tool = GetActiveOverlaysTool();
             if (!tool) return null;
-            
+
             Type type = tool.GetType();
             MethodInfo func = type.GetMethod("get_m_commonUI");
-            if (func == null) return null; // avoid null errors 
+            if (func == null) return null; // avoid null errors
             IBrushUIGroup commonUI = (IBrushUIGroup) func.Invoke(tool, null);
-            return commonUI; 
+            return commonUI;
         }
     }
-    
+
     // brush attributes (opacity, size, rotation, spacing, scattering) -------
-    // BRUSH OPACITY 
+    // BRUSH OPACITY
     [EditorToolbarElement(id, typeof(SceneView))]
     internal class BrushOpacity : CondensedSliderDropdown
     {
         internal const string id = "Brushes/OpacityPackage";
         private const string label = "Opacity";
-        
+
         private static float minValue
         {
             get
@@ -132,7 +132,7 @@ namespace UnityEditor.TerrainTools.UI
                 return commonUI.brushStrengthMin;
             }
         }
-        
+
         private static float maxValue
         {
             get
@@ -150,14 +150,14 @@ namespace UnityEditor.TerrainTools.UI
             get
             {
                 if(s_OpacityIcon == null)
-                    s_OpacityIcon = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/Opacity.png", typeof(Texture2D));
+                    s_OpacityIcon = (Texture2D)EditorGUIUtility.IconContent("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/Opacity@2x.png").image;
                 return s_OpacityIcon;
             }
         }
-        
+
         public void UpdateOverlayDirection(Layout l)
         {
-            DropdownUpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, null, minValue, maxValue); 
+            DropdownUpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, null, minValue, maxValue);
             labelFormatting = (f, s, d) =>
             {
                 if (direction == SliderDirection.Vertical)
@@ -165,9 +165,9 @@ namespace UnityEditor.TerrainTools.UI
                 return $"{s} {f:F2}";
             };
             clicked += () => OpenPopup(CreatePopUp(), BrushAttributesOverlay.popUpWidth, BrushAttributesOverlay.popUpHeight);
-            UpdateValues(); 
+            UpdateValues();
         }
-        
+
         public void UpdateOverlayDirection(bool collapsedChanged)
         {
             DropdownUpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, null, minValue, maxValue);
@@ -178,7 +178,7 @@ namespace UnityEditor.TerrainTools.UI
                 return $"{s} {f:F2}";
             };
             clicked += () => OpenPopup(CreatePopUp(), BrushAttributesOverlay.popUpWidth, BrushAttributesOverlay.popUpHeight);
-            UpdateValues(); 
+            UpdateValues();
         }
 
         // On first install of the package, need to rebuild the attribute UI after
@@ -204,7 +204,7 @@ namespace UnityEditor.TerrainTools.UI
                     return $"{f:F2}";
                 return $"{s} {f:F2}";
             };
-            
+
             void UpdateMin()
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
@@ -225,7 +225,7 @@ namespace UnityEditor.TerrainTools.UI
             {
                 ToolManager.activeToolChanged += UpdateValues;
                 ToolManager.activeContextChanged += UpdateValues;
-                BrushAttributesOverlay.instance.layoutChanged += UpdateOverlayDirection; 
+                BrushAttributesOverlay.instance.layoutChanged += UpdateOverlayDirection;
                 BrushAttributesOverlay.instance.collapsedChanged += UpdateOverlayDirection;
                 BrushStrengthVariator.BrushStrengthChanged += UpdateValues;
                 BrushStrengthVariator.BrushStrengthMinChanged += UpdateMin;
@@ -238,12 +238,12 @@ namespace UnityEditor.TerrainTools.UI
                 if (commonUI == null) return;
                 commonUI.brushStrength = e.newValue;
             });
-            
+
             RegisterCallback<DetachFromPanelEvent>(e =>
             {
                 ToolManager.activeToolChanged -= UpdateValues;
                 ToolManager.activeContextChanged -= UpdateValues;
-                BrushAttributesOverlay.instance.layoutChanged -= UpdateOverlayDirection; 
+                BrushAttributesOverlay.instance.layoutChanged -= UpdateOverlayDirection;
                 BrushAttributesOverlay.instance.collapsedChanged -= UpdateOverlayDirection;
                 BrushStrengthVariator.BrushStrengthChanged -= UpdateValues;
                 BrushStrengthVariator.BrushStrengthMinChanged -= UpdateMin;
@@ -267,9 +267,9 @@ namespace UnityEditor.TerrainTools.UI
         private void UpdateValues()
         {
             var commonUI = BrushAttributesOverlay.GetCommonUI();
-            if (commonUI == null) return; 
+            if (commonUI == null) return;
             style.display = commonUI.hasBrushStrength ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!commonUI.hasBrushStrength) return; 
+            if (!commonUI.hasBrushStrength) return;
             value = commonUI.brushStrengthVal;
         }
 
@@ -284,23 +284,23 @@ namespace UnityEditor.TerrainTools.UI
             opacityMinMaxContainer.style.flexDirection = FlexDirection.Row;
             opacityContainer.Add(opacityMinMaxContainer);
             var opacityMinText = new TextElement();
-            opacityMinText.text = "Min"; 
+            opacityMinText.text = "Min";
             opacityMinMaxContainer.Add(opacityMinText);
             var opacityMinField = new FloatField();
             opacityMinMaxContainer.Add(opacityMinField);
-            
+
             var opacityMaxText = new TextElement();
-            opacityMaxText.text = "Max"; 
+            opacityMaxText.text = "Max";
             opacityMinMaxContainer.Add(opacityMaxText);
             var opacityMaxField = new FloatField();
             opacityMinMaxContainer.Add(opacityMaxField);
 
-            // add jitter slider 
+            // add jitter slider
             var opacityJitterContainer = new VisualElement();
             opacityJitterContainer.style.flexDirection = FlexDirection.Row;
             opacityContainer.Add(opacityJitterContainer);
             var jitter = new Slider("Jitter", 0f, 1f);
-            jitter.style.flexGrow = 1; 
+            jitter.style.flexGrow = 1;
             opacityJitterContainer.Add(jitter);
             var opacityJitterTextField = new FloatField();
             opacityJitterContainer.Add(opacityJitterTextField);
@@ -318,29 +318,29 @@ namespace UnityEditor.TerrainTools.UI
                 }
                 SetLowValueWithoutNotify(e.newValue);
             });
-            
+
             opacityMaxField.RegisterValueChangedCallback(e =>
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
                 if (commonUI == null) return;
-                commonUI.brushStrengthMax = e.newValue; 
+                commonUI.brushStrengthMax = e.newValue;
                 if (commonUI.brushStrengthMax < commonUI.brushStrengthMin)
                 {
                     commonUI.brushStrengthMin = e.newValue;
-                    opacityMinField.value = e.newValue; 
+                    opacityMinField.value = e.newValue;
                     SetLowValueWithoutNotify(e.newValue);
                 }
                 SetHighValueWithoutNotify(e.newValue);
             });
-            
+
             jitter.RegisterValueChangedCallback(e =>
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
                 if (commonUI == null) return;
-                commonUI.brushStrengthJitter = e.newValue; 
+                commonUI.brushStrengthJitter = e.newValue;
                 opacityJitterTextField.SetValueWithoutNotify(e.newValue);
             });
-            
+
             opacityJitterTextField.RegisterValueChangedCallback(e =>
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
@@ -348,19 +348,19 @@ namespace UnityEditor.TerrainTools.UI
                 commonUI.brushStrengthJitter = e.newValue;
                 jitter.SetValueWithoutNotify(e.newValue);
             });
-            
+
             var commonUI = BrushAttributesOverlay.GetCommonUI();
             if (commonUI == null) Debug.LogWarning("cannot display STRENGTH in BrushAttributesOverlay.CS in PACKAGE");
-            
+
             // NOTE: when I set values, I am setting them to commonUI.brushStrengthVal rather than commonUI.brushStrength
             // this is because commonUI.brushStrengthVal gives the raw brush strength, where as commonUI.brushStrength uses
-            // a getter which calculates the jitter, which I don't want to display in the UI 
-            // this is also true for size (commonUI.brushSizeVal) and rotation (commonUI.brushRotationVal) 
-            
+            // a getter which calculates the jitter, which I don't want to display in the UI
+            // this is also true for size (commonUI.brushSizeVal) and rotation (commonUI.brushRotationVal)
+
             opacityMinField.value = commonUI.brushStrengthMin;
-            opacityMaxField.value = commonUI.brushStrengthMax; 
+            opacityMaxField.value = commonUI.brushStrengthMax;
             jitter.value = commonUI.brushStrengthJitter;
-            opacityJitterTextField.value = commonUI.brushStrengthJitter; 
+            opacityJitterTextField.value = commonUI.brushStrengthJitter;
             return opacityContainer;
         }
 
@@ -372,8 +372,8 @@ namespace UnityEditor.TerrainTools.UI
             window.ShowAsDropDown(GUIUtility.GUIToScreenRect(worldBound), new Vector2(width, height));
         }
     }
-    
-    // BRUSH SIZE 
+
+    // BRUSH SIZE
     [EditorToolbarElement(id, typeof(SceneView))]
     internal class BrushSize : CondensedSliderDropdown
     {
@@ -389,7 +389,7 @@ namespace UnityEditor.TerrainTools.UI
                 return commonUI.brushSizeMin;
             }
         }
-        
+
         private static float maxValue
         {
             get
@@ -400,21 +400,21 @@ namespace UnityEditor.TerrainTools.UI
             }
         }
 
-        static Texture2D s_SizeIcon;            
+        static Texture2D s_SizeIcon;
 
         static Texture2D Texture
         {
             get
             {
                 if(s_SizeIcon == null)
-                    s_SizeIcon = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/Size.png", typeof(Texture2D));
+                    s_SizeIcon = (Texture2D)EditorGUIUtility.IconContent("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/Size.png").image;
                 return s_SizeIcon;
             }
         }
-        
+
         public void UpdateOverlayDirection(Layout l)
         {
-            DropdownUpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, null, minValue, maxValue); 
+            DropdownUpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, null, minValue, maxValue);
             labelFormatting = (f, s, d) =>
             {
                 if (direction == SliderDirection.Vertical)
@@ -422,9 +422,9 @@ namespace UnityEditor.TerrainTools.UI
                 return $"{s} {f:F2}";
             };
             clicked += () => OpenPopup(CreatePopUp(), BrushAttributesOverlay.popUpWidth, BrushAttributesOverlay.popUpHeight);
-            UpdateValues(); 
+            UpdateValues();
         }
-        
+
         public void UpdateOverlayDirection(bool collapsedChanged)
         {
             DropdownUpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, null, minValue, maxValue);
@@ -435,7 +435,7 @@ namespace UnityEditor.TerrainTools.UI
                 return $"{s} {f:F2}";
             };
             clicked += () => OpenPopup(CreatePopUp(), BrushAttributesOverlay.popUpWidth, BrushAttributesOverlay.popUpHeight);
-            UpdateValues(); 
+            UpdateValues();
         }
 
         // On first install of the package, need to rebuild the attribute UI after
@@ -461,7 +461,7 @@ namespace UnityEditor.TerrainTools.UI
                     return $"{f:F2}";
                 return $"{s} {f:F2}";
             };
-            
+
             void UpdateMin()
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
@@ -475,18 +475,18 @@ namespace UnityEditor.TerrainTools.UI
                 if (commonUI == null) return;
                 SetHighValueWithoutNotify(commonUI.brushSizeMax);
             }
-            
+
             UpdateOverlayDirection(true);
-            
+
             RegisterCallback<AttachToPanelEvent>(e =>
             {
                 ToolManager.activeToolChanged += UpdateValues;
                 ToolManager.activeContextChanged += UpdateValues;
-                BrushAttributesOverlay.instance.layoutChanged += UpdateOverlayDirection; 
+                BrushAttributesOverlay.instance.layoutChanged += UpdateOverlayDirection;
                 BrushAttributesOverlay.instance.collapsedChanged += UpdateOverlayDirection;
                 BrushSizeVariator.BrushSizeChanged += UpdateValues;
                 BrushSizeVariator.BrushSizeMinChanged += UpdateMin;
-                BrushSizeVariator.BrushSizeMaxChanged += UpdateMax; 
+                BrushSizeVariator.BrushSizeMaxChanged += UpdateMax;
             });
 
             this.RegisterValueChangedCallback(e =>
@@ -495,16 +495,16 @@ namespace UnityEditor.TerrainTools.UI
                 if (commonUI == null) return;
                 commonUI.brushSize = e.newValue;
             });
-            
+
             RegisterCallback<DetachFromPanelEvent>(e =>
             {
                 ToolManager.activeToolChanged -= UpdateValues;
                 ToolManager.activeContextChanged -= UpdateValues;
-                BrushAttributesOverlay.instance.layoutChanged -= UpdateOverlayDirection; 
+                BrushAttributesOverlay.instance.layoutChanged -= UpdateOverlayDirection;
                 BrushAttributesOverlay.instance.collapsedChanged -= UpdateOverlayDirection;
                 BrushSizeVariator.BrushSizeChanged -= UpdateValues;
                 BrushSizeVariator.BrushSizeMinChanged -= UpdateMin;
-                BrushSizeVariator.BrushSizeMaxChanged -= UpdateMax; 
+                BrushSizeVariator.BrushSizeMaxChanged -= UpdateMax;
             });
 
             SetContentWidth();
@@ -524,12 +524,12 @@ namespace UnityEditor.TerrainTools.UI
         private void UpdateValues()
         {
             var commonUI = BrushAttributesOverlay.GetCommonUI();
-            if (commonUI == null) return; 
+            if (commonUI == null) return;
             style.display = commonUI.hasBrushSize ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!commonUI.hasBrushSize) return; 
+            if (!commonUI.hasBrushSize) return;
             value = commonUI.brushSizeVal;
         }
-        
+
         private VisualElement CreatePopUp()
         {
             var sizeContainer = new VisualElement();
@@ -541,23 +541,23 @@ namespace UnityEditor.TerrainTools.UI
             sizeMinMaxContainer.style.flexDirection = FlexDirection.Row;
             sizeContainer.Add(sizeMinMaxContainer);
             var sizeMinText = new TextElement();
-            sizeMinText.text = "Min"; 
+            sizeMinText.text = "Min";
             sizeMinMaxContainer.Add(sizeMinText);
             var sizeMinField = new FloatField();
             sizeMinMaxContainer.Add(sizeMinField);
-            
+
             var sizeMaxText = new TextElement();
-            sizeMaxText.text = "Max"; 
+            sizeMaxText.text = "Max";
             sizeMinMaxContainer.Add(sizeMaxText);
             var sizeMaxField = new FloatField();
             sizeMinMaxContainer.Add(sizeMaxField);
-            
-            // add jitter slider 
+
+            // add jitter slider
             var sizeJitterContainer = new VisualElement();
             sizeJitterContainer.style.flexDirection = FlexDirection.Row;
             sizeContainer.Add(sizeJitterContainer);
             var jitter = new Slider("Jitter", 0f, 1f);
-            jitter.style.flexGrow = 1; 
+            jitter.style.flexGrow = 1;
             sizeJitterContainer.Add(jitter);
             var sizeJitterTextField = new FloatField();
             sizeJitterContainer.Add(sizeJitterTextField);
@@ -575,29 +575,29 @@ namespace UnityEditor.TerrainTools.UI
                 }
                 SetLowValueWithoutNotify(sizeMinField.value);
             });
-            
+
             sizeMaxField.RegisterCallback<FocusOutEvent>(e =>
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
                 if (commonUI == null) return;
-                commonUI.brushSizeMax = sizeMaxField.value; 
+                commonUI.brushSizeMax = sizeMaxField.value;
                 if (commonUI.brushSizeMax < commonUI.brushSizeMin)
                 {
                     commonUI.brushSizeMax = sizeMaxField.value;
-                    sizeMinField.value = sizeMaxField.value; 
+                    sizeMinField.value = sizeMaxField.value;
                     SetLowValueWithoutNotify(sizeMaxField.value);
                 }
                 SetHighValueWithoutNotify(sizeMaxField.value);
             });
-            
+
             jitter.RegisterValueChangedCallback(e =>
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
                 if (commonUI == null) return;
-                commonUI.brushSizeJitter = e.newValue; 
+                commonUI.brushSizeJitter = e.newValue;
                 sizeJitterTextField.SetValueWithoutNotify(e.newValue);
             });
-            
+
             sizeJitterTextField.RegisterValueChangedCallback(e =>
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
@@ -605,14 +605,14 @@ namespace UnityEditor.TerrainTools.UI
                 commonUI.brushSizeJitter = e.newValue;
                 jitter.SetValueWithoutNotify(e.newValue);
             });
-            
+
             var commonUI = BrushAttributesOverlay.GetCommonUI();
             if (commonUI == null) Debug.LogWarning("cannot display SIZE in BrushAttributesOverlay.CS in PACKAGE");
-            
+
             sizeMinField.value = commonUI.brushSizeMin;
-            sizeMaxField.value = commonUI.brushSizeMax; 
+            sizeMaxField.value = commonUI.brushSizeMax;
             jitter.value = commonUI.brushSizeJitter;
-            sizeJitterTextField.value = commonUI.brushSizeJitter; 
+            sizeJitterTextField.value = commonUI.brushSizeJitter;
             return sizeContainer;
         }
 
@@ -624,8 +624,8 @@ namespace UnityEditor.TerrainTools.UI
             window.ShowAsDropDown(GUIUtility.GUIToScreenRect(worldBound), new Vector2(width, height));
         }
     }
-    
-    // BRUSH ROTATION 
+
+    // BRUSH ROTATION
     [EditorToolbarElement(id, typeof(SceneView))]
     internal class BrushRotation : CondensedSliderDropdown
     {
@@ -634,21 +634,21 @@ namespace UnityEditor.TerrainTools.UI
         private const float minValue = -180;
         private const float maxValue = 180;
 
-        static Texture2D s_RotationIcon;            
+        static Texture2D s_RotationIcon;
 
         static Texture2D Texture
         {
             get
             {
                 if(s_RotationIcon == null)
-                    s_RotationIcon = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/Rotation.png", typeof(Texture2D));
+                    s_RotationIcon = (Texture2D)EditorGUIUtility.IconContent("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/Rotation.png").image;
                 return s_RotationIcon;
             }
         }
-        
+
         public void UpdateOverlayDirection(Layout l)
         {
-            DropdownUpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, null, minValue, maxValue); 
+            DropdownUpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, null, minValue, maxValue);
             labelFormatting = (f, s, d) =>
             {
                 if (direction == SliderDirection.Vertical)
@@ -656,9 +656,9 @@ namespace UnityEditor.TerrainTools.UI
                 return $"{s} {f:F2}";
             };
             clicked += () => OpenPopup(CreatePopUp(), BrushAttributesOverlay.popUpWidth, BrushAttributesOverlay.popUpHeight);
-            UpdateValues(); 
+            UpdateValues();
         }
-        
+
         public void UpdateOverlayDirection(bool collapsedChanged)
         {
             DropdownUpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, null, minValue, maxValue);
@@ -669,7 +669,7 @@ namespace UnityEditor.TerrainTools.UI
                 return $"{s} {f:F2}";
             };
             clicked += () => OpenPopup(CreatePopUp(), BrushAttributesOverlay.popUpWidth, BrushAttributesOverlay.popUpHeight);
-            UpdateValues(); 
+            UpdateValues();
         }
 
         // On first install of the package, need to rebuild the attribute UI after
@@ -695,18 +695,18 @@ namespace UnityEditor.TerrainTools.UI
                     return $"{f:F2}";
                 return $"{s} {f:F2}";
             };
-            
+
             UpdateOverlayDirection(true);
-            
+
             RegisterCallback<AttachToPanelEvent>(e =>
             {
                 ToolManager.activeToolChanged += UpdateValues;
                 ToolManager.activeContextChanged += UpdateValues;
-                BrushAttributesOverlay.instance.layoutChanged += UpdateOverlayDirection; 
+                BrushAttributesOverlay.instance.layoutChanged += UpdateOverlayDirection;
                 BrushAttributesOverlay.instance.collapsedChanged += UpdateOverlayDirection;
                 BrushRotationVariator.BrushRotationChanged += UpdateValues;
             });
-            
+
 
             this.RegisterValueChangedCallback(e =>
             {
@@ -714,18 +714,18 @@ namespace UnityEditor.TerrainTools.UI
                 if (commonUI == null) return;
                 commonUI.brushRotation = e.newValue;
             });
-            
+
             RegisterCallback<DetachFromPanelEvent>(e =>
             {
                 ToolManager.activeToolChanged -= UpdateValues;
                 ToolManager.activeContextChanged -= UpdateValues;
-                BrushAttributesOverlay.instance.layoutChanged -= UpdateOverlayDirection; 
+                BrushAttributesOverlay.instance.layoutChanged -= UpdateOverlayDirection;
                 BrushAttributesOverlay.instance.collapsedChanged -= UpdateOverlayDirection;
                 BrushRotationVariator.BrushRotationChanged -= UpdateValues;
             });
 
             SetContentWidth();
-            
+
             clicked += () => OpenPopup(CreatePopUp(), BrushAttributesOverlay.popUpWidth, BrushAttributesOverlay.popUpHeight);
 
             UpdateValues();
@@ -741,9 +741,9 @@ namespace UnityEditor.TerrainTools.UI
         private void UpdateValues()
         {
             var commonUI = BrushAttributesOverlay.GetCommonUI();
-            if (commonUI == null) return; 
+            if (commonUI == null) return;
             style.display = commonUI.hasBrushRotation ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!commonUI.hasBrushRotation) return; 
+            if (!commonUI.hasBrushRotation) return;
             value = commonUI.brushRotationVal;
         }
 
@@ -753,12 +753,12 @@ namespace UnityEditor.TerrainTools.UI
             StyleSheet styleSheet = (StyleSheet)AssetDatabase.LoadAssetAtPath("Packages/com.unity.terrain-tools/Editor/Style/BrushPopup.uss", typeof(StyleSheet));
             if (styleSheet) rotationContainer.styleSheets.Add(styleSheet);
 
-            // add jitter slider 
+            // add jitter slider
             var rotationJitterContainer = new VisualElement();
             rotationJitterContainer.style.flexDirection = FlexDirection.Row;
             rotationContainer.Add(rotationJitterContainer);
             var jitter = new Slider("Jitter", 0f, 1f);
-            jitter.style.flexGrow = 1; 
+            jitter.style.flexGrow = 1;
             rotationJitterContainer.Add(jitter);
             var rotationJitterTextField = new FloatField();
             rotationJitterContainer.Add(rotationJitterTextField);
@@ -767,10 +767,10 @@ namespace UnityEditor.TerrainTools.UI
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
                 if (commonUI == null) return;
-                commonUI.brushRotationJitter = e.newValue; 
+                commonUI.brushRotationJitter = e.newValue;
                 rotationJitterTextField.SetValueWithoutNotify(e.newValue);
             });
-            
+
             rotationJitterTextField.RegisterValueChangedCallback(e =>
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
@@ -782,7 +782,7 @@ namespace UnityEditor.TerrainTools.UI
             if (commonUI == null) Debug.LogWarning("cannot display ROTATION in BrushAttributesOverlay.CS in PACKAGE");
 
             jitter.value = commonUI.brushRotationJitter;
-            rotationJitterTextField.value = commonUI.brushRotationJitter; 
+            rotationJitterTextField.value = commonUI.brushRotationJitter;
             return rotationContainer;
         }
 
@@ -794,8 +794,8 @@ namespace UnityEditor.TerrainTools.UI
             window.ShowAsDropDown(GUIUtility.GUIToScreenRect(worldBound), new Vector2(width, height));
         }
     }
-    
-    // BRUSH SPACING 
+
+    // BRUSH SPACING
     [EditorToolbarElement(id, typeof(SceneView))]
     internal class BrushSpacing : CondensedSlider
     {
@@ -805,20 +805,20 @@ namespace UnityEditor.TerrainTools.UI
         private const float maxValue = 100;
         private const float offset = 100;
 
-        static Texture2D s_SpacingIcon;            
+        static Texture2D s_SpacingIcon;
 
         static Texture2D Texture
         {
             get
             {
                 if(s_SpacingIcon == null)
-                    s_SpacingIcon = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/Spacing.png", typeof(Texture2D));
+                    s_SpacingIcon = (Texture2D)EditorGUIUtility.IconContent("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/Spacing.png").image;
                 return s_SpacingIcon;
             }
         }
-        
+
         public void UpdateOverlayDirection(Layout l)
-        { 
+        {
             UpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, minValue, maxValue);
             labelFormatting = (f, s, d) =>
             {
@@ -826,9 +826,9 @@ namespace UnityEditor.TerrainTools.UI
                     return $"{f:F2}";
                 return $"{s} {f:F2}";
             };
-            UpdateValues(); 
+            UpdateValues();
         }
-        
+
         public void UpdateOverlayDirection(bool collapsedChanged)
         {
             UpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, minValue, maxValue);
@@ -838,7 +838,7 @@ namespace UnityEditor.TerrainTools.UI
                     return $"{f:F2}";
                 return $"{s} {f:F2}";
             };
-            UpdateValues(); 
+            UpdateValues();
         }
 
         // On first install of the package, need to rebuild the attribute UI after
@@ -865,14 +865,14 @@ namespace UnityEditor.TerrainTools.UI
             };
 
             UpdateOverlayDirection(true);
-            
+
             RegisterCallback<AttachToPanelEvent>(e =>
             {
                 ToolManager.activeToolChanged += UpdateValues;
                 ToolManager.activeContextChanged += UpdateValues;
-                BrushAttributesOverlay.instance.layoutChanged += UpdateOverlayDirection; 
+                BrushAttributesOverlay.instance.layoutChanged += UpdateOverlayDirection;
                 BrushAttributesOverlay.instance.collapsedChanged += UpdateOverlayDirection;
-                BrushSpacingVariator.BrushSpacingChanged += UpdateValues; 
+                BrushSpacingVariator.BrushSpacingChanged += UpdateValues;
             });
 
             this.RegisterValueChangedCallback(e =>
@@ -881,18 +881,18 @@ namespace UnityEditor.TerrainTools.UI
                 if (commonUI == null) return;
                 commonUI.brushSpacing = e.newValue / offset;
             });
-            
+
             RegisterCallback<DetachFromPanelEvent>(e =>
             {
                 ToolManager.activeToolChanged -= UpdateValues;
                 ToolManager.activeContextChanged -= UpdateValues;
-                BrushAttributesOverlay.instance.layoutChanged -= UpdateOverlayDirection; 
+                BrushAttributesOverlay.instance.layoutChanged -= UpdateOverlayDirection;
                 BrushAttributesOverlay.instance.collapsedChanged -= UpdateOverlayDirection;
-                BrushSpacingVariator.BrushSpacingChanged -= UpdateValues; 
+                BrushSpacingVariator.BrushSpacingChanged -= UpdateValues;
             });
 
-            SetContentWidth();            
-            
+            SetContentWidth();
+
             UpdateValues();
         }
 
@@ -906,15 +906,15 @@ namespace UnityEditor.TerrainTools.UI
         private void UpdateValues()
         {
             var commonUI = BrushAttributesOverlay.GetCommonUI();
-            if (commonUI == null) return; 
+            if (commonUI == null) return;
             style.display = commonUI.hasBrushSpacing ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!commonUI.hasBrushSpacing) return; 
+            if (!commonUI.hasBrushSpacing) return;
             value = commonUI.brushSpacing * offset;
         }
-        
+
     }
-    
-    // BRUSH SCATTERING 
+
+    // BRUSH SCATTERING
     [EditorToolbarElement(id, typeof(SceneView))]
     internal class BrushScattering : CondensedSlider
     {
@@ -924,18 +924,18 @@ namespace UnityEditor.TerrainTools.UI
         private const float maxValue = 100;
         private const float offset = 100;
 
-        static Texture2D s_ScatteringIcon;           
+        static Texture2D s_ScatteringIcon;
 
         static Texture2D Texture
         {
             get
             {
                 if (s_ScatteringIcon == null)
-                    s_ScatteringIcon = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/Scattering.png", typeof(Texture2D));
+                    s_ScatteringIcon = (Texture2D)EditorGUIUtility.IconContent("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/Scattering.png").image;
                 return s_ScatteringIcon;
             }
         }
-        
+
         public void UpdateOverlayDirection(Layout l)
         {
             UpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, minValue, maxValue);
@@ -945,9 +945,9 @@ namespace UnityEditor.TerrainTools.UI
                     return $"{f:F2}";
                 return $"{s} {f:F2}";
             };
-            UpdateValues(); 
+            UpdateValues();
         }
-        
+
         public void UpdateOverlayDirection(bool collapsedChanged)
         {
             UpdateDirection(BrushAttributesOverlay.activeToolbarLayout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal, minValue, maxValue);
@@ -957,7 +957,7 @@ namespace UnityEditor.TerrainTools.UI
                     return $"{f:F2}";
                 return $"{s} {f:F2}";
             };
-            UpdateValues(); 
+            UpdateValues();
         }
 
         // On first install of the package, need to rebuild the attribute UI after
@@ -984,34 +984,34 @@ namespace UnityEditor.TerrainTools.UI
             };
 
             UpdateOverlayDirection(true);
-            
+
             RegisterCallback<AttachToPanelEvent>(e =>
             {
                 ToolManager.activeToolChanged += UpdateValues;
                 ToolManager.activeContextChanged += UpdateValues;
-                BrushAttributesOverlay.instance.layoutChanged += UpdateOverlayDirection; 
+                BrushAttributesOverlay.instance.layoutChanged += UpdateOverlayDirection;
                 BrushAttributesOverlay.instance.collapsedChanged += UpdateOverlayDirection;
                 BrushScatterVariator.BrushScatterChanged += UpdateValues;
             });
-            
+
             this.RegisterValueChangedCallback(e =>
             {
                 var commonUI = BrushAttributesOverlay.GetCommonUI();
                 if (commonUI == null) return;
                 commonUI.brushScatter = e.newValue / offset;
             });
-            
+
             RegisterCallback<DetachFromPanelEvent>(e =>
             {
                 ToolManager.activeToolChanged -= UpdateValues;
                 ToolManager.activeContextChanged -= UpdateValues;
-                BrushAttributesOverlay.instance.layoutChanged -= UpdateOverlayDirection; 
+                BrushAttributesOverlay.instance.layoutChanged -= UpdateOverlayDirection;
                 BrushAttributesOverlay.instance.collapsedChanged -= UpdateOverlayDirection;
                 BrushScatterVariator.BrushScatterChanged -= UpdateValues;
             });
 
             SetContentWidth();
-            
+
             UpdateValues();
         }
 
@@ -1025,9 +1025,9 @@ namespace UnityEditor.TerrainTools.UI
         private void UpdateValues()
         {
             var commonUI = BrushAttributesOverlay.GetCommonUI();
-            if (commonUI == null) return; 
+            if (commonUI == null) return;
             style.display = commonUI.hasBrushScatter ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!commonUI.hasBrushScatter) return; 
+            if (!commonUI.hasBrushScatter) return;
             value = commonUI.brushScatter * offset;
         }
     }

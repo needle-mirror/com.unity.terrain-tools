@@ -28,36 +28,36 @@
 
 struct StrataFractalInput
 {
-	float octaves;
-	float amplitude;
-	float persistence;
-	float frequency;
-	float lacunarity;
-	float warpIterations;
-	float warpStrength;
-	float4 warpOffsets;
-	float strataScale;
-	float strataOffset;
+    float octaves;
+    float amplitude;
+    float persistence;
+    float frequency;
+    float lacunarity;
+    float warpIterations;
+    float warpStrength;
+    float4 warpOffsets;
+    float strataScale;
+    float strataOffset;
 };
 
 
 
 StrataFractalInput GetDefaultStrataFractalInput()
 {
-	StrataFractalInput ret;
+    StrataFractalInput ret;
 
-	ret.octaves = 8;
-	ret.amplitude = 0.5;
-	ret.persistence = 0.5;
-	ret.frequency = 1;
-	ret.lacunarity = 2;
-	ret.warpIterations = 0;
-	ret.warpStrength = 0.5;
-	ret.warpOffsets = float4(2.5, 1.4, 3.2, 2.7);
-	ret.strataScale = 1;
-	ret.strataOffset = 0;
+    ret.octaves = 8;
+    ret.amplitude = 0.5;
+    ret.persistence = 0.5;
+    ret.frequency = 1;
+    ret.lacunarity = 2;
+    ret.warpIterations = 0;
+    ret.warpStrength = 0.5;
+    ret.warpOffsets = float4(2.5, 1.4, 3.2, 2.7);
+    ret.strataScale = 1;
+    ret.strataOffset = 0;
 
-	return ret;
+    return ret;
 }
 
 
@@ -76,20 +76,20 @@ float _StrataStrataOffset;
 
 StrataFractalInput GetStrataFractalInput()
 {
-	StrataFractalInput ret;
+    StrataFractalInput ret;
 
-	ret.octaves = _StrataOctaves;
-	ret.amplitude = _StrataAmplitude;
-	ret.persistence = _StrataPersistence;
-	ret.frequency = _StrataFrequency;
-	ret.lacunarity = _StrataLacunarity;
-	ret.warpIterations = _StrataWarpIterations;
-	ret.warpStrength = _StrataWarpStrength;
-	ret.warpOffsets = _StrataWarpOffsets;
-	ret.strataScale = _StrataStrataScale;
-	ret.strataOffset = _StrataStrataOffset;
+    ret.octaves = _StrataOctaves;
+    ret.amplitude = _StrataAmplitude;
+    ret.persistence = _StrataPersistence;
+    ret.frequency = _StrataFrequency;
+    ret.lacunarity = _StrataLacunarity;
+    ret.warpIterations = _StrataWarpIterations;
+    ret.warpStrength = _StrataWarpStrength;
+    ret.warpOffsets = _StrataWarpOffsets;
+    ret.strataScale = _StrataStrataScale;
+    ret.strataOffset = _StrataStrataOffset;
 
-	return ret;
+    return ret;
 }
 
 
@@ -211,7 +211,7 @@ float noise_StrataPerlin( float pos, StrataFractalInput fractalInput )
     float h = noise_StrataPerlin_Raw( pos, fractalInput );
 
     float f = noise_StrataValue_Raw( h * fractalInput.strataScale + fractalInput.strataOffset, fractalInput );
-    
+
     return f;
 }
 
@@ -231,14 +231,14 @@ float noise_StrataPerlin( float2 pos, StrataFractalInput fractalInput )
 
             pos = pos + fractalInput.warpStrength * q;
         }
-        
+
         pos = lerp( prev, pos, frac( fractalInput.warpIterations ) );
     }
 
     float h = noise_StrataPerlin_Raw( pos, fractalInput );
 
     float f = noise_StrataValue_Raw( h * fractalInput.strataScale + fractalInput.strataOffset, fractalInput );
-    
+
     return f;
 }
 
@@ -258,20 +258,20 @@ float noise_StrataPerlin( float3 pos, StrataFractalInput fractalInput )
             prev = pos;
             pos = pos + fractalInput.warpStrength * q;
         }
-        
+
         pos = lerp(prev, pos, frac( fractalInput.warpIterations ) );
     }
-    
+
     float h = noise_StrataPerlin_Raw( pos, fractalInput );
 
     // h = sin( sign( h ) * ( 1 / abs( h ) ) );
     // h = sign( h ) * ( 1 / abs( h ) );
 
     float f = noise_StrataValue_Raw( h * fractalInput.strataScale + fractalInput.strataOffset, fractalInput );
-    
+
     // f = ( h * .5 );
     // f = h;
-    
+
     return f;
 }
 
@@ -280,7 +280,7 @@ float noise_StrataPerlin( float4 pos, StrataFractalInput fractalInput )
     float h = noise_StrataPerlin_Raw( pos, fractalInput );
 
     float f = noise_StrataValue_Raw( h * fractalInput.strataScale + fractalInput.strataOffset, fractalInput );
-    
+
     return f;
 }
 

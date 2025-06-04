@@ -67,7 +67,7 @@ namespace UnityEditor.TerrainTools
         }
 
         CloneToolSerializedProperties cloneToolProperties = new CloneToolSerializedProperties();
-        
+
         IBrushUIGroup commonUI {
             get
             {
@@ -109,7 +109,7 @@ namespace UnityEditor.TerrainTools
 
             return m_Material;
         }
-        
+
         public override int IconIndex
         {
             get { return (int) ToolIndex.SculptIndex.Clone; }
@@ -122,14 +122,14 @@ namespace UnityEditor.TerrainTools
 
         public override string GetName()
         {
-           return "Sculpt/Clone"; 
+           return "Sculpt/Clone";
         }
 
         public override string GetDescription()
         {
-           return Styles.descriptionString; 
+           return Styles.descriptionString;
         }
-        
+
         public override bool HasToolSettings => true;
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
@@ -187,9 +187,9 @@ namespace UnityEditor.TerrainTools
                 SaveSetting();
                 TerrainToolsAnalytics.OnParameterChange();
             }
-            
+
         }
-        
+
 
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
         {
@@ -201,7 +201,7 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
+
             ProcessInput(terrain, editContext);
 
             if (!commonUI.isInUse)
@@ -214,7 +214,7 @@ namespace UnityEditor.TerrainTools
             {
                 DrawBrushPreviews(m_commonUI.terrainUnderCursor, editContext);
             }
-            
+
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
         }
@@ -272,7 +272,7 @@ namespace UnityEditor.TerrainTools
 
             // xxx(jcowles): this logic is no good becuse it makes assumptions about what modifier keys will enable/disable painting,
             // however this cannot be known without querying other systems (e.g. orbiting the camera uses some combination of mouse
-            // buttons and modifier keys, but the exact configuration is a user setting). For now, assume when ALT is pressed, we are 
+            // buttons and modifier keys, but the exact configuration is a user setting). For now, assume when ALT is pressed, we are
             // not painting.
             m_isPainting = m_lmb && !m_ctrl && !Event.current.alt;
         }

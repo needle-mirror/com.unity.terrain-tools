@@ -18,7 +18,7 @@ To start the clean remove process, select your target Terrain in the Scene or Hi
 
 ## Split
 
-The **Split** tool lets you divide Terrain into smaller tiles while properly preserving Terrain height, Terrain Layers, and other details. 
+The **Split** tool lets you divide Terrain into smaller tiles while properly preserving Terrain height, Terrain Layers, and other details.
 
 ![Split options](images/4-31-toolbox-terrain-edit-02.png)
 

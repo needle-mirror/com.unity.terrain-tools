@@ -12,7 +12,7 @@ Shader "Hidden/TerrainTools/NoiseLib/DefaultPreview"
 
         sampler2D _MainTex;
         float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
-        
+
         struct appdata_t
         {
             float4 vertex : POSITION;

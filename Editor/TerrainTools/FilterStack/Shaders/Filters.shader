@@ -195,7 +195,7 @@ Shader "Hidden/TerrainTools/Filters"
 
             #pragma vertex vert
             #pragma fragment frag
-            
+
             float4 _RemapRanges;
 
             float4 frag( v2f_s i ) : SV_Target

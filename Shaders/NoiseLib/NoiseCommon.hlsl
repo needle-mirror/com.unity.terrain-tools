@@ -138,7 +138,7 @@ float2 hash( float2 p )
 {
     float x = dot( p, float2( 165.244, 492.128 ) );
     float y = dot( p, float2( 382.763, 234.567 ) );
-    
+
     return -1 + 2 * frac( sin( float2( x, y ) ) * 98102.5453123 );
 }
 

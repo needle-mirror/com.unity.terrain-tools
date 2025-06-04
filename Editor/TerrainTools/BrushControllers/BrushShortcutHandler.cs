@@ -74,7 +74,7 @@ namespace UnityEditor.TerrainTools
         /// Handles <see cref="ShortcutArguments"/> changes when using shortcuts.
         /// </summary>
         /// <remarks>
-        /// This method handles the invocation of a shortcuts on press and release actions using <see cref="ShortcutArguments"/>. 
+        /// This method handles the invocation of a shortcuts on press and release actions using <see cref="ShortcutArguments"/>.
         /// </remarks>
         /// <param name="args">The data for shortcut action methods invoked by the shortcut system.</param>
         /// <param name="key">The <see cref="TKey"/> type to check.</param>

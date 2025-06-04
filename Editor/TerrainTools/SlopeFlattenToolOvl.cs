@@ -15,13 +15,13 @@ namespace UnityEditor.TerrainTools
             TerrainToolsAnalytics.OnShortcutKeyRelease("Select Slope Flatten Tool");
         }
 #endif
-        public override string OnIcon => ("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/FlattenSlope_On.png");
-        public override string OffIcon => ("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/FlattenSlope.png");
-        
+        public override string OnIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/FlattenSlope_On.png";
+        public override string OffIcon => "Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/FlattenSlope.png";
+
         public override bool HasBrushFilters => true;
         public override bool HasBrushMask => true;
         public override bool HasBrushAttributes => true;
-        
+
         IBrushUIGroup commonUI {
             get
             {
@@ -62,13 +62,13 @@ namespace UnityEditor.TerrainTools
         public override string GetName()
         {
             return "Effects/Slope Flatten";
-            
+
         }
 
         public override string GetDescription()
         {
             return "Flattens areas while maintaining the average slope of the Terrain.";
-            
+
         }
 
         public override void OnEnterToolMode()
@@ -93,7 +93,7 @@ namespace UnityEditor.TerrainTools
             {
                 return;
             }
-            
+
             // Only render preview if this is a repaint. losing performance if we do
             if (Event.current.type == EventType.Repaint)
             {
@@ -116,7 +116,7 @@ namespace UnityEditor.TerrainTools
                     }
                 }
             }
-            
+
             // update brush UI group
             commonUI.OnSceneGUI(terrain, editContext);
         }

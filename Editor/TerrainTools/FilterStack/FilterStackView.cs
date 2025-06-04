@@ -31,7 +31,7 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Gets the Serialized Filter Stack object. 
+        /// Gets the Serialized Filter Stack object.
         /// </summary>
         public SerializedObject serializedFilterStack {
             get { return m_SerializedObject; }
@@ -416,7 +416,7 @@ namespace UnityEditor.TerrainTools
         private Filter GetFilterAtIndex(int index)
         {
             if (m_FiltersProperty.arraySize == 0) return null;
-            
+
             var element = m_FiltersProperty.GetArrayElementAtIndex(index);
             if (element == null) return null;
 

@@ -1,4 +1,4 @@
-﻿Shader "Hidden/TerrainTools/BrushPreview"
+Shader "Hidden/TerrainTools/BrushPreview"
 {
     SubShader
     {
@@ -12,7 +12,7 @@
             #include "UnityCG.cginc"
             #include "TerrainPreview.cginc"
             #include "Packages/com.unity.terrain-tools/Shaders/TerrainTools.hlsl"
-            
+
             #define CLIP_PREVIEW   clip( IsPcUvPartOfValidTerrainTileTexelSobel( (i.pcPixels + (.5).xx) / _PcPixelRect.zw, _BrushTex_TexelSize.xy * .5 ) - 1 );
 
             sampler2D _FilterTex;
@@ -88,12 +88,12 @@
             #if TERRAINTOOLS_FILTERS_ENABLED
                 float filter = UnpackHeightmap(tex2D(_FilterTex, i.uv));
             #endif
- 
+
                 if (_IsPaintHolesTool)  //override the color on the pixels that will be affected by the tool
                 {
                     float holeStripeLocation = saturate(abs(_HoleStripeThreshold));
                     float4 holeColor = _UseAltColor ?
-                        float4(0.5f, 0.0f, 1.0f, 1.0f) :    //alternate color = purplish  
+                        float4(0.5f, 0.0f, 1.0f, 1.0f) :    //alternate color = purplish
                         float4(0.0f, 0.0f, 1.0f, 1.0f);     //regular color = blue
 
                     //clearly mark which pixels will be affected by the PaintHoles brush

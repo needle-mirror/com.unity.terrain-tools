@@ -16,7 +16,7 @@ namespace UnityEditor.TerrainTools
         RenderTexture m_Prev;
 
         /// <summary>
-        /// Initializes and returns an instance of <see cref="ActiveRenderTextureScope"/>. 
+        /// Initializes and returns an instance of <see cref="ActiveRenderTextureScope"/>.
         /// </summary>
         /// <remarks>Call this constructor to swap the previous active <see cref="RenderTexture"/> with the RenderTexture that is passed in.</remarks>
         /// <param name="rt">The RenderTexture to set as active.</param>
@@ -432,13 +432,13 @@ namespace UnityEditor.TerrainTools
             m_DefaultPreviewMat.SetFloat("_HoleStripeThreshold", 1.0f/255.0f);
             m_DefaultPreviewMat.SetFloat("_UseAltColor", 0.0f);
             m_DefaultPreviewMat.SetFloat("_IsPaintHolesTool", 0.0f);
-            
+
             return m_DefaultPreviewMat;
         }
 
         static Material m_PaintHeightMat;
         /// <summary>
-        /// Gets the paint height material to render builtin brush passes. 
+        /// Gets the paint height material to render builtin brush passes.
         /// </summary>
         /// <remarks>
         /// This material overrides the Builtin PaintHeight shader with Terrain Tools version of PaintHeight.
@@ -519,9 +519,9 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         /// Retrieves texel context data used for checking texel validity.
         /// </summary>
-        /// <param name="terrain"></param>
-        /// <param name="boundsInTerrainSpace"></param>
-        /// <param name="extraBorderPixels"></param>
+        /// <param name="terrain">The initial terrain to collect texel validity.</param>
+        /// <param name="boundsInTerrainSpace">The bounds of the normal-map to use (in pixels).</param>
+        /// <param name="extraBorderPixels">Extra padding on the bounds specified.</param>
         /// <returns>Returns the <see cref="PaintContext"/> object used for checking texel validity.</returns>
         public static PaintContext CollectTexelValidity(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
         {
@@ -654,7 +654,7 @@ namespace UnityEditor.TerrainTools
                 return m_defaultProjectionMaterial;
             }
         }
-        
+
         /// <summary>
         /// Converts a <see cref="Matrix4x4"/> into a <see cref="Quaternion"/>.
         /// </summary>

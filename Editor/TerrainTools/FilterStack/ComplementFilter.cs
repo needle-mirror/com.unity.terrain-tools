@@ -7,7 +7,7 @@ namespace UnityEditor.TerrainTools
     {
         [SerializeField]
         public float value = 1;
-        
+
         public override string GetDisplayName()
         {
             return "Complement";

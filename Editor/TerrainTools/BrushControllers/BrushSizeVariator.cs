@@ -1,4 +1,4 @@
-using System; 
+using System;
 using System.Text;
 using UnityEngine;
 using UnityEngine.TerrainTools;
@@ -12,7 +12,7 @@ namespace UnityEditor.TerrainTools
         private const float kMaxBrushSize = 500.0f;
         private const float kDefaultBrushSize = 100.0f;
         private const float kDefaultMouseSensitivity = 0.1f;
-        
+
         internal readonly TerrainFloatMinMaxValue m_BrushSize = new TerrainFloatMinMaxValue(styles.brushSize, kDefaultBrushSize, kMinBrushSize, kMaxBrushSize, true);
         private readonly BrushJitterHandler m_JitterHandler = new BrushJitterHandler(0.0f, kMinBrushSize, kMaxBrushSize);
 
@@ -42,22 +42,22 @@ namespace UnityEditor.TerrainTools
         {
             get
             {
-                return m_BrushSize.value; 
+                return m_BrushSize.value;
             }
         }
-        
+
         public float brushSizeMin
         {
             get { return m_BrushSize.minValue;  }
             set { m_BrushSize.minValue = value;  }
         }
-        
+
         public float brushSizeMax
         {
             get { return m_BrushSize.maxValue;  }
             set { m_BrushSize.maxValue = value;  }
         }
-        
+
         public float brushSizeJitter
         {
             get { return m_JitterHandler.jitter;  }
@@ -164,13 +164,13 @@ namespace UnityEditor.TerrainTools
             return base.OnPaint(terrain, editContext);
         }
 
-        // for updating condensed slider overlays 
+        // for updating condensed slider overlays
         public static event Action BrushSizeChanged;
         public static event Action BrushSizeMinChanged;
-        public static event Action BrushSizeMaxChanged; 
+        public static event Action BrushSizeMaxChanged;
         private float prevBrushSize = kDefaultBrushSize;
         private float prevBrushSizeMin = kMinBrushSize;
-        private float prevBrushSizeMax = kMinBrushSize; 
+        private float prevBrushSizeMax = kMinBrushSize;
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             base.OnInspectorGUI(terrain, editContext);
@@ -180,17 +180,17 @@ namespace UnityEditor.TerrainTools
             if (!Mathf.Approximately(m_BrushSize.value, prevBrushSize) && BrushSizeChanged != null)
             {
                 BrushSizeChanged();
-                prevBrushSize = m_BrushSize.value; 
+                prevBrushSize = m_BrushSize.value;
             }
             if (!Mathf.Approximately(brushSizeMin, prevBrushSizeMin) && BrushSizeMinChanged != null)
             {
                 BrushSizeMinChanged();
-                prevBrushSizeMin = brushSizeMin; 
+                prevBrushSizeMin = brushSizeMin;
             }
             if (!Mathf.Approximately(brushSizeMax, prevBrushSizeMax) && BrushSizeMaxChanged != null)
             {
                 BrushSizeMaxChanged();
-                prevBrushSizeMax = brushSizeMax; 
+                prevBrushSizeMax = brushSizeMax;
             }
             if (m_BrushSize.expanded)
             {

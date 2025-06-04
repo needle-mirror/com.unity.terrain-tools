@@ -30,7 +30,7 @@ namespace UnityEditor.TerrainTools
         public virtual string GetToolTip() => "EMPTY_TOOLTIP";
 
         /// <summary>
-        /// Sets up necessary data needed before the Filter is evaluated. 
+        /// Sets up necessary data needed before the Filter is evaluated.
         /// </summary>
         /// <remarks>
         /// While the data is being set the system is informed
@@ -49,7 +49,7 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Evaluates the Filter. 
+        /// Evaluates the Filter.
         /// </summary>
         /// <remarks>
         /// This method calls <see cref="ValidateFilter(FilterContext, out string)"/> and checks if it returns false performing a default blit instead of

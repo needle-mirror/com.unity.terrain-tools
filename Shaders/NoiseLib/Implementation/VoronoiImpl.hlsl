@@ -2,13 +2,13 @@
 #define UNITY_NOISE_VORONOI_INC
 
 /*=========================================================================
-    
+
     VORONOI NOISE
 
 =========================================================================*/
 
 /*=========================================================================
-    
+
     Includes
 
 =========================================================================*/
@@ -16,7 +16,7 @@
 #include "Packages/com.unity.terrain-tools/Shaders/NoiseLib/NoiseCommon.hlsl"
 
 /*=========================================================================
-    
+
     1D Noise
 
 =========================================================================*/
@@ -29,7 +29,7 @@ float get_noise_Voronoi( float p )
     // get random positions within neighboring cells + offsets
 
     float n = 1;
-    
+
     for ( float x = -2; x <= 2; ++x )
     {
         float2 r = hash( i + x );
@@ -43,7 +43,7 @@ float get_noise_Voronoi( float p )
 }
 
 /*=========================================================================
-    
+
     2D Noise
 
 =========================================================================*/
@@ -75,7 +75,7 @@ float get_noise_Voronoi( float2 p )
 }
 
 /*=========================================================================
-    
+
     3D Noise
 
 =========================================================================*/
@@ -88,7 +88,7 @@ float get_noise_Voronoi( float3 p )
     // get random positions within neighboring cells + offsets
 
     float n = 1;
-    
+
     for ( float x = -2; x <= 2; x++ )
     {
         for ( float y = -2; y <= 2; y++ )
@@ -108,7 +108,7 @@ float get_noise_Voronoi( float3 p )
 }
 
 /*=========================================================================
-    
+
     4D Noise
 
 =========================================================================*/
@@ -121,7 +121,7 @@ float get_noise_Voronoi( float4 p )
     // get random positions within neighboring cells + offsets
 
     float n = 1;
-    
+
     for ( float x = -2; x <= 2; ++x )
     {
         for ( float y = -2; y <= 2; ++y )

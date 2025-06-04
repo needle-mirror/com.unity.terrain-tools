@@ -15,7 +15,7 @@
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
             sampler2D _BrushTex;
-			sampler2D _FilterTex;
+            sampler2D _FilterTex;
 
             float4 _BrushParams;
             #define BRUSH_STRENGTH      (_BrushParams[0])
@@ -66,7 +66,7 @@
                 float2 smudgedUVs = heightmapUV - brushStrength * float2(BRUSH_SMUDGE_X, BRUSH_SMUDGE_Y);
 
                 float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
-                
+
                 float h = UnpackHeightmap(tex2D(_MainTex, smudgedUVs));
 
                 return PackHeightmap(lerp(height, h, blendValue));

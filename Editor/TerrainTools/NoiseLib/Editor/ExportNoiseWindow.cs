@@ -5,7 +5,7 @@ using UnityEngine.Experimental.Rendering;
 namespace UnityEditor.TerrainTools
 {
     /// <summary>
-    /// Class that implements EditorWindow in order to provide options for exporting noise to 
+    /// Class that implements EditorWindow in order to provide options for exporting noise to
     /// textures that can be saved to disk.
     /// </summary>
     internal class ExportNoiseWindow : EditorWindow
@@ -102,10 +102,10 @@ namespace UnityEditor.TerrainTools
                                                        Application.dataPath,
                                                        "New Noise Texture2D.png",
                                                        "png");
-                
+
                 if (string.IsNullOrEmpty(path))
                 {
-                    return; 
+                    return;
                 }
 
                 if (!path.StartsWith(Application.dataPath))
@@ -161,10 +161,10 @@ namespace UnityEditor.TerrainTools
                                                             Application.dataPath,
                                                             "New Noise Texture3D.asset",
                                                             "asset");
-                
+
                 if (string.IsNullOrEmpty(path))
                 {
-                    return; 
+                    return;
                 }
 
                 if (!path.StartsWith(Application.dataPath))

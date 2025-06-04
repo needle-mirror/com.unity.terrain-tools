@@ -976,7 +976,7 @@ internal static class TerrainToolGUIHelper
         {
             return "Erosion tools work best with \n" +
                 "a heightmap resolution of 1025 or greater.";
-        }            
+        }
 
         return "";
     }

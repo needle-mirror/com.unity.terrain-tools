@@ -13,7 +13,7 @@ Shader "Hidden/TerrainTools/Noise/Preview"
         sampler2D _MainTex;
         float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
         float  _Layer;
-        
+
         struct appdata_t
         {
             float4 vertex : POSITION;
@@ -34,7 +34,7 @@ Shader "Hidden/TerrainTools/Noise/Preview"
         v2f vert( appdata_t v )
         {
             v2f o;
-            
+
             o.vertex = UnityObjectToClipPos( v.vertex );
             o.uv = v.uv;
 

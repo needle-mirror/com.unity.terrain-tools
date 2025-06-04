@@ -36,7 +36,7 @@ namespace UnityEditor.TerrainTools
         void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext);
 
         /// <summary>
-        /// 
+        /// Renders the brush's GUI within the inspector view.
         /// </summary>
         /// <param name="terrain">The terrain in focus.</param>
         /// <param name="editContext">The editcontext to reference.</param>

@@ -43,12 +43,12 @@ namespace UnityEditor.TerrainTools
         /// The x-compenent for the HLSL float2
         /// </summary>
         public float x;
-        
+
         /// <summary>
         /// The y-compenent for the HLSL float2
         /// </summary>
         public float y;
-        
+
         /// <summary>
         /// The constructor for an HlslFloat2
         /// </summary>
@@ -70,17 +70,17 @@ namespace UnityEditor.TerrainTools
         /// The x-compenent for the HLSL float3
         /// </summary>
         public float x;
-        
+
         /// <summary>
         /// The y-compenent for the HLSL float3
         /// </summary>
         public float y;
-        
+
         /// <summary>
         /// The z-compenent for the HLSL float3
         /// </summary>
         public float z;
-        
+
         /// <summary>
         /// The constructor for an HlslFloat3
         /// </summary>
@@ -109,12 +109,12 @@ namespace UnityEditor.TerrainTools
         /// The y-compenent for the HLSL float4
         /// </summary>
         public float y;
-        
+
         /// <summary>
         /// The z-compenent for the HLSL float4
         /// </summary>
         public float z;
-        
+
         /// <summary>
         /// The w-compenent for the HLSL float4
         /// </summary>
@@ -214,7 +214,7 @@ namespace UnityEditor.TerrainTools
                 m_float4Value = value;
             }
         }
-        
+
         /// <summary>
         /// Returns the string representation of the HlslValueType for this struct
         /// </summary>
@@ -235,7 +235,7 @@ namespace UnityEditor.TerrainTools
             return "unsupported_type";
         }
 
-        
+
         /// <summary>
         /// Returns the formatted HLSL string for the default value declaration for this struct's HlslValueType
         /// </summary>
@@ -271,7 +271,7 @@ namespace UnityEditor.TerrainTools
                                                                 float4Value.w.ToString( CultureInfo.InvariantCulture ) );
                     break;
                 default:
-                    return "unsupported_type()"; 
+                    return "unsupported_type()";
             }
 
             return constructedValueString;

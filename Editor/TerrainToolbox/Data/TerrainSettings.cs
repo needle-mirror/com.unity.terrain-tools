@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -18,9 +18,9 @@ namespace UnityEditor.TerrainTools
         public Material MaterialTemplate = null;
 #if UNITY_2019_2_OR_NEWER
 #else
-		public Terrain.MaterialType MaterialType = Terrain.MaterialType.BuiltInStandard;
-		public Color LegacySpecular = Color.gray;
-		public float LegacyShininess = 0;
+        public Terrain.MaterialType MaterialType = Terrain.MaterialType.BuiltInStandard;
+        public Color LegacySpecular = Color.gray;
+        public float LegacyShininess = 0;
 #endif
         public ReflectionProbeUsage ReflectionProbeUsage = ReflectionProbeUsage.BlendProbes;
 
@@ -107,9 +107,9 @@ namespace UnityEditor.TerrainTools
             ReflectionProbeUsage = other.ReflectionProbeUsage;
 #if UNITY_2019_2_OR_NEWER
 #else
-			MaterialType = other.MaterialType;
-			LegacySpecular = other.LegacySpecular;
-			LegacyShininess = other.LegacyShininess;
+            MaterialType = other.MaterialType;
+            LegacySpecular = other.LegacySpecular;
+            LegacyShininess = other.LegacyShininess;
 #endif
 
             // mesh resolution
@@ -163,9 +163,9 @@ namespace UnityEditor.TerrainTools
             ReflectionProbeUsage = terrain.reflectionProbeUsage;
 #if UNITY_2019_2_OR_NEWER
 #else
-			MaterialType = terrain.materialType;
-			LegacySpecular = terrain.legacySpecular;
-			LegacyShininess = terrain.legacyShininess;
+            MaterialType = terrain.materialType;
+            LegacySpecular = terrain.legacySpecular;
+            LegacyShininess = terrain.legacyShininess;
 #endif
 
             // mesh resolution

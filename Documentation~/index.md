@@ -10,4 +10,4 @@ This add-on toolset is suitable if you require more control over the appearance 
 
 For more information, see [Getting started with Terrain Tools](getting-started-with-terrain-tools.md).
 
-New to Unity Terrain? Check out the latest [blog post](https://blog.unity.com/games/experience-the-new-unity-terrain-demo-scenes-for-hdrp-and-urp), and download the [HDRP Terrain Demo Scene](https://u3d.as/2L6K) or the [URP Terrain Demo Scene](https://u3d.as/2L6J) from the Asset Store to explore. 
+New to Unity Terrain? Check out the latest [blog post](https://blog.unity.com/games/experience-the-new-unity-terrain-demo-scenes-for-hdrp-and-urp), and download the [HDRP Terrain Demo Scene](https://u3d.as/2L6K) or the [URP Terrain Demo Scene](https://u3d.as/2L6J) from the Asset Store to explore.

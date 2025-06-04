@@ -15,15 +15,15 @@
             float4 _MainTex_TexelSize;      // 1/width, 1/height, width, height
 
             sampler2D _BrushTex;
-			sampler2D _FilterTex;
+            sampler2D _FilterTex;
 
             float2 _BlurDirection;
             float4 _BrushParams;
             #define BRUSH_STRENGTH      (_BrushParams[0])
             #define BRUSH_TARGETHEIGHT  (_BrushParams[1])
-			int _KernelSize;
+            int _KernelSize;
 
-			float4 _SmoothWeights; // centered, min, max, unused
+            float4 _SmoothWeights; // centered, min, max, unused
 
             struct appdata_t {
                 float4 vertex : POSITION;
@@ -46,47 +46,47 @@
         ENDCG
 
         Pass
-		{
-			Name "Smooth"
+        {
+            Name "Smooth"
 
-			CGPROGRAM
-			#pragma vertex vert
-			#pragma fragment frag
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
 
-			float4 frag(v2f i) : SV_Target
-			{
-				float2 pcUV = i.pcUV;
-				float2 brushUV = PaintContextUVToBrushUV(pcUV);
+            float4 frag(v2f i) : SV_Target
+            {
+                float2 pcUV = i.pcUV;
+                float2 brushUV = PaintContextUVToBrushUV(pcUV);
 
-				// out of bounds multiplier
-				float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
-				float height = UnpackHeightmap(tex2D(_MainTex, pcUV));
-				float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, pcUV));
+                // out of bounds multiplier
+                float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
+                float height = UnpackHeightmap(tex2D(_MainTex, pcUV));
+                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, pcUV));
 
-				float divisor = 1.0f;
-				float h = UnpackHeightmap(tex2D(_MainTex, pcUV));
-				float iib = IsPcUvPartOfValidTerrainTileTexel(pcUV);
-				int kernelSize = _KernelSize; // todo: subpixel?
+                float divisor = 1.0f;
+                float h = UnpackHeightmap(tex2D(_MainTex, pcUV));
+                float iib = IsPcUvPartOfValidTerrainTileTexel(pcUV);
+                int kernelSize = _KernelSize; // todo: subpixel?
 
-				// separate axis guassian blur
-			    for(int x = 0; x < kernelSize; ++x)
-			    {
-			        float2 offset = _MainTex_TexelSize.xy * abs(sign(_BlurDirection)) * (x + 1);
-					float weight = (float)(kernelSize - x) / (float)(kernelSize + 1);
-					float2 iibKernel = float2(IsPcUvPartOfValidTerrainTileTexel(pcUV + offset), IsPcUvPartOfValidTerrainTileTexel(pcUV - offset));
+                // separate axis guassian blur
+                for(int x = 0; x < kernelSize; ++x)
+                {
+                    float2 offset = _MainTex_TexelSize.xy * abs(sign(_BlurDirection)) * (x + 1);
+                    float weight = (float)(kernelSize - x) / (float)(kernelSize + 1);
+                    float2 iibKernel = float2(IsPcUvPartOfValidTerrainTileTexel(pcUV + offset), IsPcUvPartOfValidTerrainTileTexel(pcUV - offset));
 
-					h += UnpackHeightmap(tex2D(_MainTex, pcUV + offset)) * weight * iibKernel.x;
-					h += UnpackHeightmap(tex2D(_MainTex, pcUV - offset)) * weight * iibKernel.y;
-					divisor += weight * (iibKernel.x + iibKernel.y);
-			    }
-			
-				h /= divisor;
+                    h += UnpackHeightmap(tex2D(_MainTex, pcUV + offset)) * weight * iibKernel.x;
+                    h += UnpackHeightmap(tex2D(_MainTex, pcUV - offset)) * weight * iibKernel.y;
+                    divisor += weight * (iibKernel.x + iibKernel.y);
+                }
 
-				h = dot(float3(h, min(h, height), max(h, height)), _SmoothWeights.xyz);
-				return PackHeightmap(lerp(height, h, brushStrength * iib));
-			}
-			ENDCG
-		}
+                h /= divisor;
+
+                h = dot(float3(h, min(h, height), max(h, height)), _SmoothWeights.xyz);
+                return PackHeightmap(lerp(height, h, brushStrength * iib));
+            }
+            ENDCG
+        }
     }
     Fallback Off
 }

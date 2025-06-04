@@ -86,16 +86,16 @@ namespace UnityEditor.TerrainTools
             bool isWorldSpace = false == m_isLocalSpace;
             brushSize = isWorldSpace ? brushSize * previewSize : 1;
             brushPosWS = isWorldSpace ? brushPosWS * previewSize : Vector3.zero;
-            
+
             // compensate for the difference between the size of the rotated brush and the square noise RT
             var brushTransform = GetBrushTransform(fc);
             var rect = brushTransform.GetBrushXYBounds();
             var scaleMultiplier = new Vector2(1.0f / (fc.brushSize/rect.width), 1.0f / (fc.brushSize/rect.height));
-            
+
             Quaternion rotQ = Quaternion.AngleAxis( -brushRotation, Vector3.up );
             // accumulate transformation delta
             m_noiseToWorld *= Matrix4x4.TRS(brushPosWS, rotQ, Vector3.one);
-            
+
             mat.SetMatrix( NoiseSettings.ShaderStrings.transform, noiseSettings.trs * m_noiseToWorld * Matrix4x4.Scale(new Vector3(scaleMultiplier.x, 1.0f, scaleMultiplier.y) * brushSize));
 
             int pass = NoiseUtils.kNumBlitPasses * NoiseLib.GetNoiseIndex( noiseSettings.domainSettings.noiseTypeName );
@@ -145,10 +145,10 @@ namespace UnityEditor.TerrainTools
             GUIContent worldLabel = NoiseFilter.worldLabel;
             GUIContent heightmapLabel = NoiseFilter.heightmapLabel;
             GUIContent editLabel = NoiseFilter.editLabel;
-            
+
             float editWith = GUI.skin.label.CalcSize( editLabel ).x + 20f;
             Rect editRect = new Rect( rect.xMax - editWith, rect.y, editWith, rect.height );
-            
+
             Rect labelRect = rect;
             labelRect.width = GUI.skin.label.CalcSize( coordinateLabel ).x;
 
@@ -202,12 +202,12 @@ namespace UnityEditor.TerrainTools
             {
                 m_isLocalSpace = false;
             }
-            
+
             if( GUI.Toggle( localRect, m_isLocalSpace,  localLabel, GUI.skin.button ) )
             {
                 m_isLocalSpace = true;
             }
-            
+
             m_useHeightmap = GUI.Toggle( heightmapRect, m_useHeightmap, heightmapLabel, GUI.skin.button );
 
             m_noiseSettings.useTextureForPositions = m_useHeightmap;

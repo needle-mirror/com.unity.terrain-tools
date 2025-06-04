@@ -15,11 +15,11 @@ namespace UnityEngine.TerrainTools
     internal class TerrainToolboxLayer
     {
         // add a list of terrain layers to terrain, and have an option of clear existing ones
-        // return a bool representing if the added layers are already within the trerrain 
+        // return a bool representing if the added layers are already within the trerrain
         public static bool AddLayersToTerrain(TerrainData terrainData, List<TerrainLayer> layers, bool clearExisting)
         {
             if (terrainData == null || layers == null)
-                return false; //Early out 
+                return false; //Early out
 
             if (clearExisting)
             {
@@ -52,7 +52,7 @@ namespace UnityEngine.TerrainTools
                 filteredLayers.CopyTo(newArray, terrainLength);
                 terrainData.SetTerrainLayersRegisterUndo(newArray, "Add terrain layers");
                 return existsWithinLayers;
-            }			
+            }
         }
 
         // add layer to terrain

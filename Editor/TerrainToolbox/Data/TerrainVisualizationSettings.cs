@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -7,7 +7,7 @@ internal class TerrainVisualizationSettings : ScriptableObject, ISerializationCa
 {
     [SerializeField]
     [FormerlySerializedAs("ColorSelection")]
-    // Heatmap 
+    // Heatmap
     private Color[] _colorSelection =
     {
         Color.blue,
@@ -31,7 +31,7 @@ internal class TerrainVisualizationSettings : ScriptableObject, ISerializationCa
 
     [SerializeField]
     [FormerlySerializedAs("DistanceSelection")]
-    private float[] _distanceSelection ={ 0, 150, 300, 450, 600, 600, 600, 600 }; 
+    private float[] _distanceSelection ={ 0, 150, 300, 450, 600, 600, 600, 600 };
     public float[] DistanceSelection
     {
         get => _distanceSelection;
@@ -41,7 +41,7 @@ internal class TerrainVisualizationSettings : ScriptableObject, ISerializationCa
             FixSelections();
         }
     }
-    
+
     public enum REFERENCESPACE { LocalSpace, WorldSpace};
     public REFERENCESPACE ReferenceSpace;
     public enum MEASUREMENTS { Meters, Feet };
@@ -50,7 +50,7 @@ internal class TerrainVisualizationSettings : ScriptableObject, ISerializationCa
     public float TerrainMaxHeight;
     public float MinDistance = 100;
     public float MaxDistance = 500;
-	public int HeatLevels = 5;
+    public int HeatLevels = 5;
     public float SeaLevel;
     public bool WorldSpace = false;
     public bool ModeWarning = false;
