@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.TerrainTools;
 using UnityEditorInternal;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor.TerrainTools
 {
@@ -385,7 +386,12 @@ namespace UnityEditor.TerrainTools
                 brushRender.CalculateBrushTransform(out BrushTransform brushTransform);
                 PaintContext paintContext = brushRender.AcquireHeightmap(false, brushTransform.GetBrushXYBounds());
 
-                RenderTexture renderTexture = RenderTexture.GetTemporary(readableTexture.width, readableTexture.height, 16, readableTexture.graphicsFormat);
+                // We need to use the obsolete API as it has to be compatible with Unity 2022.3.
+                #pragma warning disable CS0618
+                var graphicsFormat = SystemInfo.GetCompatibleFormat(readableTexture.graphicsFormat, FormatUsage.Render);
+                #pragma warning restore CS0618
+
+                RenderTexture renderTexture = RenderTexture.GetTemporary(readableTexture.width, readableTexture.height, 16, graphicsFormat);
                 RenderTexture oldRT = RenderTexture.active;
                 Material mat = scatterMaterial;
 
@@ -441,27 +447,30 @@ namespace UnityEditor.TerrainTools
             }
 
             //Distribution Slider
-            EditorGUILayout.LabelField("Target Density Distribution");
-            int[] layers = m_DetailDataList.Select((v, i) => new { Value = v, Index = i })
-                        .Where(b => b.Value.isSelected == true)
-                        .Select(b => b.Index).ToArray();
-
-            var sliderBarPosition = GUILayoutUtility.GetRect(0, 30, GUILayout.ExpandWidth(true));
-            var distributionElements = DistributionSliderGUI.CreateDistributionInfos(layers.Length, sliderBarPosition,
-               i => GetPrototypeName(prototypes[layers[i]]),
-               i => prototypes[layers[i]].targetCoverage,
-               i => layers[i]);
-
-            if (DistributionSliderGUI.DrawSlider(sliderBarPosition, distributionElements, prototypes))
+            if (m_DetailDataList.Count > 0)
             {
-                m_SelectedTerrain.terrainData.detailPrototypes = prototypes; //Necessary to update the settings
-                EditorUtility.SetDirty(m_SelectedTerrain);
-            }
+                EditorGUILayout.LabelField(s_Styles.distributionLabel);
+                int[] layers = m_DetailDataList.Select((v, i) => new { Value = v, Index = i })
+                    .Where(b => b.Value.isSelected == true)
+                    .Select(b => b.Index).ToArray();
 
-            //Show distribution slider limit warning
-            if (layers.Length > DistributionSliderGUI.k_MaxDistributionSliderCount)
-            {
-                EditorGUILayout.HelpBox("The distribution slider only supports the first 8 prototypes ", MessageType.Info);
+                var sliderBarPosition = GUILayoutUtility.GetRect(0, 30, GUILayout.ExpandWidth(true));
+                var distributionElements = DistributionSliderGUI.CreateDistributionInfos(layers.Length, sliderBarPosition,
+                    i => GetPrototypeName(prototypes[layers[i]]),
+                    i => prototypes[layers[i]].targetCoverage,
+                    i => layers[i]);
+
+                if (DistributionSliderGUI.DrawSlider(sliderBarPosition, distributionElements, prototypes))
+                {
+                    m_SelectedTerrain.terrainData.detailPrototypes = prototypes; //Necessary to update the settings
+                    EditorUtility.SetDirty(m_SelectedTerrain);
+                }
+
+                //Show distribution slider limit warning
+                if (layers.Length > DistributionSliderGUI.k_MaxDistributionSliderCount)
+                {
+                    EditorGUILayout.HelpBox("The distribution slider only supports the first 8 prototypes ", MessageType.Info);
+                }
             }
         }
 

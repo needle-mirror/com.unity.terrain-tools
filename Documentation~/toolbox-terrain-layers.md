@@ -7,7 +7,7 @@ The **Terrain Layers** section contains a few tools to help manage Terrain Layer
 ## Terrain Palette
 
 A **Terrain Palette** is a preset asset file that stores a collection of Terrain Layers. This preset file is similar to other Toolbox presets, which you can save or share.
-~~~~
+
 ![Terrain palette preset](images/4-32-toolbox-terrain-layers-02.png)
 
 ## Material Layer Palette

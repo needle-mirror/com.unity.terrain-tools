@@ -150,7 +150,7 @@ namespace UnityEditor.TerrainTools.UI
             get
             {
                 if(s_OpacityIcon == null)
-                    s_OpacityIcon = (Texture2D)EditorGUIUtility.IconContent("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/Opacity@2x.png").image;
+                    s_OpacityIcon = (Texture2D)EditorGUIUtility.IconContent("Packages/com.unity.terrain-tools/Editor/Icons/TerrainOverlays/BrushSettingIcons/Opacity.png").image;
                 return s_OpacityIcon;
             }
         }

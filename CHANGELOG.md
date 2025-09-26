@@ -3,6 +3,16 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+
+
+## [5.3.1] - 2025-09-26
+### Fixed:
+- [WBTR-153] Fixed error where opacity icon for tool overlay could not be found
+- [WBTRB-154] Fixed an issue where an error was thrown when scattering details when the Editor has Vulkan set as its Graphics API.
+
+### Changed:
+- [WBTR-155] Inspector for the details tool no longer displays an empty target distribution box when no details have been added to the Terrain
+
 ## [5.3.0] - 2025-06-04
 ### Changed:
 - Move tests to a separate package.

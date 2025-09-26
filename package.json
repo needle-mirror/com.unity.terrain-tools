@@ -1,7 +1,7 @@
 {
   "name": "com.unity.terrain-tools",
   "displayName": "Terrain Tools",
-  "version": "5.3.0",
+  "version": "5.3.1",
   "unity": "6000.0",
   "description": "The Terrain Tools package adds additional Terrain sculpting brushes and tools to Unity. This add-on toolset is suitable if you require more control over the appearance of your Terrain, and want to streamline Terrain workflows. It’s also useful when you want to make more complex-looking Terrain, or author Terrain Texture data in external digital content creation tools.",
   "dependencies": {
@@ -20,15 +20,15 @@
     "Noise"
   ],
   "_upm": {
-    "changelog": "### Changed:\n- Move tests to a separate package.\n\n### Fixed:\n- Fixed low resolution icons on high PPI and retina displays\n- Fixed deprecation warnings in NoiseFieldView"
+    "changelog": "### Fixed:\n- [WBTR-153] Fixed error where opacity icon for tool overlay could not be found\n- [WBTRB-154] Fixed an issue where an error was thrown when scattering details when the Editor has Vulkan set as its Graphics API.\n\n### Changed:\n- [WBTR-155] Inspector for the details tool no longer displays an empty target distribution box when no details have been added to the Terrain"
   },
   "upmCi": {
-    "footprint": "29ea37c95e6624a4b7fe8dfc19ca959b2a4bb19e"
+    "footprint": "e53e749ffe0a85c04ebcc5d7d9c9362c2d79981f"
   },
   "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.terrain-tools@5.3/manual/index.html",
   "repository": {
     "url": "https://github.com/Unity-Technologies/TerrainTools.git",
     "type": "git",
-    "revision": "f2e40ae748f1940ea0d18f66152f18d3678f4267"
+    "revision": "f524285f995b4a3c5a2add416d96dc392285d183"
   }
 }
