@@ -4,6 +4,9 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
+#if UNITY_6000_5_OR_NEWER
+using UnityEngine.Assemblies;
+#endif
 
 namespace UnityEditor.TerrainTools
 {
@@ -142,7 +145,11 @@ namespace UnityEditor.TerrainTools
 
         static FilterUtility()
         {
+#if UNITY_6000_5_OR_NEWER
+            var gatheredFilterTypes = CurrentAssemblies.GetLoadedAssemblies().SelectMany(
+#else
             var gatheredFilterTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(
+#endif
                 asm =>
                 {
                     Type[] asmTypes = null;

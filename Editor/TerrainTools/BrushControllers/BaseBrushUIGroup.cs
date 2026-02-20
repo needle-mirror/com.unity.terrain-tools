@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 using System.Text;
+using System.Xml;
 using UnityEditor.EditorTools;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
@@ -857,6 +858,7 @@ namespace UnityEditor.TerrainTools
         /// Provides methods for the brush's painting.
         /// </summary>
         [Serializable]
+        [DataContract]
         public class OnPaintOccurrence
         {
             [NonSerialized] internal static List<OnPaintOccurrence> history = new List<OnPaintOccurrence>();
@@ -896,37 +898,51 @@ namespace UnityEditor.TerrainTools
             /// <summary>
             /// The cursor's X position within UV space.
             /// </summary>
-            [SerializeField] public float xPos;
+            [SerializeField]
+            [DataMember]
+            public float xPos;
 
             /// <summary>
             /// The cursor's Y position within UV space.
             /// </summary>
-            [SerializeField] public float yPos;
+            [SerializeField]
+            [DataMember]
+            public float yPos;
 
             /// <summary>
             /// The asset file path of the brush texture in use.
             /// </summary>
-            [SerializeField] public string brushTextureAssetPath;
+            [SerializeField]
+            [DataMember]
+            public string brushTextureAssetPath;
 
             /// <summary>
             /// The brush strength.
             /// </summary>
-            [SerializeField] public float brushStrength;
+            [SerializeField]
+            [DataMember]
+            public float brushStrength;
 
             /// <summary>
             /// The brush rotation.
             /// </summary>
-            [SerializeField] public float brushRotation;
+            [SerializeField]
+            [DataMember]
+            public float brushRotation;
 
             /// <summary>
             /// The brush size.
             /// </summary>
-            [SerializeField] public float brushSize;
+            [SerializeField]
+            [DataMember]
+            public float brushSize;
 
             /// <summary>
             /// The total duration of painting.
             /// </summary>
-            [SerializeField] public float duration;
+            [SerializeField]
+            [DataMember]
+            public float duration;
         }
 
         /// <summary>
@@ -1111,8 +1127,12 @@ namespace UnityEditor.TerrainTools
             if (File.Exists(fileName)) file = File.OpenWrite(fileName);
             else file = File.Create(fileName);
 
-            BinaryFormatter binaryFormatter = new BinaryFormatter();
-            binaryFormatter.Serialize(file, tmpPaintOccurrenceHistory);
+            DataContractSerializer serializer = new DataContractSerializer(typeof(List<OnPaintOccurrence>));
+            using (var writer = XmlDictionaryWriter.CreateBinaryWriter(file))
+            {
+                serializer.WriteObject(writer, tmpPaintOccurrenceHistory);
+                writer.Flush();
+            }
             file.Close();
         }
 
