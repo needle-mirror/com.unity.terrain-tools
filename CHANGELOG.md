@@ -3,6 +3,10 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.3.3] - 2026-08-19
+### Fixed:
+- [UUM-144186] Fixed obsolete `FindObjectsSortMode` API usage that caused compile errors on Unity 6000.4 and above in projects that treat warnings as errors.
+
 ## [5.3.2] - 2026-02-20
 ### Changed:
 - Migrate Mono APIs to CoreCLR-compatible APIs available in Unity 6000.5 and above.

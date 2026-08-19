@@ -756,7 +756,11 @@ namespace UnityEditor.TerrainTools
         {
             if (GroupExists(groupID))
             {
+#if UNITY_6000_4_OR_NEWER
+                TerrainGroup[] terrainGroups = UnityEngine.Object.FindObjectsByType<TerrainGroup>().Where(g => g.GroupID == groupID).ToArray();
+#else
                 TerrainGroup[] terrainGroups = UnityEngine.Object.FindObjectsByType<TerrainGroup>(FindObjectsSortMode.None).Where(g => g.GroupID == groupID).ToArray();
+#endif
                 foreach (var group in terrainGroups)
                 {
                     Terrain[] childTerrains = group.GetComponentsInChildren<Terrain>();
@@ -982,7 +986,11 @@ namespace UnityEditor.TerrainTools
 
         bool GroupExists(int id)
         {
+#if UNITY_6000_4_OR_NEWER
+            var groups = UnityEngine.Object.FindObjectsByType<TerrainGroup>();
+#else
             var groups = UnityEngine.Object.FindObjectsByType<TerrainGroup>(FindObjectsSortMode.None);
+#endif
 
             foreach (var group in groups)
             {

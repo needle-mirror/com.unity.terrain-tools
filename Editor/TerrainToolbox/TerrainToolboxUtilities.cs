@@ -1565,8 +1565,10 @@ namespace UnityEditor.TerrainTools
             targetTerrain.lightmapIndex = sourceTerrain.lightmapIndex;
             targetTerrain.renderingLayerMask = sourceTerrain.renderingLayerMask;
             targetTerrain.lightmapScaleOffset = sourceTerrain.lightmapScaleOffset;
+#if !UNITY_6000_7_OR_NEWER
             targetTerrain.realtimeLightmapIndex = sourceTerrain.realtimeLightmapIndex;
             targetTerrain.realtimeLightmapScaleOffset = sourceTerrain.realtimeLightmapScaleOffset;
+#endif
             targetTerrain.editorRenderFlags = sourceTerrain.editorRenderFlags;
         }
 

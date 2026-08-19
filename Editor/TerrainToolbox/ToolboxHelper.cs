@@ -93,7 +93,11 @@ namespace UnityEditor.TerrainTools
 
         public static Terrain[] GetAllTerrainsInScene()
         {
+#if UNITY_6000_4_OR_NEWER
+            return GameObject.FindObjectsByType<Terrain>();
+#else
             return GameObject.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+#endif
         }
 
         public static void CalculateAdjacencies(Terrain[] terrains, int tilesX, int tilesZ)
