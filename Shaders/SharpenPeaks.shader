@@ -86,8 +86,8 @@ Shader "Hidden/TerrainTools/SharpenPeaks"
 
                 // out of bounds multiplier
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
-                float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
-                return clamp(lerp(hc, height, brushStrength), 0, 0.5f);
+                float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, i.pcUV).r;
+                return PackHeightmap(clamp(lerp(hc, height, brushStrength), 0, 0.5f));
             }
             ENDCG
         }

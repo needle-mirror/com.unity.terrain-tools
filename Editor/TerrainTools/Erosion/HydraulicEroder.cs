@@ -360,8 +360,8 @@ namespace UnityEditor.TerrainTools.Erosion
             CreateRTHandles(new Vector2Int(domainRes.x, domainRes.y));
 
             RenderTexture rt = RenderTexture.active;
-            Graphics.Blit(inputTextures["Height"], m_HeightmapRT[0]);
-            Graphics.Blit(inputTextures["Height"], m_HeightmapRT[1]);
+            HeightmapUnpack.Blit(inputTextures["Height"], m_HeightmapRT[0]);
+            HeightmapUnpack.Blit(inputTextures["Height"], m_HeightmapRT[1]);
 
             if (inputTextures.ContainsKey("Hardness"))
             {

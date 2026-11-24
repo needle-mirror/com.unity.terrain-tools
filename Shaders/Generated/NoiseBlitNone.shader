@@ -105,7 +105,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
                 float n = noise_NoneValue( pos );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -145,7 +145,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
                 float n = noise_NoneValue( pos );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -212,7 +212,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
                 float n = noise_NoneVoronoi( pos );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -252,7 +252,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
                 float n = noise_NoneVoronoi( pos );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -319,7 +319,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
                 float n = noise_NonePerlin( pos );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -359,7 +359,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
                 float n = noise_NonePerlin( pos );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -426,7 +426,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
                 float n = noise_NoneBillow( pos );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -466,7 +466,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
                 float n = noise_NoneBillow( pos );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -533,7 +533,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
                 float n = noise_NoneRidge( pos );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -573,7 +573,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitNone"
 
                 float n = noise_NoneRidge( pos );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL

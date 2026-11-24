@@ -50,9 +50,9 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                float s = tex2D(_MainTex, i.uv).r;
                 s = abs( s );
-                return PackHeightmap(s);
+                return s;
             }
 
             ENDHLSL
@@ -69,9 +69,9 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                float s = tex2D(_MainTex, i.uv).r;
                 s = s + _Add;
-                return PackHeightmap(s);
+                return s;
             }
 
             ENDHLSL
@@ -88,9 +88,9 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                float s = tex2D(_MainTex, i.uv).r;
                 s = clamp( s, _ClampRange.x, _ClampRange.y );
-                return PackHeightmap(s);
+                return s;
             }
 
             ENDHLSL
@@ -107,9 +107,9 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                float s = tex2D(_MainTex, i.uv).r;
                 s = _Complement - s;
-                return PackHeightmap(s);
+                return s;
             }
 
             ENDHLSL
@@ -126,9 +126,9 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                float s = tex2D(_MainTex, i.uv).r;
                 s = max( s, _Max );
-                return PackHeightmap(s);
+                return s;
             }
 
             ENDHLSL
@@ -145,9 +145,9 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                float s = tex2D(_MainTex, i.uv).r;
                 s = min( s, _Min );
-                return PackHeightmap(s);
+                return s;
             }
 
             ENDHLSL
@@ -162,9 +162,9 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                float s = tex2D(_MainTex, i.uv).r;
                 s = -s;
-                return PackHeightmap(s);
+                return s;
             }
 
             ENDHLSL
@@ -181,9 +181,9 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                float s = tex2D(_MainTex, i.uv).r;
                 s = pow_keep_sign( s, _Pow );
-                return PackHeightmap(s);
+                return s;
             }
 
             ENDHLSL
@@ -200,9 +200,9 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                float s = tex2D(_MainTex, i.uv).r;
                 s = RemapFilterValue(s, _RemapRanges.x, _RemapRanges.y, _RemapRanges.z, _RemapRanges.w);
-                return PackHeightmap(s);
+                return s;
             }
 
             ENDHLSL
@@ -219,9 +219,9 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag( v2f_s i ) : SV_Target
             {
-                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
+                float s = tex2D(_MainTex, i.uv).r;
                 s = s * _Multiply;
-                return PackHeightmap(s);
+                return s;
             }
 
             ENDHLSL
@@ -239,10 +239,10 @@ Shader "Hidden/TerrainTools/Filters"
 
             float4 frag(v2f_s i) : SV_Target
             {
-                float s = UnpackHeightmap(tex2D(_MainTex, i.uv));
-                s = s * UnpackHeightmap(tex2D(_Splatmap, i.uv));
+                float s = tex2D(_MainTex, i.uv).r;
+                s = s * tex2D(_Splatmap, i.uv).r;
                 s = RemapFilterValue(s, _SharpnessRanges.x, _SharpnessRanges.y, 0, 1);
-                return PackHeightmap(s);
+                return s;
             }
 
             ENDHLSL

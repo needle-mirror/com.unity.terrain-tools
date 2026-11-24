@@ -85,7 +85,7 @@
                 float3 twistedUVs = RotateUVs(heightmapUV, twistAmt);
 
                 float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
-                float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, i.pcUV).r;
                 float h = UnpackHeightmap(tex2D(_MainTex, twistedUVs.xy));
 
                 return PackHeightmap(lerp(height, h, saturate(brushStrength)));

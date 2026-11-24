@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
-using UnityEngine.Rendering;
 #if UNITY_6000_5_OR_NEWER
 using UnityEngine.Assemblies;
 #endif
@@ -79,17 +78,15 @@ namespace UnityEditor.TerrainTools
         /// <summary>
         /// Gets the default <see cref="GraphicsFormat"/> used to evaluate Filters and FilterStacks.
         /// </summary>
-        /// <remarks>Returns GraphicsFormat.R16_SFloat when the GraphicsFormat is
-        /// supported by the active Graphics API. If it is not supported, for example on Vulkan, OpenGLES3, and OpenGLES2,
-        /// GraphicsFormat.R8G8_UNorm is returned instead.</remarks>
+        /// <remarks>Returns GraphicsFormat.R16_SFloat when the active Graphics API can render into it, so Filter values
+        /// can go outside [0, 1]. Otherwise returns GraphicsFormat.R16_UNorm, or <see cref="Terrain.heightmapFormat"/> if that
+        /// cannot be rendered either. Both clamp values to [0, 1], and Terrain.heightmapFormat can hold less precision.</remarks>
         public static GraphicsFormat defaultFormat =>
 #pragma warning disable 0618
-            SystemInfo.IsFormatSupported(GraphicsFormat.R16_SFloat, FormatUsage.Render) &&
+            SystemInfo.IsFormatSupported(GraphicsFormat.R16_SFloat, FormatUsage.Render) ? GraphicsFormat.R16_SFloat :
+            SystemInfo.IsFormatSupported(GraphicsFormat.R16_UNorm, FormatUsage.Render) ? GraphicsFormat.R16_UNorm :
 #pragma warning restore 0618
-            SystemInfo.graphicsDeviceType != GraphicsDeviceType.Vulkan &&
-            SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES3
-                ? GraphicsFormat.R16_SFloat
-                : Terrain.heightmapFormat;
+            Terrain.heightmapFormat;
 
         private static Material m_builtinMaterial;
         /// <summary>

@@ -26,16 +26,10 @@ namespace UnityEditor.TerrainTools
         }
 
         /// <summary>
-        /// Format to use when rendering a Noise field into a single channel RenderTexture
+        /// Format to use when rendering a Noise field into a single channel RenderTexture.
+        /// Same as <see cref="FilterUtility.defaultFormat"/>, so noise values can go outside [0, 1] wherever R16_SFloat can be rendered.
         /// </summary>
-        public static GraphicsFormat singleChannelFormat =>
-#pragma warning disable 0618
-            SystemInfo.IsFormatSupported(GraphicsFormat.R16_SFloat, FormatUsage.Render) &&
-#pragma warning restore 0618
-            SystemInfo.graphicsDeviceType != GraphicsDeviceType.Vulkan &&
-            SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES3
-            // return Terrain height format because values will be packed and unpacked on GPU using Terrain height functions
-            ? GraphicsFormat.R16_SFloat : Terrain.heightmapFormat;
+        public static GraphicsFormat singleChannelFormat => FilterUtility.defaultFormat;
 
 
         /// <summary>

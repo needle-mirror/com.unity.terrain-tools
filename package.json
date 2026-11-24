@@ -1,7 +1,7 @@
 {
   "name": "com.unity.terrain-tools",
   "displayName": "Terrain Tools",
-  "version": "5.3.3",
+  "version": "5.3.4",
   "unity": "6000.0",
   "description": "The Terrain Tools package adds additional Terrain sculpting brushes and tools to Unity. This add-on toolset is suitable if you require more control over the appearance of your Terrain, and want to streamline Terrain workflows. It’s also useful when you want to make more complex-looking Terrain, or author Terrain Texture data in external digital content creation tools.",
   "dependencies": {
@@ -20,15 +20,15 @@
     "Noise"
   ],
   "_upm": {
-    "changelog": "### Fixed:\n- [UUM-144186] Fixed obsolete `FindObjectsSortMode` API usage that caused compile errors on Unity 6000.4 and above in projects that treat warnings as errors."
+    "changelog": "### Fixed:\n- [UUM-150468] Fixed black rectangular artifacts flickering around the cursor in the Scene view on macOS when the Aspect Brush Mask Filter is enabled.\n- [UUM-158291] Fixed the Terrain Toolbox ignoring the Flip Vertically option when exporting an 8-bit RAW heightmap. 8-bit files exported with Flip Vertically enabled now come out flipped, so a workaround that flipped them after export is no longer needed.\n- [UUM-159510] Fixed the Hydraulic, Thermal and Wind erosion tools creating large height spikes when the Editor uses Vulkan or another graphics API that stores heightmaps in two 8-bit channels.\n- [UUM-159511] Fixed the Sharpen Peaks tool turning slopes into flat steps when the Editor uses Vulkan or another graphics API that stores heightmaps in two 8-bit channels.\n- [UUM-162202] Fixed Brush Mask Filter values outside [0, 1] wrapping around on Vulkan and OpenGL ES 3. Set Height at full brush strength now reaches the target height instead of writing 0.\n- [UUM-162490] Fixed the Height, Slope, Aspect and Concavity Brush Mask Filters, and the Noise filter's Use Heightmap option, giving a sawtooth mask instead of following the terrain height when the Editor uses Vulkan or another graphics API that stores heightmaps in two 8-bit channels.\n- [UUM-162571] Fixed noise values outside [0, 1] wrapping around on Vulkan and OpenGL ES 3 in the Noise Brush Mask Filter, the Sculpt > Noise tool and the noise preview. Exported noise textures on these APIs now hold the noise values instead of only their low byte.\n\n### Changed:\n- [UUM-162202] Brush Mask Filter results are no longer packed with `PackHeightmap` on Vulkan and OpenGL ES 3. Custom tool shaders must read `_FilterTex` with `.r` instead of `UnpackHeightmap`.\n- [UUM-162490] The `FilterContext.Keywords.Heightmap` texture that `GenerateBrushMask` fills now holds plain heights on Vulkan and OpenGL ES 3 instead of packed ones. Custom filters must read it with `.r` instead of `UnpackHeightmap`.\n- Replaced the surface shader in the Built-in Render Pipeline terrain visualization shader with the vertex and fragment passes it generates, so it keeps working in Unity versions that no longer support surface shaders. Rendering is unchanged."
   },
   "upmCi": {
-    "footprint": "f27dc627a02d2ef9f9bcd4f1077e696b31ec0b99"
+    "footprint": "daf2834c8354556aa44f0b1b22864442b2aceb5f"
   },
   "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.terrain-tools@5.3/manual/index.html",
   "repository": {
     "url": "https://github.com/Unity-Technologies/TerrainTools.git",
     "type": "git",
-    "revision": "f4160af16d4069a5c20669bc003665fe5eba785e"
+    "revision": "01ab8b67fa05a9f8fba050946b5908042551b72c"
   }
 }

@@ -22,6 +22,7 @@
             #define BRUSH_TARGETHEIGHT  (_BrushParams[1])
             #define BRUSH_PINCHAMOUNT   (_BrushParams[2])
             #define BRUSH_ROTATION      (_BrushParams[3])
+            #define kMaxHeight          (32766.0f/65535.0f)
 
             struct appdata_t {
                 float4 vertex : POSITION;
@@ -61,9 +62,13 @@
 
                 float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
                 //float brushStrength = saturate(BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)));
-                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, i.pcUV).r;
 
                 float targetHeight = BRUSH_TARGETHEIGHT;
+
+                // at full strength the curve below divides zero by zero, so return the target height directly
+                if (brushStrength >= 1.0f)
+                    return PackHeightmap(targetHeight);
 
                 // have to do this check to ensure strength 0 == no change (code below makes a super tiny change even with strength 0)
                 if (brushStrength > 0.0f)
@@ -84,7 +89,7 @@
 
 
                 //return PackHeightmap(saturate(brushStrength) * targetHeight);
-                return PackHeightmap(lerp(height, targetHeight, brushStrength));
+                return PackHeightmap(clamp(lerp(height, targetHeight, brushStrength), 0.0f, kMaxHeight));
             }
             ENDCG
         }
@@ -101,7 +106,7 @@
             float4 FillHeight( v2f i ) : SV_Target
             {
                 float oldHeight = UnpackHeightmap(tex2D(_MainTex, i.pcUV));
-                return PackHeightmap(lerp(oldHeight, BRUSH_TARGETHEIGHT,  UnpackHeightmap(tex2D(_FilterTex, i.pcUV))));
+                return PackHeightmap(clamp(lerp(oldHeight, BRUSH_TARGETHEIGHT,  tex2D(_FilterTex, i.pcUV).r), 0.0f, kMaxHeight));
             }
 
             ENDCG

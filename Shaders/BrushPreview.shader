@@ -86,7 +86,7 @@ Shader "Hidden/TerrainTools/BrushPreview"
                 float opacity = .75f * brushSample;
 
             #if TERRAINTOOLS_FILTERS_ENABLED
-                float filter = UnpackHeightmap(tex2D(_FilterTex, i.uv));
+                float filter = tex2D(_FilterTex, i.uv).r;
             #endif
 
                 if (_IsPaintHolesTool)  //override the color on the pixels that will be affected by the tool

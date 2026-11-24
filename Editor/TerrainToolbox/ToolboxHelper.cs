@@ -453,7 +453,7 @@ namespace UnityEditor.TerrainTools
                         int index = x + y * heightmapWidth;
                         int srcY = flipVertical ? heightmapHeight - 1 - y : y;
 
-                        float remappedHeight = heights[y, x] * (inputLevelsRange.y - inputLevelsRange.x) + inputLevelsRange.x;
+                        float remappedHeight = heights[srcY, x] * (inputLevelsRange.y - inputLevelsRange.x) + inputLevelsRange.x;
 
                         int height = Mathf.RoundToInt(remappedHeight * normalize);
                         byte compressedHeight = (byte)Mathf.Clamp(height, 0, byte.MaxValue);

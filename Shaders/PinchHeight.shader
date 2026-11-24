@@ -22,6 +22,7 @@
             #define BRUSH_TARGETHEIGHT  (_BrushParams[1])
             #define BRUSH_PINCHAMOUNT   (_BrushParams[2])
             #define BRUSH_ROTATION      (_BrushParams[3])
+            #define kMaxHeight          (32766.0f/65535.0f)
 
             struct appdata_t {
                 float4 vertex : POSITION;
@@ -84,10 +85,10 @@
                 float2 PinchedUVs = heightmapUV + pinchVector;
 
                 float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
-                float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, i.pcUV).r;
                 float h = UnpackHeightmap(tex2D(_MainTex, PinchedUVs));
 
-                return PackHeightmap(lerp(height, h, brushStrength));
+                return PackHeightmap(clamp(lerp(height, h, brushStrength), 0.0f, kMaxHeight));
             }
             ENDCG
         }

@@ -153,8 +153,8 @@ namespace UnityEditor.TerrainTools.Erosion
             Graphics.Blit(Texture2D.blackTexture, windVelRT);
             Graphics.Blit(Texture2D.blackTexture, windVelPrevRT);
 
-            Graphics.Blit(inputTextures["Height"], heightmapPrevRT);
-            Graphics.Blit(inputTextures["Height"], heightmapRT);
+            HeightmapUnpack.Blit(inputTextures["Height"], heightmapPrevRT);
+            HeightmapUnpack.Blit(inputTextures["Height"], heightmapRT);
 
             //precompute some values on the CPU (these become uniform constants in the shader)
             float dx = (float)texelSize.x * m_SimulationScale.value;

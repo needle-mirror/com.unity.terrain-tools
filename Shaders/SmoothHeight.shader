@@ -21,6 +21,7 @@
             float4 _BrushParams;
             #define BRUSH_STRENGTH      (_BrushParams[0])
             #define BRUSH_TARGETHEIGHT  (_BrushParams[1])
+            #define kMaxHeight          (32766.0f/65535.0f)
             int _KernelSize;
 
             float4 _SmoothWeights; // centered, min, max, unused
@@ -61,7 +62,7 @@
                 // out of bounds multiplier
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
                 float height = UnpackHeightmap(tex2D(_MainTex, pcUV));
-                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, pcUV));
+                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, pcUV).r;
 
                 float divisor = 1.0f;
                 float h = UnpackHeightmap(tex2D(_MainTex, pcUV));
@@ -83,7 +84,7 @@
                 h /= divisor;
 
                 h = dot(float3(h, min(h, height), max(h, height)), _SmoothWeights.xyz);
-                return PackHeightmap(lerp(height, h, brushStrength * iib));
+                return PackHeightmap(clamp(lerp(height, h, brushStrength * iib), 0.0f, kMaxHeight));
             }
             ENDCG
         }

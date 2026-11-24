@@ -3,6 +3,21 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.3.4] - 2026-11-24
+### Fixed:
+- [UUM-150468] Fixed black rectangular artifacts flickering around the cursor in the Scene view on macOS when the Aspect Brush Mask Filter is enabled.
+- [UUM-158291] Fixed the Terrain Toolbox ignoring the Flip Vertically option when exporting an 8-bit RAW heightmap. 8-bit files exported with Flip Vertically enabled now come out flipped, so a workaround that flipped them after export is no longer needed.
+- [UUM-159510] Fixed the Hydraulic, Thermal and Wind erosion tools creating large height spikes when the Editor uses Vulkan or another graphics API that stores heightmaps in two 8-bit channels.
+- [UUM-159511] Fixed the Sharpen Peaks tool turning slopes into flat steps when the Editor uses Vulkan or another graphics API that stores heightmaps in two 8-bit channels.
+- [UUM-162202] Fixed Brush Mask Filter values outside [0, 1] wrapping around on Vulkan and OpenGL ES 3. Set Height at full brush strength now reaches the target height instead of writing 0.
+- [UUM-162490] Fixed the Height, Slope, Aspect and Concavity Brush Mask Filters, and the Noise filter's Use Heightmap option, giving a sawtooth mask instead of following the terrain height when the Editor uses Vulkan or another graphics API that stores heightmaps in two 8-bit channels.
+- [UUM-162571] Fixed noise values outside [0, 1] wrapping around on Vulkan and OpenGL ES 3 in the Noise Brush Mask Filter, the Sculpt > Noise tool and the noise preview. Exported noise textures on these APIs now hold the noise values instead of only their low byte.
+
+### Changed:
+- [UUM-162202] Brush Mask Filter results are no longer packed with `PackHeightmap` on Vulkan and OpenGL ES 3. Custom tool shaders must read `_FilterTex` with `.r` instead of `UnpackHeightmap`.
+- [UUM-162490] The `FilterContext.Keywords.Heightmap` texture that `GenerateBrushMask` fills now holds plain heights on Vulkan and OpenGL ES 3 instead of packed ones. Custom filters must read it with `.r` instead of `UnpackHeightmap`.
+- Replaced the surface shader in the Built-in Render Pipeline terrain visualization shader with the vertex and fragment passes it generates, so it keeps working in Unity versions that no longer support surface shaders. Rendering is unchanged.
+
 ## [5.3.3] - 2026-08-19
 ### Fixed:
 - [UUM-144186] Fixed obsolete `FindObjectsSortMode` API usage that caused compile errors on Unity 6000.4 and above in projects that treat warnings as errors.

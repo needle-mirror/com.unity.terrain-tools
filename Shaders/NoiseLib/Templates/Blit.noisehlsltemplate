@@ -97,7 +97,7 @@ Shader ${ShaderCategory}
 
                 float n = noise_${VariantName}( pos, ${GetInputs} );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -137,7 +137,7 @@ Shader ${ShaderCategory}
 
                 float n = noise_${VariantName}( pos, ${GetInputs} );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL

@@ -22,6 +22,7 @@
             #define BRUSH_SMUDGE_X      (_BrushParams[1])
             #define BRUSH_SMUDGE_Y      (_BrushParams[2])
             #define BRUSH_ROTATION      (_BrushParams[3])
+            #define kMaxHeight          (32766.0f/65535.0f)
 
             struct appdata_t {
                 float4 vertex : POSITION;
@@ -61,7 +62,7 @@
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
                 float brushStrength = oob * BRUSH_STRENGTH * 10.0f;
-                float blendValue = UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float blendValue = UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, i.pcUV).r;
 
                 float2 smudgedUVs = heightmapUV - brushStrength * float2(BRUSH_SMUDGE_X, BRUSH_SMUDGE_Y);
 
@@ -69,7 +70,7 @@
 
                 float h = UnpackHeightmap(tex2D(_MainTex, smudgedUVs));
 
-                return PackHeightmap(lerp(height, h, blendValue));
+                return PackHeightmap(clamp(lerp(height, h, blendValue), 0.0f, kMaxHeight));
             }
             ENDCG
         }

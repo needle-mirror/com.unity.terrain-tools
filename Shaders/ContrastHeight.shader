@@ -22,6 +22,7 @@
             #define BRUSH_TARGETHEIGHT  (_BrushParams[1])
             #define BRUSH_FEATURESIZE   (_BrushParams[2])
             #define BRUSH_ROTATION      (_BrushParams[3])
+            #define kMaxHeight          (32766.0f/65535.0f)
 
             struct appdata_t {
                 float4 vertex : POSITION;
@@ -61,7 +62,7 @@
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
                 float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
-                float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float brushStrength = oob * BRUSH_STRENGTH * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, i.pcUV).r;
 
                 float avg = 0.0F;
                 float xoffset = _MainTex_TexelSize.x * BRUSH_FEATURESIZE;
@@ -80,7 +81,7 @@
 
                 float contrast = 1.5F;
                 float h = ((height - avg)) * contrast + avg;
-                return PackHeightmap(lerp(height, h, brushStrength));
+                return PackHeightmap(clamp(lerp(height, h, brushStrength), 0.0f, kMaxHeight));
             }
             ENDCG
         }

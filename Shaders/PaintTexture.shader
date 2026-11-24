@@ -72,7 +72,7 @@
                 // out of bounds multiplier
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
-                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_FilterTex, i.pcUV)) * UnpackHeightmap(tex2D(_BrushTex, brushUV.xy));
+                float brushStrength = BRUSH_STRENGTH * oob * tex2D(_FilterTex, i.pcUV).r * UnpackHeightmap(tex2D(_BrushTex, brushUV.xy));
                 float splatMap = tex2D(_MainTex, i.pcUV).r;
                 float targetAlpha = BRUSH_TARGETHEIGHT;
 

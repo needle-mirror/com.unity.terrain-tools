@@ -53,9 +53,9 @@ Shader "Hidden/TerrainEngine/DetailScatter"
 
                 // out of bounds multiplier
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
-                float brushShape = oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float brushShape = oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, i.pcUV).r;
 
-                return PackHeightmap(brushShape);
+                return PackHeightmap(saturate(brushShape));
             }
             ENDCG
         }

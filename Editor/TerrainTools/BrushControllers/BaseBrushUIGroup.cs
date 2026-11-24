@@ -155,7 +155,7 @@ namespace UnityEditor.TerrainTools
 
                     // bind terrain texture data
                     PaintContext heightContext = brushRender.AcquireHeightmap(false, brushRect);
-                    filterContext.rtHandleCollection.AddRTHandle(0, FilterContext.Keywords.Heightmap, heightContext.sourceRenderTexture.graphicsFormat);
+                    filterContext.rtHandleCollection.AddRTHandle(0, FilterContext.Keywords.Heightmap, HeightmapUnpack.format);
 
                     List<LayerFilter> layerFilters = brushMaskFilterStack.filters.OfType<LayerFilter>().ToList();
                     if(layerFilters.Count > 0)
@@ -184,12 +184,12 @@ namespace UnityEditor.TerrainTools
                             Graphics.Blit(paintContext.sourceRenderTexture, filterContext.rtHandleCollection[layerFilter.splatmapKeyword]);
                             brushRender.Release(paintContext);
                         }
-                        Graphics.Blit(heightContext.sourceRenderTexture, filterContext.rtHandleCollection[FilterContext.Keywords.Heightmap]);
+                        HeightmapUnpack.Blit(heightContext.sourceRenderTexture, filterContext.rtHandleCollection[FilterContext.Keywords.Heightmap]);
                     }
                     else
                     {
                         filterContext.rtHandleCollection.GatherRTHandles(heightContext.sourceRenderTexture.width, heightContext.sourceRenderTexture.height);
-                        Graphics.Blit(heightContext.sourceRenderTexture, filterContext.rtHandleCollection[FilterContext.Keywords.Heightmap]);
+                        HeightmapUnpack.Blit(heightContext.sourceRenderTexture, filterContext.rtHandleCollection[FilterContext.Keywords.Heightmap]);
                     }
 
                     brushMaskFilterStack.Eval(filterContext, heightContext.sourceRenderTexture, destinationRenderTexture);
@@ -222,10 +222,14 @@ namespace UnityEditor.TerrainTools
             {
                 SetFilterContext(terrain.terrainData, position, scale, rotation);
 
-                // bind terrain texture data
-                filterContext.rtHandleCollection.AddRTHandle(0, FilterContext.Keywords.Heightmap, sourceRenderTexture.graphicsFormat);
+                // bind terrain texture data. Some tools pass an alphamap here, only a heightmap is packed.
+                bool isHeightmap = sourceRenderTexture.graphicsFormat == Terrain.heightmapFormat;
+                filterContext.rtHandleCollection.AddRTHandle(0, FilterContext.Keywords.Heightmap, isHeightmap ? HeightmapUnpack.format : sourceRenderTexture.graphicsFormat);
                 filterContext.rtHandleCollection.GatherRTHandles(sourceRenderTexture.width, sourceRenderTexture.height);
-                Graphics.Blit(sourceRenderTexture, filterContext.rtHandleCollection[FilterContext.Keywords.Heightmap]);
+                if (isHeightmap)
+                    HeightmapUnpack.Blit(sourceRenderTexture, filterContext.rtHandleCollection[FilterContext.Keywords.Heightmap]);
+                else
+                    Graphics.Blit(sourceRenderTexture, filterContext.rtHandleCollection[FilterContext.Keywords.Heightmap]);
                 brushMaskFilterStack.Eval(filterContext, sourceRenderTexture, destinationRenderTexture);
             }
 

@@ -262,7 +262,8 @@ Shader "TerrainTool/BrushMaskFilterExample"
                 // Sample the MainTex, which should be a region of the source Heightmap texture, to get the current height value at the provided UV
                 // UnpackHeightmap is necessary here because it unpacks the height value from R and G channels if the current platform/graphics device does not support R16_UNorm texture formats. If R16_UNorm formats are supported, UnpackHeightmap just reads from the R channel.
                 float height = UnpackHeightmap(tex2D(_MainTex, i.pcUV));
-                float filter = UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                // The filter texture stores the composited mask as a plain value in the R channel on every graphics device, so read it directly instead of with UnpackHeightmap
+                float filter = tex2D(_FilterTex, i.pcUV).r;
                 float brush = UnpackHeightmap(tex2D(_BrushTex, brushUV));
                 // Calculate the influence from the composited mask
                 float brushShape = oob * brush * filter;

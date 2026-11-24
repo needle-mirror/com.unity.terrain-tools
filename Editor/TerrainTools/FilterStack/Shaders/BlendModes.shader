@@ -102,7 +102,7 @@ Shader "Hidden/TerrainTools/BlendModes"
             {
                 float2 mainUV = i.uv;
                 float4 a = tex2D(_MainTex, mainUV);
-                float4 b = tex2D(_BlendTex, mainUV);
+                float b = tex2D(_BlendTex, mainUV).r;
 
                 a = a * b;
 

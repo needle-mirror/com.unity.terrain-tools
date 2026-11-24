@@ -74,14 +74,14 @@ Shader "Hidden/TerrainTools/NoiseHeightTool"
                 float oob = all( saturate( brushUV ) == brushUV ) ? 1 : 0;
 
                 // get brush mask value
-                float b = oob * UnpackHeightmap( tex2D( _BrushTex, brushUV ) ) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float b = oob * UnpackHeightmap( tex2D( _BrushTex, brushUV ) ) * tex2D(_FilterTex, i.pcUV).r;
 
                 // need to adjust uvs due to "scaling" from brush rotation
                 float2 pcUVRescale = float2( length( _PCUVToBrushUVScales.xy ), length( _PCUVToBrushUVScales.zw ) );
 
                 // get noise mask value
                 float2 noiseUV = ( i.pcUV - ( .5 ).xx ) * pcUVRescale + ( .5 ).xx + ( .5 ).xx * _NoiseTex_TexelSize.xy;
-                float n = UnpackHeightmap( tex2D( _NoiseTex, noiseUV ) );
+                float n = tex2D( _NoiseTex, noiseUV ).r;
 
                 // TODO(wyatt): remap noise values to match _WorldHeightRemap
 

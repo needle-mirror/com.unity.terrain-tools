@@ -105,7 +105,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitFbm"
 
                 float n = noise_FbmValue( pos, GetFbmFractalInput() );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -145,7 +145,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitFbm"
 
                 float n = noise_FbmValue( pos, GetFbmFractalInput() );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -212,7 +212,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitFbm"
 
                 float n = noise_FbmVoronoi( pos, GetFbmFractalInput() );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -252,7 +252,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitFbm"
 
                 float n = noise_FbmVoronoi( pos, GetFbmFractalInput() );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -319,7 +319,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitFbm"
 
                 float n = noise_FbmPerlin( pos, GetFbmFractalInput() );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -359,7 +359,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitFbm"
 
                 float n = noise_FbmPerlin( pos, GetFbmFractalInput() );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -426,7 +426,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitFbm"
 
                 float n = noise_FbmBillow( pos, GetFbmFractalInput() );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -466,7 +466,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitFbm"
 
                 float n = noise_FbmBillow( pos, GetFbmFractalInput() );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -533,7 +533,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitFbm"
 
                 float n = noise_FbmRidge( pos, GetFbmFractalInput() );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL
@@ -573,7 +573,7 @@ Shader "Hidden/TerrainTools/Noise/NoiseBlit/NoiseBlitFbm"
 
                 float n = noise_FbmRidge( pos, GetFbmFractalInput() );
 
-                return PackHeightmap(n);
+                return n;
             }
 
             ENDHLSL

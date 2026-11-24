@@ -95,8 +95,8 @@ namespace UnityEditor.TerrainTools.Erosion
             var collisionRT = RTUtils.GetTempHandle(RTUtils.GetDescriptorRW(xRes, yRes, 0, RenderTextureFormat.RFloat));
 
             //clear the render textures (also calls rt.Create())
-            Graphics.Blit(inputTextures["Height"], heightmapRT0);
-            Graphics.Blit(inputTextures["Height"], heightmapRT1);
+            HeightmapUnpack.Blit(inputTextures["Height"], heightmapRT0);
+            HeightmapUnpack.Blit(inputTextures["Height"], heightmapRT1);
             Graphics.Blit(Texture2D.blackTexture, sedimentRT);
             Graphics.Blit(Texture2D.blackTexture, hardnessRT);
             Graphics.Blit(Texture2D.blackTexture, reposeAngleRT);

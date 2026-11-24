@@ -135,6 +135,9 @@ namespace UnityEditor.TerrainTools
 
         protected override void OnSceneGUI(SceneView sceneView, FilterContext filterContext)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
             Quaternion windRot = Quaternion.AngleAxis(filterContext.brushRotation, new Vector3(0.0f, 1.0f, 0.0f));
             Handles.ArrowHandleCap(0, filterContext.brushPos, windRot, 0.5f * filterContext.brushSize, EventType.Repaint);
         }

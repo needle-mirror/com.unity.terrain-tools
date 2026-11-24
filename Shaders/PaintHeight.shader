@@ -75,7 +75,7 @@
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
                 float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
-                float brushShape = oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float brushShape = oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, i.pcUV).r;
 
                 return PackHeightmap(clamp(height + BRUSH_STRENGTH * brushShape, 0, kMaxHeight));
             }
@@ -111,7 +111,7 @@
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
                 float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
-                float brushShape = oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float brushShape = oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, i.pcUV).r;
                 float brushHeight = brushShape * BRUSH_STAMPHEIGHT;
 
                 // smoothmax behavior
@@ -157,10 +157,14 @@
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
                 float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
-                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, i.pcUV).r;
 
                 // smooth set
                 float targetHeight = BRUSH_TARGETHEIGHT;
+
+                // at full strength the curve below divides zero by zero, so return the target height directly
+                if (brushStrength >= 1.0f)
+                    return PackHeightmap(targetHeight);
 
                 // have to do this check to ensure strength 0 == no change (code below makes a super tiny change even with strength 0)
                 if (brushStrength > 0.0f)
@@ -203,7 +207,7 @@
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
                 float height = UnpackHeightmap(tex2D(_MainTex, heightmapUV));
-                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, i.pcUV).r;
 
                 float h = 0.0F;
                 float xoffset = _MainTex_TexelSize.x;
@@ -223,7 +227,7 @@
 
                 float3 new_height = float3(h, min(h, height), max(h, height));
                 h = dot(new_height, _SmoothWeights.xyz);
-                return PackHeightmap(lerp(height, h, brushStrength));
+                return PackHeightmap(clamp(lerp(height, h, brushStrength), 0.0f, kMaxHeight));
             }
             ENDCG
         }
@@ -243,7 +247,7 @@
                 // out of bounds multiplier
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
 
-                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float brushStrength = BRUSH_STRENGTH * oob * UnpackHeightmap(tex2D(_BrushTex, brushUV)) * tex2D(_FilterTex, i.pcUV).r;
                 float alphaMap = tex2D(_MainTex, i.pcUV).r;
                 return ApplyBrush(alphaMap, brushStrength);
             }
@@ -262,7 +266,7 @@
                 float2 brushUV = PaintContextUVToBrushUV(i.pcUV);
                 float holes = tex2D(_MainTex, i.pcUV).r;
                 float brush = UnpackHeightmap(tex2D(_BrushTex, brushUV));
-                float filter = UnpackHeightmap(tex2D(_FilterTex, i.pcUV));
+                float filter = tex2D(_FilterTex, i.pcUV).r;
 
                 // out of bounds multiplier
                 float oob = all(saturate(brushUV) == brushUV) ? 1.0f : 0.0f;
